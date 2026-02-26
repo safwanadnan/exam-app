@@ -1,12 +1,17 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Play, Square, FastForward, Activity, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Play, Square, FastForward, Activity, AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+
 
 // Mock progress component for the active solver 
 // (In a real scenario, this connects to the SSE progress endpoint)
@@ -164,15 +169,49 @@ function ActiveSolverPanel({ runId }: { runId: string }) {
 export default function SolverDashboard() {
     const [runs, setRuns] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [startOpen, setStartOpen] = useState(false);
+    const [sessions, setSessions] = useState<any[]>([]);
+    const [configs, setConfigs] = useState<any[]>([]);
+    const [selectedSession, setSelectedSession] = useState("");
+    const [selectedConfig, setSelectedConfig] = useState("");
+    const [starting, setStarting] = useState(false);
 
-    useEffect(() => {
+    const fetchRuns = () => {
         fetch('/api/solver/runs')
             .then(res => res.json())
-            .then(data => {
-                setRuns(data.runs || []);
-                setLoading(false);
+            .then(data => { setRuns(data.runs || []); setLoading(false); });
+    };
+
+    useEffect(() => { fetchRuns(); }, []);
+
+    const openStartDialog = async () => {
+        try {
+            const [sRes, cRes] = await Promise.all([
+                fetch("/api/sessions"), fetch("/api/solver/config"),
+            ]);
+            const sData = await sRes.json();
+            const cData = await cRes.json();
+            setSessions(sData.sessions || []);
+            setConfigs(cData.configs || []);
+            if (sData.sessions?.length) setSelectedSession(sData.sessions[0].id);
+            if (cData.configs?.length) setSelectedConfig(cData.configs[0].id);
+            setStartOpen(true);
+        } catch { toast.error("Failed to load sessions/configs"); }
+    };
+
+    const handleStart = async () => {
+        if (!selectedSession || !selectedConfig) { toast.error("Select session and config"); return; }
+        setStarting(true);
+        try {
+            const res = await fetch("/api/solver/runs", {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ sessionId: selectedSession, configId: selectedConfig }),
             });
-    }, []);
+            if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Failed to start"); }
+            toast.success("Solver started!"); setStartOpen(false); fetchRuns();
+        } catch (err: any) { toast.error(err.message); }
+        finally { setStarting(false); }
+    };
 
     const activeRun = runs.find(r => r.status === "RUNNING" || r.status === "PENDING" || r.status === "PHASE_1" || r.status === "PHASE_2" || r.status === "PHASE_3" || r.status === "FINALIZATION");
 
@@ -180,7 +219,7 @@ export default function SolverDashboard() {
         <div className="flex-1 space-y-6">
             <div className="flex items-center justify-between">
                 <h2 className="text-3xl font-bold tracking-tight">Solver Dashboard</h2>
-                <Button>
+                <Button onClick={openStartDialog}>
                     <Play className="mr-2 h-4 w-4" /> New Optimization Run
                 </Button>
             </div>
@@ -241,7 +280,7 @@ export default function SolverDashboard() {
                                     <div className="flex gap-2">
                                         <Button variant="outline" size="sm">Details</Button>
                                         {run.status === "COMPLETE" && (
-                                            <Button variant="secondary" size="sm">View Schedule</Button>
+                                            <Button variant="secondary" size="sm" onClick={() => window.location.href = `/schedule?runId=${run.id}`}>View Schedule</Button>
                                         )}
                                     </div>
                                 </div>
@@ -256,6 +295,43 @@ export default function SolverDashboard() {
                     </div>
                 </CardContent>
             </Card>
+
+            {/* Start Run Dialog */}
+            <Dialog open={startOpen} onOpenChange={setStartOpen}>
+                <DialogContent className="sm:max-w-[450px]">
+                    <DialogHeader>
+                        <DialogTitle>Start Optimization Run</DialogTitle>
+                        <DialogDescription>Select a session and solver configuration to begin.</DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                            <Label>Session</Label>
+                            <Select value={selectedSession} onValueChange={setSelectedSession}>
+                                <SelectTrigger><SelectValue placeholder="Select session" /></SelectTrigger>
+                                <SelectContent>
+                                    {sessions.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.name} ({s.term} {s.year})</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="grid gap-2">
+                            <Label>Configuration</Label>
+                            <Select value={selectedConfig} onValueChange={setSelectedConfig}>
+                                <SelectTrigger><SelectValue placeholder="Select config" /></SelectTrigger>
+                                <SelectContent>
+                                    {configs.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setStartOpen(false)}>Cancel</Button>
+                        <Button onClick={handleStart} disabled={starting || !selectedSession || !selectedConfig}>
+                            {starting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            <Play className="mr-2 h-4 w-4" /> Start Solver
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

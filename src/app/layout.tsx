@@ -3,6 +3,10 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Sidebar } from "@/components/sidebar";
+import { ThemeProvider } from "@/components/theme-provider";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { MobileNav } from "@/components/mobile-nav";
+import { Toaster } from "@/components/ui/sonner";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -17,23 +21,33 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full">
+    <html lang="en" className="h-full" suppressHydrationWarning>
       <body className={`${inter.className} h-full overflow-hidden antialiased bg-background`}>
-        <div className="grid h-full lg:grid-cols-[250px_1fr]">
-          <div className="hidden border-r bg-muted/10 lg:block h-full">
-            <Sidebar />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <div className="grid h-full lg:grid-cols-[250px_1fr]">
+            <div className="hidden border-r bg-muted/10 lg:block h-full">
+              <Sidebar />
+            </div>
+            <div className="flex flex-col h-full overflow-hidden">
+              <header className="flex h-14 lg:h-[60px] items-center gap-4 border-b bg-background px-6">
+                <MobileNav />
+                <div className="w-full flex-1">
+                  <h1 className="font-semibold text-lg">Exam Scheduler</h1>
+                </div>
+                <ThemeToggle />
+              </header>
+              <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 overflow-auto bg-muted/5">
+                {children}
+              </main>
+            </div>
           </div>
-          <div className="flex flex-col h-full overflow-hidden">
-            <header className="flex h-14 lg:h-[60px] items-center gap-4 border-b bg-background px-6">
-              <div className="w-full flex-1">
-                <h1 className="font-semibold text-lg">Exam Scheduler</h1>
-              </div>
-            </header>
-            <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 overflow-auto bg-muted/5">
-              {children}
-            </main>
-          </div>
-        </div>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );

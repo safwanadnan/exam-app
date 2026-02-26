@@ -1,75 +1,231 @@
-import { prisma } from "@/lib/prisma";
-import { Plus, Building2, Search, MoreHorizontal } from "lucide-react";
+"use client";
+
+import { useEffect, useState } from "react";
+import { Plus, Building2, Search, MoreHorizontal, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
 
-export default async function RoomsPage() {
-    const buildings = await prisma.building.findMany({
-        orderBy: { name: "asc" },
-        include: {
-            rooms: {
-                orderBy: { name: "asc" }
-            },
-            _count: {
-                select: { rooms: true }
-            }
+interface Room {
+    id: string; name: string; capacity: number; altCapacity: number | null;
+    coordX: number | null; coordY: number | null; buildingId: string;
+}
+interface BuildingData {
+    id: string; name: string; code: string;
+    rooms: Room[]; _count: { rooms: number };
+}
+
+function BuildingDialog({ building, open, onOpenChange, onSaved }: {
+    building?: BuildingData | null; open: boolean; onOpenChange: (o: boolean) => void; onSaved: () => void;
+}) {
+    const isEditing = !!building;
+    const [saving, setSaving] = useState(false);
+    const [name, setName] = useState("");
+    const [code, setCode] = useState("");
+
+    useEffect(() => {
+        if (building) { setName(building.name); setCode(building.code); }
+        else { setName(""); setCode(""); }
+    }, [building, open]);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault(); setSaving(true);
+        try {
+            const body = { name, code };
+            const url = isEditing ? `/api/buildings/${building!.id}` : "/api/buildings";
+            const res = await fetch(url, { method: isEditing ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+            if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Failed"); }
+            toast.success(isEditing ? "Building updated" : "Building created");
+            onOpenChange(false); onSaved();
+        } catch (err: any) { toast.error(err.message); } finally { setSaving(false); }
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-[400px]">
+                <form onSubmit={handleSubmit}>
+                    <DialogHeader>
+                        <DialogTitle>{isEditing ? "Edit Building" : "Add Building"}</DialogTitle>
+                        <DialogDescription>Enter the building details.</DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid gap-2"><Label>Name</Label><Input value={name} onChange={e => setName(e.target.value)} required /></div>
+                        <div className="grid gap-2"><Label>Code</Label><Input value={code} onChange={e => setCode(e.target.value)} placeholder="e.g. SCI" required /></div>
+                    </div>
+                    <DialogFooter>
+                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                        <Button type="submit" disabled={saving}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{isEditing ? "Save" : "Create"}</Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function RoomDialog({ room, buildings, open, onOpenChange, onSaved }: {
+    room?: Room | null; buildings: BuildingData[]; open: boolean; onOpenChange: (o: boolean) => void; onSaved: () => void;
+}) {
+    const isEditing = !!room;
+    const [saving, setSaving] = useState(false);
+    const [name, setName] = useState("");
+    const [buildingId, setBuildingId] = useState("");
+    const [capacity, setCapacity] = useState(30);
+    const [altCapacity, setAltCapacity] = useState("");
+    const [coordX, setCoordX] = useState("");
+    const [coordY, setCoordY] = useState("");
+
+    useEffect(() => {
+        if (room) {
+            setName(room.name); setBuildingId(room.buildingId); setCapacity(room.capacity);
+            setAltCapacity(room.altCapacity?.toString() || ""); setCoordX(room.coordX?.toString() || ""); setCoordY(room.coordY?.toString() || "");
+        } else {
+            setName(""); setBuildingId(buildings[0]?.id || ""); setCapacity(30); setAltCapacity(""); setCoordX(""); setCoordY("");
         }
-    });
+    }, [room, open, buildings]);
 
-    const totalRooms = buildings.reduce((acc: number, b: any) => acc + b._count.rooms, 0);
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault(); setSaving(true);
+        try {
+            const body: any = { name, buildingId, capacity };
+            if (altCapacity) body.altCapacity = parseInt(altCapacity);
+            if (coordX) body.coordX = parseFloat(coordX);
+            if (coordY) body.coordY = parseFloat(coordY);
+            const url = isEditing ? `/api/rooms/${room!.id}` : "/api/rooms";
+            const res = await fetch(url, { method: isEditing ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+            if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Failed"); }
+            toast.success(isEditing ? "Room updated" : "Room created");
+            onOpenChange(false); onSaved();
+        } catch (err: any) { toast.error(err.message); } finally { setSaving(false); }
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-[480px]">
+                <form onSubmit={handleSubmit}>
+                    <DialogHeader>
+                        <DialogTitle>{isEditing ? "Edit Room" : "Add Room"}</DialogTitle>
+                        <DialogDescription>Configure room details and seating capacity.</DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                            <Label>Building</Label>
+                            <Select value={buildingId} onValueChange={setBuildingId}>
+                                <SelectTrigger><SelectValue placeholder="Select building" /></SelectTrigger>
+                                <SelectContent>{buildings.map(b => <SelectItem key={b.id} value={b.id}>{b.name} ({b.code})</SelectItem>)}</SelectContent>
+                            </Select>
+                        </div>
+                        <div className="grid gap-2"><Label>Room Name</Label><Input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. 101" required /></div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2"><Label>Capacity</Label><Input type="number" value={capacity} onChange={e => setCapacity(parseInt(e.target.value))} required /></div>
+                            <div className="grid gap-2"><Label>Alt Capacity</Label><Input type="number" value={altCapacity} onChange={e => setAltCapacity(e.target.value)} placeholder="Optional" /></div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2"><Label>Coord X</Label><Input type="number" step="any" value={coordX} onChange={e => setCoordX(e.target.value)} placeholder="Optional" /></div>
+                            <div className="grid gap-2"><Label>Coord Y</Label><Input type="number" step="any" value={coordY} onChange={e => setCoordY(e.target.value)} placeholder="Optional" /></div>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                        <Button type="submit" disabled={saving}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{isEditing ? "Save" : "Create"}</Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function DeleteDialog({ open, onOpenChange, onConfirm, title }: { open: boolean; onOpenChange: (o: boolean) => void; onConfirm: () => void; title: string; }) {
+    const [deleting, setDeleting] = useState(false);
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-[400px]">
+                <DialogHeader><DialogTitle>Confirm Delete</DialogTitle><DialogDescription>Are you sure you want to delete <strong>{title}</strong>? This cannot be undone.</DialogDescription></DialogHeader>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                    <Button variant="destructive" disabled={deleting} onClick={async () => { setDeleting(true); await onConfirm(); setDeleting(false); }}>
+                        {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Delete
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+export default function RoomsPage() {
+    const [buildings, setBuildings] = useState<BuildingData[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState("");
+    const [buildingDialogOpen, setBuildingDialogOpen] = useState(false);
+    const [editBuilding, setEditBuilding] = useState<BuildingData | null>(null);
+    const [roomDialogOpen, setRoomDialogOpen] = useState(false);
+    const [editRoom, setEditRoom] = useState<Room | null>(null);
+    const [deleteTarget, setDeleteTarget] = useState<{ type: "building" | "room"; id: string; name: string } | null>(null);
+
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            const res = await fetch("/api/buildings?limit=100");
+            const data = await res.json();
+            setBuildings(data.buildings || []);
+        } catch { toast.error("Failed to load buildings"); }
+        finally { setLoading(false); }
+    };
+
+    useEffect(() => { fetchData(); }, []);
+
+    const handleDelete = async () => {
+        if (!deleteTarget) return;
+        try {
+            const url = deleteTarget.type === "building" ? `/api/buildings/${deleteTarget.id}` : `/api/rooms/${deleteTarget.id}`;
+            const res = await fetch(url, { method: "DELETE" });
+            if (!res.ok) throw new Error("Failed to delete");
+            toast.success(`${deleteTarget.type === "building" ? "Building" : "Room"} deleted`);
+            setDeleteTarget(null); fetchData();
+        } catch (err: any) { toast.error(err.message); }
+    };
+
+    const filtered = buildings.filter(b =>
+        search === "" || b.name.toLowerCase().includes(search.toLowerCase()) || b.code.toLowerCase().includes(search.toLowerCase()) ||
+        b.rooms.some(r => r.name.toLowerCase().includes(search.toLowerCase()))
+    );
+
+    const totalRooms = buildings.reduce((acc, b) => acc + b._count.rooms, 0);
 
     return (
         <div className="flex-1 space-y-6">
             <div className="flex items-center justify-between">
                 <h2 className="text-3xl font-bold tracking-tight">Rooms & Buildings</h2>
                 <div className="flex items-center gap-2">
-                    <Button variant="outline">
-                        <Plus className="mr-2 h-4 w-4" /> Add Building
-                    </Button>
-                    <Button>
-                        <Plus className="mr-2 h-4 w-4" /> Add Room
-                    </Button>
+                    <Button variant="outline" onClick={() => { setEditBuilding(null); setBuildingDialogOpen(true); }}><Plus className="mr-2 h-4 w-4" /> Add Building</Button>
+                    <Button onClick={() => { setEditRoom(null); setRoomDialogOpen(true); }}><Plus className="mr-2 h-4 w-4" /> Add Room</Button>
                 </div>
             </div>
 
             <div className="flex items-center space-x-2 pb-2">
                 <div className="relative max-w-sm w-full">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        type="search"
-                        placeholder="Search buildings or rooms..."
-                        className="pl-8 bg-background"
-                    />
+                    <Input type="search" placeholder="Search buildings or rooms..." className="pl-8 bg-background" value={search} onChange={e => setSearch(e.target.value)} />
                 </div>
+                <div className="text-sm text-muted-foreground">{totalRooms} rooms in {buildings.length} buildings</div>
             </div>
 
             <div className="grid gap-6">
-                {buildings.length === 0 ? (
+                {loading ? (
+                    <div className="flex items-center justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+                ) : filtered.length === 0 ? (
                     <div className="flex flex-col items-center justify-center p-8 text-center bg-muted/20 border border-dashed rounded-lg">
                         <Building2 className="h-10 w-10 text-muted-foreground mb-4 opacity-50" />
                         <h3 className="font-semibold text-lg text-foreground">No buildings configured</h3>
-                        <p className="text-sm text-muted-foreground max-w-sm mt-1">
-                            Add buildings and rooms to start placing exams.
-                        </p>
+                        <p className="text-sm text-muted-foreground max-w-sm mt-1">Add buildings and rooms to start placing exams.</p>
                     </div>
                 ) : (
-                    buildings.map((building: any) => (
+                    filtered.map(building => (
                         <Card key={building.id} className="overflow-hidden">
                             <CardHeader className="bg-muted/10 border-b py-4 flex flex-row items-center justify-between">
                                 <div>
@@ -77,54 +233,40 @@ export default async function RoomsPage() {
                                         <Building2 className="h-5 w-5 text-muted-foreground" />
                                         {building.name} <span className="text-muted-foreground font-normal">({building.code})</span>
                                     </CardTitle>
-                                    <CardDescription>
-                                        {building._count.rooms} {building._count.rooms === 1 ? 'room' : 'rooms'}
-                                    </CardDescription>
+                                    <CardDescription>{building._count.rooms} {building._count.rooms === 1 ? 'room' : 'rooms'}</CardDescription>
                                 </div>
-                                <Button variant="outline" size="sm">Edit Building</Button>
+                                <div className="flex gap-2">
+                                    <Button variant="outline" size="sm" onClick={() => { setEditBuilding(building); setBuildingDialogOpen(true); }}>Edit</Button>
+                                    <Button variant="outline" size="sm" className="text-destructive" onClick={() => setDeleteTarget({ type: "building", id: building.id, name: building.name })}>Delete</Button>
+                                </div>
                             </CardHeader>
                             <CardContent className="p-0">
                                 {building.rooms.length === 0 ? (
-                                    <div className="p-8 text-center text-sm text-muted-foreground">
-                                        No rooms added to this building yet.
-                                    </div>
+                                    <div className="p-8 text-center text-sm text-muted-foreground">No rooms added yet.</div>
                                 ) : (
                                     <Table>
                                         <TableHeader className="bg-muted/5">
                                             <TableRow>
                                                 <TableHead className="pl-6 w-[30%]">Room Name</TableHead>
                                                 <TableHead>Normal Capacity</TableHead>
-                                                <TableHead>Alternate Seating Capacity</TableHead>
+                                                <TableHead>Alternate Capacity</TableHead>
                                                 <TableHead>Coordinates (X,Y)</TableHead>
                                                 <TableHead className="w-[80px]"></TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {building.rooms.map((room: any) => (
+                                            {building.rooms.map(room => (
                                                 <TableRow key={room.id}>
                                                     <TableCell className="pl-6 font-medium">{room.name}</TableCell>
-                                                    <TableCell className="font-medium text-primary">
-                                                        {room.capacity}
-                                                    </TableCell>
-                                                    <TableCell className="text-muted-foreground">
-                                                        {room.altCapacity || "—"}
-                                                    </TableCell>
-                                                    <TableCell className="text-muted-foreground">
-                                                        {room.coordX !== null && room.coordY !== null
-                                                            ? `${room.coordX}, ${room.coordY}`
-                                                            : "—"}
-                                                    </TableCell>
+                                                    <TableCell className="font-medium text-primary">{room.capacity}</TableCell>
+                                                    <TableCell className="text-muted-foreground">{room.altCapacity || "—"}</TableCell>
+                                                    <TableCell className="text-muted-foreground">{room.coordX != null && room.coordY != null ? `${room.coordX}, ${room.coordY}` : "—"}</TableCell>
                                                     <TableCell>
                                                         <DropdownMenu>
-                                                            <DropdownMenuTrigger asChild>
-                                                                <Button aria-haspopup="true" size="icon" variant="ghost">
-                                                                    <MoreHorizontal className="h-4 w-4" />
-                                                                    <span className="sr-only">Toggle menu</span>
-                                                                </Button>
-                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuTrigger asChild><Button size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                                                             <DropdownMenuContent align="end">
-                                                                <DropdownMenuItem>Edit room</DropdownMenuItem>
-                                                                <DropdownMenuItem className="text-destructive">Delete room</DropdownMenuItem>
+                                                                <DropdownMenuItem onClick={() => { setEditRoom(room); setRoomDialogOpen(true); }}>Edit room</DropdownMenuItem>
+                                                                <DropdownMenuItem className="text-destructive" onClick={() => setDeleteTarget({ type: "room", id: room.id, name: room.name })}>Delete room</DropdownMenuItem>
                                                             </DropdownMenuContent>
                                                         </DropdownMenu>
                                                     </TableCell>
@@ -138,6 +280,10 @@ export default async function RoomsPage() {
                     ))
                 )}
             </div>
+
+            <BuildingDialog building={editBuilding} open={buildingDialogOpen} onOpenChange={setBuildingDialogOpen} onSaved={fetchData} />
+            <RoomDialog room={editRoom} buildings={buildings} open={roomDialogOpen} onOpenChange={setRoomDialogOpen} onSaved={fetchData} />
+            <DeleteDialog open={!!deleteTarget} onOpenChange={o => { if (!o) setDeleteTarget(null); }} onConfirm={handleDelete} title={deleteTarget?.name || ""} />
         </div>
     );
 }

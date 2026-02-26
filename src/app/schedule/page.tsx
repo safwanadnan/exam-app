@@ -1,37 +1,97 @@
-import { prisma } from "@/lib/prisma";
-import { CalendarDays, Filter, Download } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+"use client";
+
+import { useEffect, useState, useCallback } from "react";
 import { format } from "date-fns";
+import { CalendarDays, Download, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
 
-export default async function SchedulePage({
-    searchParams,
-}: {
-    searchParams: Promise<{ runId?: string }>;
-}) {
-    const resolvedParams = await searchParams;
-    const runs = await prisma.solverRun.findMany({
-        where: { status: "COMPLETE" },
-        orderBy: { createdAt: "desc" },
-        include: { config: { select: { name: true } } }
-    });
+interface Assignment {
+    id: string;
+    exam: { name: string; length: number; _count: { studentEnrollments: number } };
+    period: { id: string; date: string; startTime: string; endTime: string; length: number };
+    periodId: string;
+    rooms: { roomId: string; room: { name: string; building: { code: string } } }[];
+}
 
-    const activeRunId = resolvedParams?.runId || (runs.length > 0 ? runs[0].id : null);
+interface Period { id: string; date: string; startTime: string; endTime: string; length: number; }
+interface Run { id: string; status: string; createdAt: string; config?: { name: string } | null; }
 
-    const assignments = activeRunId ? await prisma.examAssignment.findMany({
-        where: { runId: activeRunId },
-        include: {
-            exam: { select: { name: true, length: true, _count: { select: { studentEnrollments: true } } } },
-            period: true,
-            rooms: { include: { room: { select: { name: true, building: { select: { code: true } } } } } }
-        }
-    }) : [];
+const COLORS = [
+    "bg-blue-500/10 border-blue-500/30 text-blue-900 dark:text-blue-200",
+    "bg-emerald-500/10 border-emerald-500/30 text-emerald-900 dark:text-emerald-200",
+    "bg-violet-500/10 border-violet-500/30 text-violet-900 dark:text-violet-200",
+    "bg-amber-500/10 border-amber-500/30 text-amber-900 dark:text-amber-200",
+    "bg-rose-500/10 border-rose-500/30 text-rose-900 dark:text-rose-200",
+    "bg-cyan-500/10 border-cyan-500/30 text-cyan-900 dark:text-cyan-200",
+    "bg-pink-500/10 border-pink-500/30 text-pink-900 dark:text-pink-200",
+    "bg-indigo-500/10 border-indigo-500/30 text-indigo-900 dark:text-indigo-200",
+];
 
-    // Group by Period then by Room for the grid
-    const periods = activeRunId ? await prisma.examPeriod.findMany({
-        orderBy: [{ date: 'asc' }, { startTime: 'asc' }]
-    }) : [];
+export default function SchedulePage() {
+    const [loading, setLoading] = useState(true);
+    const [runs, setRuns] = useState<Run[]>([]);
+    const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+    const [assignments, setAssignments] = useState<Assignment[]>([]);
+    const [periods, setPeriods] = useState<Period[]>([]);
+
+    useEffect(() => {
+        fetch("/api/solver/runs").then(r => r.json()).then(data => {
+            const completed = (data.runs || []).filter((r: Run) => r.status === "COMPLETE");
+            setRuns(completed);
+            if (completed.length > 0) setSelectedRunId(completed[0].id);
+            setLoading(false);
+        }).catch(() => { setLoading(false); toast.error("Failed to load runs"); });
+    }, []);
+
+    useEffect(() => {
+        if (!selectedRunId) return;
+        setLoading(true);
+        Promise.all([
+            fetch(`/api/export?runId=${selectedRunId}`).then(r => r.json()),
+            fetch("/api/periods?limit=200").then(r => r.json()),
+        ]).then(([expData, perData]) => {
+            setAssignments(expData.assignments || []);
+            setPeriods(perData.periods || []);
+            setLoading(false);
+        }).catch(() => { setLoading(false); toast.error("Failed to load schedule"); });
+    }, [selectedRunId]);
+
+    const buildingColorMap = useCallback(() => {
+        const map = new Map<string, string>();
+        let i = 0;
+        assignments.forEach(a => {
+            a.rooms.forEach(r => {
+                const code = r.room.building.code;
+                if (!map.has(code)) { map.set(code, COLORS[i % COLORS.length]); i++; }
+            });
+        });
+        return map;
+    }, [assignments]);
+
+    const colorMap = buildingColorMap();
+
+    const exportCsv = () => {
+        const rows = [["Exam", "Date", "Time", "Duration", "Students", "Rooms"].join(",")];
+        assignments.forEach(a => {
+            rows.push([
+                `"${a.exam.name || "Unnamed"}"`,
+                format(new Date(a.period.date), "yyyy-MM-dd"),
+                a.period.startTime,
+                a.exam.length.toString(),
+                a.exam._count.studentEnrollments.toString(),
+                `"${a.rooms.map(r => `${r.room.building.code} ${r.room.name}`).join("; ")}"`,
+            ].join(","));
+        });
+        const blob = new Blob([rows.join("\n")], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a"); link.href = url;
+        link.download = `schedule-${selectedRunId?.slice(0, 8)}.csv`;
+        link.click(); URL.revokeObjectURL(url);
+        toast.success("Schedule exported as CSV");
+    };
 
     return (
         <div className="flex-1 space-y-6">
@@ -39,77 +99,73 @@ export default async function SchedulePage({
                 <h2 className="text-3xl font-bold tracking-tight">Schedule View</h2>
                 <div className="flex items-center gap-2">
                     {runs.length > 0 && (
-                        <Select defaultValue={activeRunId || undefined}>
-                            <SelectTrigger className="w-[250px] bg-background">
-                                <SelectValue placeholder="Select Solver Run" />
-                            </SelectTrigger>
+                        <Select value={selectedRunId || undefined} onValueChange={setSelectedRunId}>
+                            <SelectTrigger className="w-[250px] bg-background"><SelectValue placeholder="Select Run" /></SelectTrigger>
                             <SelectContent>
-                                {runs.map((r: any) => (
-                                    <SelectItem key={r.id} value={r.id}>
-                                        {r.config?.name || 'Default'} - {format(new Date(r.createdAt), "MMM d, HH:mm")}
-                                    </SelectItem>
-                                ))}
+                                {runs.map(r => <SelectItem key={r.id} value={r.id}>{r.config?.name || "Default"} — {format(new Date(r.createdAt), "MMM d, HH:mm")}</SelectItem>)}
                             </SelectContent>
                         </Select>
                     )}
-                    <Button variant="outline">
-                        <Filter className="mr-2 h-4 w-4" /> Filter
-                    </Button>
-                    <Button disabled={!activeRunId}>
-                        <Download className="mr-2 h-4 w-4" /> Export
+                    <Button onClick={exportCsv} disabled={!selectedRunId || assignments.length === 0}>
+                        <Download className="mr-2 h-4 w-4" /> Export CSV
                     </Button>
                 </div>
             </div>
 
-            {!activeRunId ? (
+            {loading ? (
+                <div className="flex items-center justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+            ) : !selectedRunId ? (
                 <Card className="border-dashed">
                     <CardContent className="flex flex-col items-center justify-center p-12 text-center">
                         <CalendarDays className="h-10 w-10 text-muted-foreground mb-4 opacity-50" />
                         <h3 className="font-semibold text-lg">No Schedules Available</h3>
-                        <p className="text-sm text-muted-foreground max-w-sm mt-1">
-                            Run the solver to generate a schedule before viewing it here.
-                        </p>
+                        <p className="text-sm text-muted-foreground max-w-sm mt-1">Run the solver to generate a schedule.</p>
                     </CardContent>
                 </Card>
             ) : (
                 <div className="space-y-6">
-                    <div className="flex gap-4 mb-4">
-                        <div className="bg-muted px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2">
+                    <div className="flex gap-4 mb-4 flex-wrap">
+                        <div className="bg-muted px-4 py-2 rounded-md text-sm font-medium">
                             Total Assignments: <span className="text-primary">{assignments.length}</span>
                         </div>
+                        {Array.from(colorMap.entries()).map(([code, classes]) => (
+                            <div key={code} className={`px-3 py-1.5 rounded-md text-xs font-medium border ${classes}`}>{code}</div>
+                        ))}
                     </div>
-
                     <div className="grid gap-6">
-                        {periods.map((period: any) => {
-                            const periodAssignments = assignments.filter((a: any) => a.periodId === period.id);
-                            if (periodAssignments.length === 0) return null;
-
+                        {periods.map(period => {
+                            const pa = assignments.filter(a => a.periodId === period.id);
+                            if (pa.length === 0) return null;
                             return (
                                 <Card key={period.id} className="overflow-hidden">
                                     <CardHeader className="bg-muted/10 border-b py-3">
                                         <CardTitle className="text-base flex justify-between items-center">
                                             <span>{format(new Date(period.date), "EEEE, MMM d, yyyy")}</span>
-                                            <span className="text-muted-foreground font-normal">{period.startTime} - {period.endTime} ({period.length}m)</span>
+                                            <span className="text-muted-foreground font-normal">{period.startTime} — {period.endTime} ({period.length}m)</span>
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent className="p-4">
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                            {periodAssignments.map((assignment: any) => (
-                                                <div key={assignment.id} className="bg-background border rounded-lg p-3 shadow-sm hover:border-primary transition-colors cursor-pointer">
-                                                    <div className="font-semibold text-sm mb-1">{assignment.exam.name || "Unnamed Exam"}</div>
-                                                    <div className="text-xs text-muted-foreground flex justify-between mb-2">
-                                                        <span>{assignment.exam.length} mins</span>
-                                                        <span className="bg-primary/10 text-primary px-1.5 py-0.5 rounded font-medium">{assignment.exam._count.studentEnrollments} students</span>
+                                            {pa.map(a => {
+                                                const buildingCode = a.rooms[0]?.room.building.code || "";
+                                                const colors = colorMap.get(buildingCode) || COLORS[0];
+                                                return (
+                                                    <div key={a.id} className={`border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow ${colors}`}>
+                                                        <div className="font-semibold text-sm mb-1">{a.exam.name || "Unnamed"}</div>
+                                                        <div className="text-xs opacity-75 flex justify-between mb-2">
+                                                            <span>{a.exam.length}m</span>
+                                                            <span className="font-medium">{a.exam._count.studentEnrollments} students</span>
+                                                        </div>
+                                                        <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-current/10">
+                                                            {a.rooms.map(r => (
+                                                                <span key={r.roomId} className="text-[11px] bg-background/60 px-1.5 py-0.5 rounded font-medium">
+                                                                    {r.room.building.code} {r.room.name}
+                                                                </span>
+                                                            ))}
+                                                        </div>
                                                     </div>
-                                                    <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t">
-                                                        {assignment.rooms.map((r: any) => (
-                                                            <span key={r.roomId} className="text-[11px] bg-secondary text-secondary-foreground px-1.5 py-0.5 rounded">
-                                                                {r.room.building.code} {r.room.name}
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            ))}
+                                                );
+                                            })}
                                         </div>
                                     </CardContent>
                                 </Card>
