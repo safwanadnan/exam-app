@@ -1,6 +1,7 @@
+﻿export const dynamic = 'force-dynamic';
 /**
- * GET /api/sessions — List all academic sessions
- * POST /api/sessions — Create a new academic session
+ * GET /api/sessions â€” List all academic sessions
+ * POST /api/sessions â€” Create a new academic session
  */
 import { NextRequest } from "next/server";
 import { z } from "zod";
@@ -44,3 +45,4 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     });
     return jsonResponse(session, 201);
 });
+

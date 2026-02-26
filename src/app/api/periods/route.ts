@@ -1,6 +1,7 @@
+﻿export const dynamic = 'force-dynamic';
 /**
- * GET /api/periods — List periods (filter by sessionId, examTypeId)
- * POST /api/periods — Create a period
+ * GET /api/periods â€” List periods (filter by sessionId, examTypeId)
+ * POST /api/periods â€” Create a period
  */
 import { NextRequest } from "next/server";
 import { z } from "zod";
@@ -55,3 +56,4 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     });
     return jsonResponse(period, 201);
 });
+

@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 /**
  * GET /api/sessions/[id] — Get a session by ID
  * PUT /api/sessions/[id] — Update a session

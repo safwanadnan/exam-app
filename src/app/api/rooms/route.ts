@@ -1,6 +1,7 @@
+﻿export const dynamic = 'force-dynamic';
 /**
- * GET /api/rooms — List rooms (optionally filter by buildingId)
- * POST /api/rooms — Create a room
+ * GET /api/rooms â€” List rooms (optionally filter by buildingId)
+ * POST /api/rooms â€” Create a room
  */
 import { NextRequest } from "next/server";
 import { z } from "zod";
@@ -43,3 +44,4 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     });
     return jsonResponse(room, 201);
 });
+

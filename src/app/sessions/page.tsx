@@ -24,7 +24,7 @@ export default async function SessionsPage() {
         orderBy: { year: "desc" },
         include: {
             _count: {
-                select: { departments: true, exams: true, solverRuns: true, examTypes: true },
+                select: { departments: true, solverRuns: true, examTypes: true },
             },
         },
     });
@@ -65,7 +65,7 @@ export default async function SessionsPage() {
                                     <TableHead>Term & Year</TableHead>
                                     <TableHead>Dates</TableHead>
                                     <TableHead className="text-right">Exam Types</TableHead>
-                                    <TableHead className="text-right">Exams</TableHead>
+
                                     <TableHead className="text-right">Solver Runs</TableHead>
                                     <TableHead className="w-[80px]"></TableHead>
                                 </TableRow>
@@ -86,7 +86,7 @@ export default async function SessionsPage() {
                                             {format(new Date(session.startDate), "MMM d")} - {format(new Date(session.endDate), "MMM d, yyyy")}
                                         </TableCell>
                                         <TableCell className="text-right font-medium">{session._count.examTypes}</TableCell>
-                                        <TableCell className="text-right font-medium">{session._count.exams}</TableCell>
+
                                         <TableCell className="text-right font-medium">{session._count.solverRuns}</TableCell>
                                         <TableCell>
                                             <DropdownMenu>

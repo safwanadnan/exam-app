@@ -5,7 +5,7 @@
  * the in-memory ExamModel that the solver operates on.
  * After solving, saves results back to the database.
  */
-import { PrismaClient } from "@/generated/prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { ExamModel } from "./model/ExamModel";
 import { ExamPeriod } from "./model/ExamPeriod";
 import { ExamRoom } from "./model/ExamRoom";

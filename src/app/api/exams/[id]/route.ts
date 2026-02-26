@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 /**
  * GET /api/exams/[id] — Get exam with full details
  * PUT /api/exams/[id] — Update exam

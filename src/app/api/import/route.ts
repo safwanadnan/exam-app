@@ -1,5 +1,6 @@
+﻿export const dynamic = 'force-dynamic';
 /**
- * POST /api/import — Bulk data import
+ * POST /api/import â€” Bulk data import
  */
 import { NextRequest } from "next/server";
 import { z } from "zod";
@@ -119,3 +120,4 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
 
     return jsonResponse({ success: true, message: "Import completed successfully", result }, 201);
 });
+

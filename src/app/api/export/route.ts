@@ -1,5 +1,6 @@
+﻿export const dynamic = 'force-dynamic';
 /**
- * GET /api/export — Export schedule results (assignments)
+ * GET /api/export â€” Export schedule results (assignments)
  */
 import { NextRequest, NextResponse } from "next/server";
 import { prisma, jsonResponse, withErrorHandling } from "@/lib/api-helpers";
@@ -47,3 +48,4 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
 
     return jsonResponse(exportData);
 });
+

@@ -6,6 +6,8 @@ import { activeSolvers } from "@/lib/solver-manager";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest, ctx: RouteContext) {
     const { id } = await ctx.params;
     const state = activeSolvers.get(id);

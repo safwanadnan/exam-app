@@ -1,6 +1,7 @@
+﻿export const dynamic = 'force-dynamic';
 /**
- * POST /api/solver/runs — Create a new solver run and start it
- * GET /api/solver/runs — List past solver runs
+ * POST /api/solver/runs â€” Create a new solver run and start it
+ * GET /api/solver/runs â€” List past solver runs
  */
 import { NextRequest } from "next/server";
 import { z } from "zod";
@@ -75,3 +76,4 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
 
     return jsonResponse({ run, message: "Solver started" }, 202);
 });
+

@@ -1,6 +1,7 @@
+﻿export const dynamic = 'force-dynamic';
 /**
- * GET /api/exams — List exams (filter by sessionId, examTypeId)
- * POST /api/exams — Create an exam
+ * GET /api/exams â€” List exams (filter by sessionId, examTypeId)
+ * POST /api/exams â€” Create an exam
  */
 import { NextRequest } from "next/server";
 import { z } from "zod";
@@ -54,3 +55,4 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     });
     return jsonResponse(exam, 201);
 });
+

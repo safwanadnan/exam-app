@@ -1,6 +1,7 @@
+﻿export const dynamic = 'force-dynamic';
 /**
- * GET /api/exam-types — List exam types for a session
- * POST /api/exam-types — Create an exam type
+ * GET /api/exam-types â€” List exam types for a session
+ * POST /api/exam-types â€” Create an exam type
  */
 import { NextRequest } from "next/server";
 import { z } from "zod";
@@ -33,3 +34,4 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     const examType = await prisma.examType.create({ data: parsed.data });
     return jsonResponse(examType, 201);
 });
+

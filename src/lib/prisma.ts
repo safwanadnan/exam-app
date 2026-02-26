@@ -1,12 +1,22 @@
-import { PrismaClient } from "@/generated/prisma/client";
+import { PrismaClient } from "@prisma/client";
 
 const globalForPrisma = globalThis as unknown as {
-    prisma: InstanceType<typeof PrismaClient> | undefined;
+    prisma: PrismaClient | undefined;
 };
 
-export const prisma =
-    globalForPrisma.prisma ?? new (PrismaClient as any)();
-
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+// Use a Proxy to lazily instantiate PrismaClient.
+// This completely bypasses Next.js Turbopack's static evaluation which attempts
+// to eagerly instantiate Prisma without proper environment context during builds.
+export const prisma = new Proxy({} as PrismaClient, {
+    get(target, prop, receiver) {
+        if (!globalForPrisma.prisma) {
+            globalForPrisma.prisma = new PrismaClient();
+            if (process.env.NODE_ENV !== "production") {
+                globalForPrisma.prisma = globalForPrisma.prisma;
+            }
+        }
+        return Reflect.get(globalForPrisma.prisma, prop, receiver);
+    }
+});
 
 export default prisma;

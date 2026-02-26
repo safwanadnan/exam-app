@@ -1,6 +1,7 @@
+﻿export const dynamic = 'force-dynamic';
 /**
- * GET /api/buildings — List all buildings with rooms
- * POST /api/buildings — Create a building
+ * GET /api/buildings â€” List all buildings with rooms
+ * POST /api/buildings â€” Create a building
  */
 import { NextRequest } from "next/server";
 import { z } from "zod";
@@ -36,3 +37,4 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     const building = await prisma.building.create({ data: parsed.data });
     return jsonResponse(building, 201);
 });
+

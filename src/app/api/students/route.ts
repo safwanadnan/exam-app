@@ -1,6 +1,7 @@
+﻿export const dynamic = 'force-dynamic';
 /**
- * GET /api/students — List students (filter by sessionId via exam enrollment)
- * POST /api/students — Create a student
+ * GET /api/students â€” List students (filter by sessionId via exam enrollment)
+ * POST /api/students â€” Create a student
  */
 import { NextRequest } from "next/server";
 import { z } from "zod";
@@ -46,3 +47,4 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     const student = await prisma.student.create({ data: parsed.data });
     return jsonResponse(student, 201);
 });
+

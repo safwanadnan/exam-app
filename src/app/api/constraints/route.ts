@@ -1,6 +1,7 @@
+﻿export const dynamic = 'force-dynamic';
 /**
- * GET /api/constraints — List distribution constraints
- * POST /api/constraints — Create a distribution constraint
+ * GET /api/constraints â€” List distribution constraints
+ * POST /api/constraints â€” Create a distribution constraint
  */
 import { NextRequest } from "next/server";
 import { z } from "zod";
@@ -46,3 +47,4 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
 
     return jsonResponse(constraint, 201);
 });
+
