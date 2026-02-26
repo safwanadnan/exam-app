@@ -15,9 +15,32 @@ import { formatDistanceToNow } from "date-fns";
 
 // Mock progress component for the active solver 
 // (In a real scenario, this connects to the SSE progress endpoint)
+function PenaltyChart({ history }: { history: number[] }) {
+    if (history.length < 2) return null;
+    const max = Math.max(...history, 1);
+    const min = Math.min(...history);
+    const w = 300, h = 60, pad = 2;
+    const points = history.map((v, i) => {
+        const x = pad + (i / (history.length - 1)) * (w - pad * 2);
+        const y = pad + ((max - v) / (max - min || 1)) * (h - pad * 2);
+        return `${x},${y}`;
+    }).join(" ");
+    return (
+        <div className="mt-4">
+            <div className="text-xs text-muted-foreground mb-1 uppercase tracking-wider font-semibold">Penalty Convergence</div>
+            <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-16 rounded-md bg-background border">
+                <polyline fill="none" stroke="hsl(var(--primary))" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" points={points} />
+                <polyline fill="url(#grad)" stroke="none" points={`${pad},${h} ${points} ${w - pad},${h}`} />
+                <defs><linearGradient id="grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.2" /><stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0" /></linearGradient></defs>
+            </svg>
+        </div>
+    );
+}
+
 function ActiveSolverPanel({ runId }: { runId: string }) {
     const [progress, setProgress] = useState<any>(null);
     const [status, setStatus] = useState<string>("CONNECTING");
+    const [penaltyHistory, setPenaltyHistory] = useState<number[]>([]);
     const eventSourceRef = useRef<EventSource | null>(null);
 
     useEffect(() => {
@@ -41,6 +64,12 @@ function ActiveSolverPanel({ runId }: { runId: string }) {
                 } else {
                     setStatus("RUNNING");
                     setProgress(data);
+                    if (data.totalPenalty !== undefined) {
+                        setPenaltyHistory(prev => {
+                            const next = [...prev, Math.round(data.totalPenalty)];
+                            return next.length > 100 ? next.slice(-100) : next;
+                        });
+                    }
                 }
             } catch (err) {
                 console.error("Failed to parse SSE data", err);
@@ -160,6 +189,7 @@ function ActiveSolverPanel({ runId }: { runId: string }) {
                             </div>
                         </div>
                     </div>
+                    <PenaltyChart history={penaltyHistory} />
                 </div>
             </CardContent>
         </Card>

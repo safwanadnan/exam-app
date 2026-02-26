@@ -12,7 +12,9 @@ import {
     Settings2,
     CalendarCheck,
     BarChart3,
-    DatabaseZap
+    DatabaseZap,
+    PieChart,
+    FileSpreadsheet
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -30,7 +32,9 @@ const solverNav = [
     { name: "Solver Configuration", href: "/solver/config", icon: Settings2 },
     { name: "Solver Dashboard", href: "/solver", icon: BarChart3 },
     { name: "Schedule View", href: "/schedule", icon: CalendarCheck },
+    { name: "Analytics", href: "/analytics", icon: PieChart },
     { name: "Data Import", href: "/import", icon: DatabaseZap },
+    { name: "Excel Import", href: "/import/excel", icon: FileSpreadsheet },
 ];
 
 export function Sidebar() {
