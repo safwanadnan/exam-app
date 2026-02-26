@@ -8,6 +8,7 @@ import {
     Building2,
     GraduationCap,
     Users,
+    UserCog,
     Clock,
     Settings2,
     CalendarCheck,
@@ -23,7 +24,8 @@ const navigation = [
     { name: "Sessions", href: "/sessions", icon: CalendarDays },
     { name: "Rooms & Buildings", href: "/rooms", icon: Building2 },
     { name: "Exams & Courses", href: "/exams", icon: GraduationCap },
-    { name: "Students & Instructors", href: "/students", icon: Users },
+    { name: "Students", href: "/students", icon: Users },
+    { name: "Instructors", href: "/instructors", icon: UserCog },
     { name: "Exam Periods", href: "/periods", icon: Clock },
     { name: "Constraints", href: "/constraints", icon: Settings2 },
 ];
