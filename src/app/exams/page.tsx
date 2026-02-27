@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, GraduationCap, Search, MoreHorizontal, Loader2 } from "lucide-react";
+import { Plus, GraduationCap, Search, MoreHorizontal, Loader2, Tags } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,10 +28,30 @@ function ExamDialog({ exam, open, onOpenChange, onSaved }: {
     const [length, setLength] = useState(120);
     const [maxRooms, setMaxRooms] = useState(4);
     const [altSeating, setAltSeating] = useState(false);
+    const [sections, setSections] = useState<any[]>([]);
+    const [selectedSections, setSelectedSections] = useState<string[]>([]);
 
     useEffect(() => {
-        if (exam) { setName(exam.name || ""); setLength(exam.length); setMaxRooms(exam.maxRooms); setAltSeating(exam.altSeating); }
-        else { setName(""); setLength(120); setMaxRooms(4); setAltSeating(false); }
+        if (open) {
+            fetch("/api/courses").then(r => r.json()).then(cData => {
+                const courseMap = new Map((cData.courses || []).map((c: any) => [c.id, c]));
+                fetch("/api/sections").then(r => r.json()).then(sData => {
+                    const enhanced = (sData.sections || []).map((s: any) => ({
+                        ...s, course: courseMap.get(s.courseId)
+                    })).filter((s: any) => s.course);
+                    setSections(enhanced);
+                });
+            });
+
+            if (exam) {
+                setName(exam.name || ""); setLength(exam.length); setMaxRooms(exam.maxRooms); setAltSeating(exam.altSeating);
+                fetch(`/api/exams/${exam.id}/owners`).then(r => r.json()).then(data => {
+                    setSelectedSections((data.owners || []).map((o: any) => o.sectionId));
+                });
+            } else {
+                setName(""); setLength(120); setMaxRooms(4); setAltSeating(false); setSelectedSections([]);
+            }
+        }
     }, [exam, open]);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -45,6 +65,16 @@ function ExamDialog({ exam, open, onOpenChange, onSaved }: {
             }
             const res = await fetch(url, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
             if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Failed"); }
+
+            // Save Owners if editing
+            if (isEditing) {
+                await fetch(`/api/exams/${exam!.id}/owners`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ sectionIds: selectedSections })
+                });
+            }
+
             toast.success("Exam updated");
             onOpenChange(false); onSaved();
         } catch (err: any) { toast.error(err.message); } finally { setSaving(false); }
@@ -68,6 +98,29 @@ function ExamDialog({ exam, open, onOpenChange, onSaved }: {
                             <Switch checked={altSeating} onCheckedChange={setAltSeating} />
                             <Label>Alternate Seating Required <HelpTip text="When enabled, room capacity is calculated using the alternate (spaced) layout — typically half the normal capacity. Use for exams needing extra spacing between students." /></Label>
                         </div>
+                        {isEditing && (
+                            <div className="grid gap-2 border-t pt-4 mt-2">
+                                <Label>Exam Owners (Sections) <HelpTip text="Attach course sections to this exam. Students enrolled in these sections will automatically be placed into this exam." /></Label>
+                                <div className="border rounded-md max-h-48 overflow-y-auto p-2 bg-muted/5 space-y-1">
+                                    {sections.map(sec => (
+                                        <div key={sec.id} className="flex items-center space-x-2 p-1 hover:bg-muted/50 rounded">
+                                            <Switch
+                                                checked={selectedSections.includes(sec.id)}
+                                                onCheckedChange={(checked) => {
+                                                    if (checked) setSelectedSections([...selectedSections, sec.id]);
+                                                    else setSelectedSections(selectedSections.filter(id => id !== sec.id));
+                                                }}
+                                            />
+                                            <Label className="text-sm font-normal cursor-pointer select-none">
+                                                {sec.course.subjectId && <span className="text-muted-foreground mr-1">Subject | </span>}
+                                                <span className="font-semibold">{sec.course.courseNumber}</span> - Section {sec.sectionNumber}
+                                            </Label>
+                                        </div>
+                                    ))}
+                                    {sections.length === 0 && <div className="text-xs text-muted-foreground italic p-2">No sections available to attach.</div>}
+                                </div>
+                            </div>
+                        )}
                     </div>
                     <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
@@ -104,6 +157,12 @@ export default function ExamsPage() {
     const [editOpen, setEditOpen] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<Exam | null>(null);
 
+    // Features
+    const [showFeatures, setShowFeatures] = useState<Exam | null>(null);
+    const [features, setFeatures] = useState<any[]>([]);
+    const [preferences, setPreferences] = useState<{ id: string; penalty: number }[]>([]);
+    const [savingFeatures, setSavingFeatures] = useState(false);
+
     const fetchExams = async () => {
         setLoading(true);
         try {
@@ -124,6 +183,44 @@ export default function ExamsPage() {
             toast.success("Exam deleted");
             setDeleteTarget(null); fetchExams();
         } catch (err: any) { toast.error(err.message); }
+    };
+
+    const openFeatures = async (e: Exam) => {
+        setShowFeatures(e);
+        const [featRes, prefRes] = await Promise.all([
+            fetch("/api/features?limit=100").then(r => r.json()),
+            fetch(`/api/exams/${e.id}/features`).then(r => r.json())
+        ]);
+        setFeatures(featRes.features || []);
+        setPreferences((prefRes.preferences || []).map((p: any) => ({ id: p.featureId, penalty: p.penalty })));
+    };
+
+    const handleFeatureChange = (featureId: string, penalty: string) => {
+        if (penalty === "0") {
+            setPreferences(preferences.filter(p => p.id !== featureId));
+        } else {
+            const numPenalty = parseInt(penalty);
+            if (preferences.some(p => p.id === featureId)) {
+                setPreferences(preferences.map(p => p.id === featureId ? { ...p, penalty: numPenalty } : p));
+            } else {
+                setPreferences([...preferences, { id: featureId, penalty: numPenalty }]);
+            }
+        }
+    };
+
+    const handleSaveFeatures = async () => {
+        if (!showFeatures) return;
+        setSavingFeatures(true);
+        try {
+            const res = await fetch(`/api/exams/${showFeatures.id}/features`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ features: preferences })
+            });
+            if (!res.ok) throw new Error("Failed to save feature preferences");
+            toast.success("Exam feature preferences saved");
+            setShowFeatures(null);
+        } catch (e: any) { toast.error(e.message); }
+        setSavingFeatures(false);
     };
 
     const filtered = exams.filter(e => search === "" || (e.name || "").toLowerCase().includes(search.toLowerCase()));
@@ -184,13 +281,18 @@ export default function ExamsPage() {
                                                 ) : <span className="text-muted-foreground text-xs">—</span>}
                                             </TableCell>
                                             <TableCell>
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild><Button size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end">
-                                                        <DropdownMenuItem onClick={() => { setEditExam(exam); setEditOpen(true); }}>Edit exam</DropdownMenuItem>
-                                                        <DropdownMenuItem className="text-destructive" onClick={() => setDeleteTarget(exam)}>Delete exam</DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
+                                                <div className="flex justify-end gap-1">
+                                                    <Tip content="Room Feature Requirements"><Button variant="ghost" size="sm" onClick={() => openFeatures(exam)}>
+                                                        <Tags className="h-4 w-4" />
+                                                    </Button></Tip>
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild><Button size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end">
+                                                            <DropdownMenuItem onClick={() => { setEditExam(exam); setEditOpen(true); }}>Edit exam</DropdownMenuItem>
+                                                            <DropdownMenuItem className="text-destructive" onClick={() => setDeleteTarget(exam)}>Delete exam</DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </div>
                                             </TableCell>
                                         </TableRow>
                                     ))}
@@ -203,6 +305,45 @@ export default function ExamsPage() {
 
             <ExamDialog exam={editExam} open={editOpen} onOpenChange={setEditOpen} onSaved={fetchExams} />
             <DeleteDialog open={!!deleteTarget} onOpenChange={o => { if (!o) setDeleteTarget(null); }} onConfirm={handleDelete} title={deleteTarget?.name || "this exam"} />
+
+            {/* Feature Preferences Dialog */}
+            <Dialog open={!!showFeatures} onOpenChange={() => setShowFeatures(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Room Features — {showFeatures?.name}</DialogTitle>
+                        <DialogDescription>Require or prefer specific room equipment properties for this exam.</DialogDescription>
+                    </DialogHeader>
+                    <div className="border rounded-md max-h-64 overflow-y-auto p-2 bg-muted/5 space-y-1 my-4">
+                        {features.map(feat => {
+                            const pref = preferences.find(p => p.id === feat.id);
+                            const val = pref ? pref.penalty.toString() : "0";
+                            return (
+                                <div key={feat.id} className="flex items-center justify-between p-2 hover:bg-muted/50 rounded">
+                                    <Label className="text-sm font-medium">
+                                        {feat.name} <span className="text-muted-foreground ml-1 font-normal text-xs">({feat.code})</span>
+                                    </Label>
+                                    <Select value={val} onValueChange={(v) => handleFeatureChange(feat.id, v)}>
+                                        <SelectTrigger className="w-[180px] h-8 text-xs">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="0">Not Required</SelectItem>
+                                            <SelectItem value="1">Preferred</SelectItem>
+                                            <SelectItem value="2">Strongly Preferred</SelectItem>
+                                            <SelectItem value="-1" className="text-amber-600 font-medium">Required (Must Have)</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            );
+                        })}
+                        {features.length === 0 && <div className="text-sm text-muted-foreground p-2 text-center">No features exist in the system. <br /> Create them in the Room Features menu.</div>}
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowFeatures(null)}>Cancel</Button>
+                        <Button onClick={handleSaveFeatures} disabled={savingFeatures}>{savingFeatures && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Save</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

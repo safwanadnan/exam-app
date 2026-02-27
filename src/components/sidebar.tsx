@@ -15,15 +15,20 @@ import {
     BarChart3,
     DatabaseZap,
     PieChart,
-    FileSpreadsheet
+    FileSpreadsheet,
+    LogOut,
+    Tags
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tip } from "@/components/tip";
+import { useSession, signOut } from "next-auth/react";
 
 const navigation = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard, tip: "Live overview of your scheduling data and solver activity" },
     { name: "Sessions", href: "/sessions", icon: CalendarDays, tip: "Manage academic terms/semesters for exam scheduling" },
+    { name: "Academic Structure", href: "/academic-structure", icon: Building2, tip: "Manage departments, courses, and sections hierarchy" },
     { name: "Rooms & Buildings", href: "/rooms", icon: Building2, tip: "Configure buildings and rooms available for exam scheduling" },
+    { name: "Room Features", href: "/features", icon: Tags, tip: "Define equipment and properties available in rooms" },
     { name: "Exams & Courses", href: "/exams", icon: GraduationCap, tip: "View and manage exams, their duration, and room requirements" },
     { name: "Students", href: "/students", icon: Users, tip: "Student directory and enrollment tracking" },
     { name: "Instructors", href: "/instructors", icon: UserCog, tip: "Manage instructors and their exam assignments for conflict avoidance" },
@@ -42,6 +47,11 @@ const solverNav = [
 
 export function Sidebar() {
     const pathname = usePathname();
+    const { data: session } = useSession();
+
+    const initials = session?.user?.name
+        ? session.user.name.split(" ").map(n => n[0]).join("").toUpperCase().substring(0, 2)
+        : session?.user?.email?.substring(0, 2).toUpperCase() || "U";
 
     return (
         <div className="flex h-full w-64 flex-col border-r bg-muted/20">
@@ -96,17 +106,24 @@ export function Sidebar() {
                 </nav>
             </div>
 
-            <div className="p-4 border-t">
-                <div className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground">
-                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
-                        AD
-                    </div>
-                    <div className="flex flex-col">
-                        <span className="font-medium text-foreground">Admin User</span>
-                        <span className="text-xs">University Scheduler</span>
+            {session && (
+                <div className="p-4 border-t">
+                    <div className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground">
+                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
+                            {initials}
+                        </div>
+                        <div className="flex flex-col flex-1 overflow-hidden">
+                            <span className="font-medium text-foreground truncate">{session.user?.name || "User"}</span>
+                            <span className="text-xs truncate">{session.user?.email}</span>
+                        </div>
+                        <Tip content="Sign out">
+                            <button onClick={() => signOut()} className="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground">
+                                <LogOut className="h-4 w-4" />
+                            </button>
+                        </Tip>
                     </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 }

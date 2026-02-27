@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface Assignment {
     id: string;
@@ -93,6 +95,40 @@ export default function SchedulePage() {
         toast.success("Schedule exported as CSV");
     };
 
+    const exportPdf = () => {
+        const doc = new jsPDF();
+        const runName = runs.find(r => r.id === selectedRunId)?.config?.name || "Default";
+        const dateStr = format(new Date(), "yyyy-MM-dd HH:mm");
+
+        doc.setFontSize(18);
+        doc.text("Exam Schedule", 14, 22);
+        doc.setFontSize(11);
+        doc.setTextColor(100);
+        doc.text(`Run: ${runName} | Generated: ${dateStr}`, 14, 30);
+
+        const tableData = assignments.map(a => [
+            a.exam.name || "Unnamed",
+            format(new Date(a.period.date), "MMM d, yyyy"),
+            `${a.period.startTime} - ${a.period.endTime}`,
+            `${a.exam.length}m`,
+            a.exam._count.studentEnrollments.toString(),
+            a.rooms.map(r => `${r.room.building.code} ${r.room.name}`).join("\n")
+        ]);
+
+        autoTable(doc, {
+            startY: 36,
+            head: [["Exam", "Date", "Time", "Duration", "Students", "Rooms"]],
+            body: tableData,
+            theme: "grid",
+            headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+            styles: { fontSize: 9, cellPadding: 3 },
+            columnStyles: { 5: { cellWidth: 40 } },
+        });
+
+        doc.save(`exam-schedule-${selectedRunId?.slice(0, 8)}.pdf`);
+        toast.success("Schedule exported as PDF");
+    };
+
     return (
         <div className="flex-1 space-y-6">
             <div className="flex items-center justify-between">
@@ -106,8 +142,11 @@ export default function SchedulePage() {
                             </SelectContent>
                         </Select>
                     )}
-                    <Button onClick={exportCsv} disabled={!selectedRunId || assignments.length === 0}>
-                        <Download className="mr-2 h-4 w-4" /> Export CSV
+                    <Button variant="outline" onClick={exportCsv} disabled={!selectedRunId || assignments.length === 0}>
+                        <Download className="mr-2 h-4 w-4" /> CSV
+                    </Button>
+                    <Button onClick={exportPdf} disabled={!selectedRunId || assignments.length === 0}>
+                        <Download className="mr-2 h-4 w-4" /> PDF
                     </Button>
                 </div>
             </div>

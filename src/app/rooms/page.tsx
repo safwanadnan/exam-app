@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Building2, Search, MoreHorizontal, Loader2 } from "lucide-react";
+import { Plus, Building2, Search, MoreHorizontal, Loader2, CalendarOff, Tags } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { HelpTip, Tip } from "@/components/tip";
 
@@ -168,6 +169,18 @@ export default function RoomsPage() {
     const [editRoom, setEditRoom] = useState<Room | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<{ type: "building" | "room"; id: string; name: string } | null>(null);
 
+    // Unavailability
+    const [showUnavail, setShowUnavail] = useState<Room | null>(null);
+    const [periods, setPeriods] = useState<any[]>([]);
+    const [selectedPeriods, setSelectedPeriods] = useState<string[]>([]);
+    const [savingUnavail, setSavingUnavail] = useState(false);
+
+    // Features
+    const [showFeatures, setShowFeatures] = useState<Room | null>(null);
+    const [features, setFeatures] = useState<any[]>([]);
+    const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
+    const [savingFeatures, setSavingFeatures] = useState(false);
+
     const fetchData = async () => {
         setLoading(true);
         try {
@@ -189,6 +202,56 @@ export default function RoomsPage() {
             toast.success(`${deleteTarget.type === "building" ? "Building" : "Room"} deleted`);
             setDeleteTarget(null); fetchData();
         } catch (err: any) { toast.error(err.message); }
+    };
+
+    const openUnavail = async (r: Room) => {
+        setShowUnavail(r);
+        const [perRes, unRes] = await Promise.all([
+            fetch("/api/periods?limit=200").then(res => res.json()),
+            fetch(`/api/rooms/${r.id}/unavailability`).then(res => res.json())
+        ]);
+        setPeriods(perRes.periods || []);
+        setSelectedPeriods((unRes.unavailability || []).map((u: any) => u.periodId));
+    };
+
+    const handleSaveUnavail = async () => {
+        if (!showUnavail) return;
+        setSavingUnavail(true);
+        try {
+            const res = await fetch(`/api/rooms/${showUnavail.id}/unavailability`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ periodIds: selectedPeriods })
+            });
+            if (!res.ok) throw new Error("Failed to save room blackout periods");
+            toast.success("Room blackout periods saved");
+            setShowUnavail(null);
+        } catch (e: any) { toast.error(e.message); }
+        setSavingUnavail(false);
+    };
+
+    const openFeatures = async (r: Room) => {
+        setShowFeatures(r);
+        const [featRes, assignRes] = await Promise.all([
+            fetch("/api/features?limit=100").then(res => res.json()),
+            fetch(`/api/rooms/${r.id}/features`).then(res => res.json())
+        ]);
+        setFeatures(featRes.features || []);
+        setSelectedFeatures((assignRes.assignments || []).map((a: any) => a.featureId));
+    };
+
+    const handleSaveFeatures = async () => {
+        if (!showFeatures) return;
+        setSavingFeatures(true);
+        try {
+            const res = await fetch(`/api/rooms/${showFeatures.id}/features`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ featureIds: selectedFeatures })
+            });
+            if (!res.ok) throw new Error("Failed to save room features");
+            toast.success("Room features saved");
+            setShowFeatures(null);
+        } catch (e: any) { toast.error(e.message); }
+        setSavingFeatures(false);
     };
 
     const filtered = buildings.filter(b =>
@@ -263,13 +326,21 @@ export default function RoomsPage() {
                                                     <TableCell className="text-muted-foreground">{room.altCapacity || "—"}</TableCell>
                                                     <TableCell className="text-muted-foreground">{room.coordX != null && room.coordY != null ? `${room.coordX}, ${room.coordY}` : "—"}</TableCell>
                                                     <TableCell>
-                                                        <DropdownMenu>
-                                                            <DropdownMenuTrigger asChild><Button size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                                                            <DropdownMenuContent align="end">
-                                                                <DropdownMenuItem onClick={() => { setEditRoom(room); setRoomDialogOpen(true); }}>Edit room</DropdownMenuItem>
-                                                                <DropdownMenuItem className="text-destructive" onClick={() => setDeleteTarget({ type: "room", id: room.id, name: room.name })}>Delete room</DropdownMenuItem>
-                                                            </DropdownMenuContent>
-                                                        </DropdownMenu>
+                                                        <div className="flex justify-end gap-1">
+                                                            <Tip content="Manage features"><Button variant="ghost" size="sm" onClick={() => openFeatures(room)}>
+                                                                <Tags className="h-4 w-4" />
+                                                            </Button></Tip>
+                                                            <Tip content="Manage blackout periods"><Button variant="ghost" size="sm" onClick={() => openUnavail(room)}>
+                                                                <CalendarOff className="h-4 w-4" />
+                                                            </Button></Tip>
+                                                            <DropdownMenu>
+                                                                <DropdownMenuTrigger asChild><Button size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                                                                <DropdownMenuContent align="end">
+                                                                    <DropdownMenuItem onClick={() => { setEditRoom(room); setRoomDialogOpen(true); }}>Edit room</DropdownMenuItem>
+                                                                    <DropdownMenuItem className="text-destructive" onClick={() => setDeleteTarget({ type: "room", id: room.id, name: room.name })}>Delete room</DropdownMenuItem>
+                                                                </DropdownMenuContent>
+                                                            </DropdownMenu>
+                                                        </div>
                                                     </TableCell>
                                                 </TableRow>
                                             ))}
@@ -285,6 +356,73 @@ export default function RoomsPage() {
             <BuildingDialog building={editBuilding} open={buildingDialogOpen} onOpenChange={setBuildingDialogOpen} onSaved={fetchData} />
             <RoomDialog room={editRoom} buildings={buildings} open={roomDialogOpen} onOpenChange={setRoomDialogOpen} onSaved={fetchData} />
             <DeleteDialog open={!!deleteTarget} onOpenChange={o => { if (!o) setDeleteTarget(null); }} onConfirm={handleDelete} title={deleteTarget?.name || ""} />
+
+            {/* Room Unavailability Dialog */}
+            <Dialog open={!!showUnavail} onOpenChange={() => setShowUnavail(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Blackout Periods — {showUnavail?.name}</DialogTitle>
+                        <DialogDescription>Select periods when this room is completely unavailable (e.g. booked for another event, under maintenance).</DialogDescription>
+                    </DialogHeader>
+                    <div className="border rounded-md max-h-64 overflow-y-auto p-2 bg-muted/5 space-y-1 my-4">
+                        {periods.map(per => {
+                            const dateStr = new Date(per.date).toLocaleDateString();
+                            return (
+                                <div key={per.id} className="flex items-center space-x-2 p-1.5 hover:bg-muted/50 rounded">
+                                    <Switch
+                                        checked={selectedPeriods.includes(per.id)}
+                                        onCheckedChange={(checked) => {
+                                            if (checked) setSelectedPeriods([...selectedPeriods, per.id]);
+                                            else setSelectedPeriods(selectedPeriods.filter(id => id !== per.id));
+                                        }}
+                                    />
+                                    <Label className="text-sm font-normal cursor-pointer select-none">
+                                        <span className="font-medium text-foreground">{dateStr}</span>
+                                        <span className="text-muted-foreground ml-2">{per.startTime} - {per.endTime}</span>
+                                    </Label>
+                                </div>
+                            );
+                        })}
+                        {periods.length === 0 && <div className="text-sm text-muted-foreground p-2">No periods found.</div>}
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowUnavail(null)}>Cancel</Button>
+                        <Button onClick={handleSaveUnavail} disabled={savingUnavail}>{savingUnavail && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Save</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Room Features Dialog */}
+            <Dialog open={!!showFeatures} onOpenChange={() => setShowFeatures(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Features — {showFeatures?.name}</DialogTitle>
+                        <DialogDescription>Select the properties and equipment available in this room.</DialogDescription>
+                    </DialogHeader>
+                    <div className="border rounded-md max-h-64 overflow-y-auto p-2 bg-muted/5 space-y-1 my-4">
+                        {features.map(feat => (
+                            <div key={feat.id} className="flex items-center space-x-2 p-1.5 hover:bg-muted/50 rounded">
+                                <Switch
+                                    checked={selectedFeatures.includes(feat.id)}
+                                    onCheckedChange={(checked) => {
+                                        if (checked) setSelectedFeatures([...selectedFeatures, feat.id]);
+                                        else setSelectedFeatures(selectedFeatures.filter(id => id !== feat.id));
+                                    }}
+                                />
+                                <Label className="text-sm font-normal cursor-pointer select-none">
+                                    <span className="font-semibold text-foreground">{feat.name}</span>
+                                    <span className="text-muted-foreground ml-2 text-xs">({feat.code})</span>
+                                </Label>
+                            </div>
+                        ))}
+                        {features.length === 0 && <div className="text-sm text-muted-foreground p-2 text-center">No features exist in the system. <br /> Create features in the Room Features menu first.</div>}
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowFeatures(null)}>Cancel</Button>
+                        <Button onClick={handleSaveFeatures} disabled={savingFeatures}>{savingFeatures && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Save</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

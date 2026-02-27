@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Users, Search, MoreHorizontal, Loader2 } from "lucide-react";
+import { Plus, Users, Search, MoreHorizontal, Loader2, CalendarOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -85,6 +86,12 @@ export default function StudentsPage() {
     const [addOpen, setAddOpen] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<Student | null>(null);
 
+    // Unavailability
+    const [showUnavail, setShowUnavail] = useState<Student | null>(null);
+    const [periods, setPeriods] = useState<any[]>([]);
+    const [selectedPeriods, setSelectedPeriods] = useState<string[]>([]);
+    const [saving, setSaving] = useState(false);
+
     const fetchStudents = async (q = search) => {
         setLoading(true);
         try {
@@ -111,6 +118,31 @@ export default function StudentsPage() {
             if (!res.ok) throw new Error("Failed"); toast.success("Student deleted");
             setDeleteTarget(null); fetchStudents();
         } catch (err: any) { toast.error(err.message); }
+    };
+
+    const openUnavail = async (s: Student) => {
+        setShowUnavail(s);
+        const [perRes, unRes] = await Promise.all([
+            fetch("/api/periods?limit=200").then(r => r.json()),
+            fetch(`/api/students/${s.id}/unavailability`).then(r => r.json())
+        ]);
+        setPeriods(perRes.periods || []);
+        setSelectedPeriods((unRes.unavailability || []).map((u: any) => u.periodId));
+    };
+
+    const handleSaveUnavail = async () => {
+        if (!showUnavail) return;
+        setSaving(true);
+        try {
+            const res = await fetch(`/api/students/${showUnavail.id}/unavailability`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ periodIds: selectedPeriods })
+            });
+            if (!res.ok) throw new Error("Failed to save unavailability");
+            toast.success("Unavailability preferences saved");
+            setShowUnavail(null);
+        } catch (e: any) { toast.error(e.message); }
+        setSaving(false);
     };
 
     return (
@@ -160,12 +192,17 @@ export default function StudentsPage() {
                                                 <span className="inline-flex items-center rounded-full bg-primary/10 text-primary px-2.5 py-0.5 text-xs font-semibold">{s._count.enrollments}</span>
                                             </TableCell>
                                             <TableCell>
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild><Button size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end">
-                                                        <DropdownMenuItem className="text-destructive" onClick={() => setDeleteTarget(s)}>Delete</DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
+                                                <div className="flex justify-end gap-1">
+                                                    <Tip content="Manage unavailability gaps"><Button variant="ghost" size="sm" onClick={() => openUnavail(s)}>
+                                                        <CalendarOff className="h-4 w-4" />
+                                                    </Button></Tip>
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild><Button size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end">
+                                                            <DropdownMenuItem className="text-destructive" onClick={() => setDeleteTarget(s)}>Delete</DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </div>
                                             </TableCell>
                                         </TableRow>
                                     ))}
@@ -178,6 +215,41 @@ export default function StudentsPage() {
 
             <StudentDialog open={addOpen} onOpenChange={setAddOpen} onSaved={fetchStudents} />
             <DeleteDialog open={!!deleteTarget} onOpenChange={o => { if (!o) setDeleteTarget(null); }} onConfirm={handleDelete} title={deleteTarget?.name || ""} />
+
+            {/* Unavailability Dialog */}
+            <Dialog open={!!showUnavail} onOpenChange={() => setShowUnavail(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Unavailable Periods — {showUnavail?.name}</DialogTitle>
+                        <DialogDescription>Select which periods this student is completely unavailable to take exams.</DialogDescription>
+                    </DialogHeader>
+                    <div className="border rounded-md max-h-64 overflow-y-auto p-2 bg-muted/5 space-y-1 my-4">
+                        {periods.map(per => {
+                            const dateStr = new Date(per.date).toLocaleDateString();
+                            return (
+                                <div key={per.id} className="flex items-center space-x-2 p-1.5 hover:bg-muted/50 rounded">
+                                    <Switch
+                                        checked={selectedPeriods.includes(per.id)}
+                                        onCheckedChange={(checked) => {
+                                            if (checked) setSelectedPeriods([...selectedPeriods, per.id]);
+                                            else setSelectedPeriods(selectedPeriods.filter(id => id !== per.id));
+                                        }}
+                                    />
+                                    <Label className="text-sm font-normal cursor-pointer select-none">
+                                        <span className="font-medium text-foreground">{dateStr}</span>
+                                        <span className="text-muted-foreground ml-2">{per.startTime} - {per.endTime}</span>
+                                    </Label>
+                                </div>
+                            );
+                        })}
+                        {periods.length === 0 && <div className="text-sm text-muted-foreground p-2">No periods found.</div>}
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowUnavail(null)}>Cancel</Button>
+                        <Button onClick={handleSaveUnavail} disabled={saving}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Save</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

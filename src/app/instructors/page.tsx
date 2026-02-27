@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { GraduationCap, Plus, Pencil, Trash2, Search, Loader2, UserPlus, Link2, Unlink } from "lucide-react";
+import { GraduationCap, Plus, Pencil, Trash2, Search, Loader2, UserPlus, Link2, Unlink, CalendarOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { HelpTip, Tip } from "@/components/tip";
 
@@ -42,6 +43,11 @@ export default function InstructorsPage() {
     const [exams, setExams] = useState<any[]>([]);
     const [selectedExam, setSelectedExam] = useState("");
     const [assignments, setAssignments] = useState<any[]>([]);
+
+    // Unavailability
+    const [showUnavail, setShowUnavail] = useState<Instructor | null>(null);
+    const [periods, setPeriods] = useState<any[]>([]);
+    const [selectedPeriods, setSelectedPeriods] = useState<string[]>([]);
 
     // Debounce search
     useEffect(() => {
@@ -131,6 +137,32 @@ export default function InstructorsPage() {
 
     const isDialogOpen = showAdd || !!editInstructor;
 
+    // Unavailability
+    const openUnavail = async (i: Instructor) => {
+        setShowUnavail(i);
+        const [perRes, unRes] = await Promise.all([
+            fetch("/api/periods?limit=200").then(r => r.json()),
+            fetch(`/api/instructors/${i.id}/unavailability`).then(r => r.json())
+        ]);
+        setPeriods(perRes.periods || []);
+        setSelectedPeriods((unRes.unavailability || []).map((u: any) => u.periodId));
+    };
+
+    const handleSaveUnavail = async () => {
+        if (!showUnavail) return;
+        setSaving(true);
+        try {
+            const res = await fetch(`/api/instructors/${showUnavail.id}/unavailability`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ periodIds: selectedPeriods })
+            });
+            if (!res.ok) throw new Error("Failed to save unavailability");
+            toast.success("Unavailability preferences saved");
+            setShowUnavail(null);
+        } catch (e: any) { toast.error(e.message); }
+        setSaving(false);
+    };
+
     return (
         <div className="flex-1 space-y-6">
             <div className="flex items-center justify-between">
@@ -182,6 +214,9 @@ export default function InstructorsPage() {
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex justify-end gap-1">
+                                                <Tip content="Manage unavailability gaps"><Button variant="ghost" size="sm" onClick={() => openUnavail(i)}>
+                                                    <CalendarOff className="h-4 w-4" />
+                                                </Button></Tip>
                                                 <Tip content="Manage exam assignments"><Button variant="ghost" size="sm" onClick={() => openAssignments(i)}>
                                                     <Link2 className="h-4 w-4" />
                                                 </Button></Tip>
@@ -296,6 +331,41 @@ export default function InstructorsPage() {
                             </div>
                         )}
                     </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Unavailability Dialog */}
+            <Dialog open={!!showUnavail} onOpenChange={() => setShowUnavail(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Unavailable Periods — {showUnavail?.name}</DialogTitle>
+                        <DialogDescription>Select which periods this instructor is completely unavailable to proctor exams.</DialogDescription>
+                    </DialogHeader>
+                    <div className="border rounded-md max-h-64 overflow-y-auto p-2 bg-muted/5 space-y-1 my-4">
+                        {periods.map(per => {
+                            const dateStr = new Date(per.date).toLocaleDateString();
+                            return (
+                                <div key={per.id} className="flex items-center space-x-2 p-1.5 hover:bg-muted/50 rounded">
+                                    <Switch
+                                        checked={selectedPeriods.includes(per.id)}
+                                        onCheckedChange={(checked) => {
+                                            if (checked) setSelectedPeriods([...selectedPeriods, per.id]);
+                                            else setSelectedPeriods(selectedPeriods.filter(id => id !== per.id));
+                                        }}
+                                    />
+                                    <Label className="text-sm font-normal cursor-pointer select-none">
+                                        <span className="font-medium text-foreground">{dateStr}</span>
+                                        <span className="text-muted-foreground ml-2">{per.startTime} - {per.endTime}</span>
+                                    </Label>
+                                </div>
+                            );
+                        })}
+                        {periods.length === 0 && <div className="text-sm text-muted-foreground p-2">No periods found.</div>}
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowUnavail(null)}>Cancel</Button>
+                        <Button onClick={handleSaveUnavail} disabled={saving}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Save</Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </div>

@@ -53,16 +53,21 @@ export default function AnalyticsPage() {
                     <h2 className="text-3xl font-bold tracking-tight">Analytics</h2>
                     <p className="text-muted-foreground mt-1">Conflict analysis and utilization insights</p>
                 </div>
-                {runs.length > 0 && (
-                    <Select value={selectedRun} onValueChange={setSelectedRun}>
-                        <SelectTrigger className="w-[250px] bg-background"><SelectValue placeholder="Select run" /></SelectTrigger>
-                        <SelectContent>
-                            {runs.map((r: any) => (
-                                <SelectItem key={r.id} value={r.id}>{r.config?.name || "Default"} — {format(new Date(r.createdAt), "MMM d, HH:mm")}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                )}
+                <div className="flex items-center gap-3">
+                    <Button variant="outline" asChild>
+                        <a href="/analytics/compare">Compare Runs</a>
+                    </Button>
+                    {runs.length > 0 && (
+                        <Select value={selectedRun} onValueChange={setSelectedRun}>
+                            <SelectTrigger className="w-[250px] bg-background"><SelectValue placeholder="Select run" /></SelectTrigger>
+                            <SelectContent>
+                                {runs.map((r: any) => (
+                                    <SelectItem key={r.id} value={r.id}>{r.config?.name || "Default"} — {format(new Date(r.createdAt), "MMM d, HH:mm")}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    )}
+                </div>
             </div>
 
             {loading ? (
