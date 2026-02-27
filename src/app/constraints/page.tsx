@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { HelpTip } from "@/components/tip";
 
 const CONSTRAINT_TYPES = [
     "SAME_ROOM", "DIFF_ROOM", "SAME_PERIOD", "DIFF_PERIOD",
@@ -72,21 +73,21 @@ function ConstraintDialog({ constraint, exams, open, onOpenChange, onSaved }: {
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <div className="grid gap-2">
-                            <Label>Constraint Type</Label>
+                            <Label>Constraint Type <HelpTip text="The scheduling rule: SAME_PERIOD forces both exams at the same time, DIFF_PERIOD separates them, PRECEDENCE ensures A comes before B, etc." /></Label>
                             <Select value={type} onValueChange={setType}>
                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>{CONSTRAINT_TYPES.map(t => <SelectItem key={t} value={t}>{t.replace(/_/g, " ")}</SelectItem>)}</SelectContent>
                             </Select>
                         </div>
                         <div className="grid gap-2">
-                            <Label>Primary Exam (A)</Label>
+                            <Label>Primary Exam (A) <HelpTip text="The first exam in the constraint pair. For PRECEDENCE, this exam must come before Exam B." /></Label>
                             <Select value={examAId} onValueChange={setExamAId}>
                                 <SelectTrigger><SelectValue placeholder="Select exam" /></SelectTrigger>
                                 <SelectContent>{exams.map(e => <SelectItem key={e.id} value={e.id}>{e.name || "Unnamed"}</SelectItem>)}</SelectContent>
                             </Select>
                         </div>
                         <div className="grid gap-2">
-                            <Label>Secondary Exam (B)</Label>
+                            <Label>Secondary Exam (B) <HelpTip text="The second exam in the constraint pair" /></Label>
                             <Select value={examBId} onValueChange={setExamBId}>
                                 <SelectTrigger><SelectValue placeholder="Select exam" /></SelectTrigger>
                                 <SelectContent>{exams.map(e => <SelectItem key={e.id} value={e.id}>{e.name || "Unnamed"}</SelectItem>)}</SelectContent>
@@ -95,11 +96,11 @@ function ConstraintDialog({ constraint, exams, open, onOpenChange, onSaved }: {
                         <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-2">
                                 <Switch checked={hard} onCheckedChange={setHard} />
-                                <Label>Hard Constraint</Label>
+                                <Label>Hard Constraint <HelpTip text="Hard constraints MUST be satisfied — the solver will never violate them. Soft constraints incur a penalty but can be violated if necessary." /></Label>
                             </div>
                             {!hard && (
                                 <div className="flex items-center gap-2">
-                                    <Label>Weight</Label>
+                                    <Label>Weight <HelpTip text="Penalty multiplier for violating this soft constraint. Higher weight = solver tries harder to satisfy it." /></Label>
                                     <Input type="number" className="w-20" value={weight} onChange={e => setWeight(parseInt(e.target.value))} min={1} />
                                 </div>
                             )}

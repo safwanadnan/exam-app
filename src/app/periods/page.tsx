@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { HelpTip } from "@/components/tip";
 
 interface Period {
     id: string; date: string; startTime: string; endTime: string;
@@ -63,14 +64,14 @@ function PeriodDialog({ period, open, onOpenChange, onSaved }: {
                         <DialogDescription>Update this exam period's scheduling parameters.</DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
-                        <div className="grid gap-2"><Label>Date</Label><Input type="date" value={date} onChange={e => setDate(e.target.value)} required /></div>
+                        <div className="grid gap-2"><Label>Date <HelpTip text="The calendar date for this exam period" /></Label><Input type="date" value={date} onChange={e => setDate(e.target.value)} required /></div>
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="grid gap-2"><Label>Start Time</Label><Input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} required /></div>
-                            <div className="grid gap-2"><Label>End Time</Label><Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} required /></div>
+                            <div className="grid gap-2"><Label>Start Time <HelpTip text="When this exam period begins (24-hour format)" /></Label><Input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} required /></div>
+                            <div className="grid gap-2"><Label>End Time <HelpTip text="When this exam period ends" /></Label><Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} required /></div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="grid gap-2"><Label>Duration (min)</Label><Input type="number" value={length} onChange={e => setLength(parseInt(e.target.value))} required /></div>
-                            <div className="grid gap-2"><Label>Penalty Weight</Label><Input type="number" value={penalty} onChange={e => setPenalty(parseInt(e.target.value))} /></div>
+                            <div className="grid gap-2"><Label>Duration (min) <HelpTip text="Maximum allowed exam length during this period. Exams shorter than this will still end when finished." /></Label><Input type="number" value={length} onChange={e => setLength(parseInt(e.target.value))} required /></div>
+                            <div className="grid gap-2"><Label>Penalty Weight <HelpTip text="A penalty score added when exams are placed in this period. Use higher values to discourage late evening or weekend slots (0 = no penalty)." /></Label><Input type="number" value={penalty} onChange={e => setPenalty(parseInt(e.target.value))} /></div>
                         </div>
                     </div>
                     <DialogFooter>

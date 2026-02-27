@@ -18,25 +18,26 @@ import {
     FileSpreadsheet
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Tip } from "@/components/tip";
 
 const navigation = [
-    { name: "Dashboard", href: "/", icon: LayoutDashboard },
-    { name: "Sessions", href: "/sessions", icon: CalendarDays },
-    { name: "Rooms & Buildings", href: "/rooms", icon: Building2 },
-    { name: "Exams & Courses", href: "/exams", icon: GraduationCap },
-    { name: "Students", href: "/students", icon: Users },
-    { name: "Instructors", href: "/instructors", icon: UserCog },
-    { name: "Exam Periods", href: "/periods", icon: Clock },
-    { name: "Constraints", href: "/constraints", icon: Settings2 },
+    { name: "Dashboard", href: "/", icon: LayoutDashboard, tip: "Live overview of your scheduling data and solver activity" },
+    { name: "Sessions", href: "/sessions", icon: CalendarDays, tip: "Manage academic terms/semesters for exam scheduling" },
+    { name: "Rooms & Buildings", href: "/rooms", icon: Building2, tip: "Configure buildings and rooms available for exam scheduling" },
+    { name: "Exams & Courses", href: "/exams", icon: GraduationCap, tip: "View and manage exams, their duration, and room requirements" },
+    { name: "Students", href: "/students", icon: Users, tip: "Student directory and enrollment tracking" },
+    { name: "Instructors", href: "/instructors", icon: UserCog, tip: "Manage instructors and their exam assignments for conflict avoidance" },
+    { name: "Exam Periods", href: "/periods", icon: Clock, tip: "Define available time slots when exams can be scheduled" },
+    { name: "Constraints", href: "/constraints", icon: Settings2, tip: "Set distribution rules between exam pairs (same room, different day, etc.)" },
 ];
 
 const solverNav = [
-    { name: "Solver Configuration", href: "/solver/config", icon: Settings2 },
-    { name: "Solver Dashboard", href: "/solver", icon: BarChart3 },
-    { name: "Schedule View", href: "/schedule", icon: CalendarCheck },
-    { name: "Analytics", href: "/analytics", icon: PieChart },
-    { name: "Data Import", href: "/import", icon: DatabaseZap },
-    { name: "Excel Import", href: "/import/excel", icon: FileSpreadsheet },
+    { name: "Solver Configuration", href: "/solver/config", icon: Settings2, tip: "Tune optimization weights and algorithm parameters" },
+    { name: "Solver Dashboard", href: "/solver", icon: BarChart3, tip: "Launch the optimizer and monitor solving progress in real-time" },
+    { name: "Schedule View", href: "/schedule", icon: CalendarCheck, tip: "View the generated exam schedule in a timetable grid" },
+    { name: "Analytics", href: "/analytics", icon: PieChart, tip: "Analyze student conflicts, room utilization, and scheduling quality" },
+    { name: "Data Import", href: "/import", icon: DatabaseZap, tip: "Bulk import data from JSON format" },
+    { name: "Excel Import", href: "/import/excel", icon: FileSpreadsheet, tip: "Import rooms, students, exams, and enrollments from XLSX/CSV files" },
 ];
 
 export function Sidebar() {
@@ -57,38 +58,40 @@ export function Sidebar() {
                         Data Management
                     </div>
                     {navigation.map((item) => (
-                        <Link
-                            key={item.name}
-                            href={item.href}
-                            className={cn(
-                                "flex items-center gap-3 rounded-lg px-3 py-2.5 transition-all",
-                                pathname === item.href || (item.href !== "/" && pathname?.startsWith(item.href))
-                                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                            )}
-                        >
-                            <item.icon className="h-4 w-4" />
-                            {item.name}
-                        </Link>
+                        <Tip key={item.name} content={item.tip} side="right">
+                            <Link
+                                href={item.href}
+                                className={cn(
+                                    "flex items-center gap-3 rounded-lg px-3 py-2.5 transition-all w-full",
+                                    pathname === item.href || (item.href !== "/" && pathname?.startsWith(item.href))
+                                        ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                )}
+                            >
+                                <item.icon className="h-4 w-4" />
+                                {item.name}
+                            </Link>
+                        </Tip>
                     ))}
 
                     <div className="mt-6 mb-2 px-4 text-xs font-semibold tracking-tight text-muted-foreground uppercase h-6 flex items-center">
                         Optimization Engine
                     </div>
                     {solverNav.map((item) => (
-                        <Link
-                            key={item.name}
-                            href={item.href}
-                            className={cn(
-                                "flex items-center gap-3 rounded-lg px-3 py-2.5 transition-all",
-                                pathname === item.href
-                                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                            )}
-                        >
-                            <item.icon className="h-4 w-4" />
-                            {item.name}
-                        </Link>
+                        <Tip key={item.name} content={item.tip} side="right">
+                            <Link
+                                href={item.href}
+                                className={cn(
+                                    "flex items-center gap-3 rounded-lg px-3 py-2.5 transition-all w-full",
+                                    pathname === item.href
+                                        ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                )}
+                            >
+                                <item.icon className="h-4 w-4" />
+                                {item.name}
+                            </Link>
+                        </Tip>
                     ))}
                 </nav>
             </div>

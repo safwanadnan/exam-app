@@ -11,6 +11,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { HelpTip, Tip } from "@/components/tip";
 
 interface Room {
     id: string; name: string; capacity: number; altCapacity: number | null;
@@ -55,8 +56,8 @@ function BuildingDialog({ building, open, onOpenChange, onSaved }: {
                         <DialogDescription>Enter the building details.</DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
-                        <div className="grid gap-2"><Label>Name</Label><Input value={name} onChange={e => setName(e.target.value)} required /></div>
-                        <div className="grid gap-2"><Label>Code</Label><Input value={code} onChange={e => setCode(e.target.value)} placeholder="e.g. SCI" required /></div>
+                        <div className="grid gap-2"><Label>Name <HelpTip text="Full building name, e.g. 'Engineering Science Building'" /></Label><Input value={name} onChange={e => setName(e.target.value)} required /></div>
+                        <div className="grid gap-2"><Label>Code <HelpTip text="Short unique code for this building, e.g. 'ESB' or 'SCI'. Used in schedule views." /></Label><Input value={code} onChange={e => setCode(e.target.value)} placeholder="e.g. SCI" required /></div>
                     </div>
                     <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
@@ -114,20 +115,20 @@ function RoomDialog({ room, buildings, open, onOpenChange, onSaved }: {
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <div className="grid gap-2">
-                            <Label>Building</Label>
+                            <Label>Building <HelpTip text="Select which building this room belongs to" /></Label>
                             <Select value={buildingId} onValueChange={setBuildingId}>
                                 <SelectTrigger><SelectValue placeholder="Select building" /></SelectTrigger>
                                 <SelectContent>{buildings.map(b => <SelectItem key={b.id} value={b.id}>{b.name} ({b.code})</SelectItem>)}</SelectContent>
                             </Select>
                         </div>
-                        <div className="grid gap-2"><Label>Room Name</Label><Input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. 101" required /></div>
+                        <div className="grid gap-2"><Label>Room Name <HelpTip text="Room number or name within the building, e.g. '101' or 'Auditorium A'" /></Label><Input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. 101" required /></div>
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="grid gap-2"><Label>Capacity</Label><Input type="number" value={capacity} onChange={e => setCapacity(parseInt(e.target.value))} required /></div>
-                            <div className="grid gap-2"><Label>Alt Capacity</Label><Input type="number" value={altCapacity} onChange={e => setAltCapacity(e.target.value)} placeholder="Optional" /></div>
+                            <div className="grid gap-2"><Label>Capacity <HelpTip text="Normal seating capacity — the maximum number of students this room can hold" /></Label><Input type="number" value={capacity} onChange={e => setCapacity(parseInt(e.target.value))} required /></div>
+                            <div className="grid gap-2"><Label>Alt Capacity <HelpTip text="Alternate seating capacity for exams requiring spaced seating (e.g. every other seat). Leave blank if same as normal." /></Label><Input type="number" value={altCapacity} onChange={e => setAltCapacity(e.target.value)} placeholder="Optional" /></div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="grid gap-2"><Label>Coord X</Label><Input type="number" step="any" value={coordX} onChange={e => setCoordX(e.target.value)} placeholder="Optional" /></div>
-                            <div className="grid gap-2"><Label>Coord Y</Label><Input type="number" step="any" value={coordY} onChange={e => setCoordY(e.target.value)} placeholder="Optional" /></div>
+                            <div className="grid gap-2"><Label>Coord X <HelpTip text="GPS longitude or campus X coordinate — used to calculate walking distance between rooms for back-to-back penalties" /></Label><Input type="number" step="any" value={coordX} onChange={e => setCoordX(e.target.value)} placeholder="Optional" /></div>
+                            <div className="grid gap-2"><Label>Coord Y <HelpTip text="GPS latitude or campus Y coordinate — paired with Coord X for distance calculations" /></Label><Input type="number" step="any" value={coordY} onChange={e => setCoordY(e.target.value)} placeholder="Optional" /></div>
                         </div>
                     </div>
                     <DialogFooter>

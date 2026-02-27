@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { HelpTip, Tip } from "@/components/tip";
 
 interface Session {
     id: string;
@@ -113,32 +114,32 @@ function SessionFormDialog({
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <div className="grid gap-2">
-                            <Label htmlFor="name">Session Name</Label>
+                            <Label htmlFor="name">Session Name <HelpTip text="A descriptive label for this academic period, e.g. 'Fall 2026' or 'Summer Term 2025'" /></Label>
                             <Input id="name" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Fall 2026" required />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="grid gap-2">
-                                <Label htmlFor="term">Term</Label>
+                                <Label htmlFor="term">Term <HelpTip text="Semester type: Fall, Spring, Summer, or Winter" /></Label>
                                 <Input id="term" value={term} onChange={e => setTerm(e.target.value)} placeholder="Fall" required />
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="year">Year</Label>
+                                <Label htmlFor="year">Year <HelpTip text="Academic year this session belongs to" /></Label>
                                 <Input id="year" type="number" value={year} onChange={e => setYear(parseInt(e.target.value))} required />
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="grid gap-2">
-                                <Label htmlFor="startDate">Start Date</Label>
+                                <Label htmlFor="startDate">Start Date <HelpTip text="First day of the semester — exams can be scheduled from this date" /></Label>
                                 <Input id="startDate" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} required />
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="endDate">End Date</Label>
+                                <Label htmlFor="endDate">End Date <HelpTip text="Last day of the semester — final date for exam scheduling" /></Label>
                                 <Input id="endDate" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} required />
                             </div>
                         </div>
                         <div className="flex items-center space-x-2">
                             <Switch id="isActive" checked={isActive} onCheckedChange={setIsActive} />
-                            <Label htmlFor="isActive">Active Session</Label>
+                            <Label htmlFor="isActive">Active Session <HelpTip text="Mark as active to use this session for exam scheduling. Only one session should be active at a time." /></Label>
                         </div>
                     </div>
                     <DialogFooter>
@@ -234,9 +235,11 @@ export default function SessionsPage() {
         <div className="flex-1 space-y-6">
             <div className="flex items-center justify-between">
                 <h2 className="text-3xl font-bold tracking-tight">Academic Sessions</h2>
-                <Button onClick={() => { setEditSession(null); setFormOpen(true); }}>
-                    <Plus className="mr-2 h-4 w-4" /> Add Session
-                </Button>
+                <Tip content="Create a new academic session for exam scheduling">
+                    <Button onClick={() => { setEditSession(null); setFormOpen(true); }}>
+                        <Plus className="mr-2 h-4 w-4" /> Add Session
+                    </Button>
+                </Tip>
             </div>
 
             <Card>
@@ -269,8 +272,8 @@ export default function SessionsPage() {
                                     <TableHead>Session Name</TableHead>
                                     <TableHead>Term & Year</TableHead>
                                     <TableHead>Dates</TableHead>
-                                    <TableHead className="text-right">Exam Types</TableHead>
-                                    <TableHead className="text-right">Solver Runs</TableHead>
+                                    <TableHead className="text-right">Exam Types <HelpTip text="Number of exam types (e.g. Final, Midterm) configured for this session" /></TableHead>
+                                    <TableHead className="text-right">Solver Runs <HelpTip text="How many times the optimizer has been executed for this session" /></TableHead>
                                     <TableHead className="w-[80px]"></TableHead>
                                 </TableRow>
                             </TableHeader>

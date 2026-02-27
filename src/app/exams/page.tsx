@@ -11,6 +11,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { HelpTip, Tip } from "@/components/tip";
 
 interface Exam {
     id: string; name: string; length: number; maxRooms: number; altSeating: boolean;
@@ -58,14 +59,14 @@ function ExamDialog({ exam, open, onOpenChange, onSaved }: {
                         <DialogDescription>Update exam scheduling parameters.</DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
-                        <div className="grid gap-2"><Label>Exam Name</Label><Input value={name} onChange={e => setName(e.target.value)} /></div>
+                        <div className="grid gap-2"><Label>Exam Name <HelpTip text="The name of this exam, typically the course code and title" /></Label><Input value={name} onChange={e => setName(e.target.value)} /></div>
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="grid gap-2"><Label>Length (minutes)</Label><Input type="number" value={length} onChange={e => setLength(parseInt(e.target.value))} required /></div>
-                            <div className="grid gap-2"><Label>Max Rooms</Label><Input type="number" value={maxRooms} onChange={e => setMaxRooms(parseInt(e.target.value))} required /></div>
+                            <div className="grid gap-2"><Label>Length (minutes) <HelpTip text="How long the exam takes. The solver ensures the exam fits within the assigned period." /></Label><Input type="number" value={length} onChange={e => setLength(parseInt(e.target.value))} required /></div>
+                            <div className="grid gap-2"><Label>Max Rooms <HelpTip text="Maximum number of rooms the exam can be split across. Large exams may need 2-4 rooms. Set to 1 to force single room." /></Label><Input type="number" value={maxRooms} onChange={e => setMaxRooms(parseInt(e.target.value))} required /></div>
                         </div>
                         <div className="flex items-center space-x-2">
                             <Switch checked={altSeating} onCheckedChange={setAltSeating} />
-                            <Label>Alternate Seating Required</Label>
+                            <Label>Alternate Seating Required <HelpTip text="When enabled, room capacity is calculated using the alternate (spaced) layout — typically half the normal capacity. Use for exams needing extra spacing between students." /></Label>
                         </div>
                     </div>
                     <DialogFooter>

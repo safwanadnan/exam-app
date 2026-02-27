@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { HelpTip, Tip } from "@/components/tip";
 
 interface Instructor {
     id: string; externalId: string; name: string;
@@ -164,8 +165,8 @@ export default function InstructorsPage() {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Name</TableHead>
-                                    <TableHead>External ID</TableHead>
-                                    <TableHead>Assigned Exams</TableHead>
+                                    <TableHead>External ID <HelpTip text="University/institutional ID for this instructor" /></TableHead>
+                                    <TableHead>Assigned Exams <HelpTip text="Click the badge to manage which exams this instructor proctors. The solver avoids scheduling their assigned exams at the same time." /></TableHead>
                                     <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -181,15 +182,15 @@ export default function InstructorsPage() {
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex justify-end gap-1">
-                                                <Button variant="ghost" size="sm" onClick={() => openAssignments(i)} title="Manage exam assignments">
+                                                <Tip content="Manage exam assignments"><Button variant="ghost" size="sm" onClick={() => openAssignments(i)}>
                                                     <Link2 className="h-4 w-4" />
-                                                </Button>
-                                                <Button variant="ghost" size="sm" onClick={() => openEdit(i)}>
+                                                </Button></Tip>
+                                                <Tip content="Edit instructor details"><Button variant="ghost" size="sm" onClick={() => openEdit(i)}>
                                                     <Pencil className="h-4 w-4" />
-                                                </Button>
-                                                <Button variant="ghost" size="sm" onClick={() => setDeleteInstructor(i)}>
+                                                </Button></Tip>
+                                                <Tip content="Delete this instructor"><Button variant="ghost" size="sm" onClick={() => setDeleteInstructor(i)}>
                                                     <Trash2 className="h-4 w-4 text-destructive" />
-                                                </Button>
+                                                </Button></Tip>
                                             </div>
                                         </TableCell>
                                     </TableRow>
@@ -208,11 +209,11 @@ export default function InstructorsPage() {
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <div className="grid gap-2">
-                            <Label>Name</Label>
+                            <Label>Name <HelpTip text="Instructor's full name, e.g. 'Dr. Jane Smith' or 'Prof. Ahmed Ali'" /></Label>
                             <Input value={formName} onChange={e => setFormName(e.target.value)} placeholder="Dr. Jane Smith" />
                         </div>
                         <div className="grid gap-2">
-                            <Label>External ID</Label>
+                            <Label>External ID <HelpTip text="Unique institutional ID for this instructor. Used to match during data imports." /></Label>
                             <Input value={formExtId} onChange={e => setFormExtId(e.target.value)} placeholder="INS001" />
                         </div>
                     </div>

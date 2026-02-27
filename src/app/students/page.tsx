@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { HelpTip, Tip } from "@/components/tip";
 
 interface Student {
     id: string; externalId: string; name: string;
@@ -46,8 +47,8 @@ function StudentDialog({ open, onOpenChange, onSaved }: {
                         <DialogDescription>Enter student details.</DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
-                        <div className="grid gap-2"><Label>External ID</Label><Input value={externalId} onChange={e => setExternalId(e.target.value)} placeholder="e.g. S12345" required /></div>
-                        <div className="grid gap-2"><Label>Name</Label><Input value={name} onChange={e => setName(e.target.value)} required /></div>
+                        <div className="grid gap-2"><Label>External ID <HelpTip text="The university student ID (e.g. S12345). Must be unique. Used to match students during data import." /></Label><Input value={externalId} onChange={e => setExternalId(e.target.value)} placeholder="e.g. S12345" required /></div>
+                        <div className="grid gap-2"><Label>Name <HelpTip text="Student's full name as it appears in university records" /></Label><Input value={name} onChange={e => setName(e.target.value)} required /></div>
                     </div>
                     <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
@@ -144,9 +145,9 @@ export default function StudentsPage() {
                             <Table>
                                 <TableHeader className="bg-muted/5">
                                     <TableRow>
-                                        <TableHead>External ID</TableHead>
+                                        <TableHead>External ID <HelpTip text="University student ID" /></TableHead>
                                         <TableHead>Name</TableHead>
-                                        <TableHead className="text-right">Enrollments</TableHead>
+                                        <TableHead className="text-right">Enrollments <HelpTip text="Number of exams this student is enrolled in. The solver avoids scheduling conflicting exams for the same student." /></TableHead>
                                         <TableHead className="w-[80px]"></TableHead>
                                     </TableRow>
                                 </TableHeader>
