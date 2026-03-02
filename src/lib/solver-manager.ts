@@ -79,6 +79,7 @@ export async function startSolverRun(runId: string, sessionId: string, configId:
                     moreThan2ADay: result.moreThan2ADay,
                     totalPenalty: result.totalPenalty,
                     iterations: result.iterations,
+                    log: JSON.stringify(result.diagnostics),
                 }
             });
 

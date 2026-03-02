@@ -41,7 +41,7 @@ export default function SchedulePage() {
 
     useEffect(() => {
         fetch("/api/solver/runs").then(r => r.json()).then(data => {
-            const completed = (data.runs || []).filter((r: Run) => r.status === "COMPLETE");
+            const completed = (data.runs || []).filter((r: Run) => r.status === "COMPLETED" || r.status === "COMPLETE");
             setRuns(completed);
             if (completed.length > 0) setSelectedRunId(completed[0].id);
             setLoading(false);

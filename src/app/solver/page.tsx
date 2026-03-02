@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Play, Square, FastForward, Activity, AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import { Play, Square, FastForward, Activity, AlertCircle, CheckCircle2, Loader2, Info, ChevronDown, ChevronRight, AlertTriangle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -98,19 +98,28 @@ function ActiveSolverPanel({ runId }: { runId: string }) {
     };
 
     if (!progress && status !== "CONNECTING") {
+        const isOffline = status === "FAILED" || status === "DISCONNECTED";
         return (
             <Card className="border-primary bg-primary/5">
                 <CardContent className="p-6 flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <Activity className="h-8 w-8 text-primary animate-pulse" />
+                        {isOffline ? (
+                            <AlertCircle className="h-8 w-8 text-destructive" />
+                        ) : (
+                            <Activity className="h-8 w-8 text-primary animate-pulse" />
+                        )}
                         <div>
-                            <h3 className="font-semibold text-lg text-primary">Engine Initializing</h3>
-                            <p className="text-sm text-muted-foreground">Preparing data models and building domains...</p>
+                            <h3 className={`font-semibold text-lg ${isOffline ? "text-destructive" : "text-primary"}`}>
+                                {isOffline ? "Solver Disconnected" : "Engine Initializing"}
+                            </h3>
+                            <p className="text-sm text-muted-foreground">
+                                {isOffline ? "The engine process stopped unexpectedly." : "Preparing data models and building domains..."}
+                            </p>
                         </div>
                     </div>
                     <Button variant="outline" onClick={handleStop} disabled={status === "STOPPING"}>
                         <Square className="mr-2 h-4 w-4" />
-                        {status === "STOPPING" ? "Stopping..." : "Abort"}
+                        {status === "STOPPING" ? "Wait..." : (isOffline ? "Clear Run" : "Abort")}
                     </Button>
                 </CardContent>
             </Card>
@@ -205,6 +214,10 @@ export default function SolverDashboard() {
     const [selectedSession, setSelectedSession] = useState("");
     const [selectedConfig, setSelectedConfig] = useState("");
     const [starting, setStarting] = useState(false);
+    const [detailsRun, setDetailsRun] = useState<any>(null);
+    const [detailsDiag, setDetailsDiag] = useState<any>(null);
+    const [loadingDiag, setLoadingDiag] = useState(false);
+    const [showUnassigned, setShowUnassigned] = useState(false);
 
     const fetchRuns = () => {
         fetch('/api/solver/runs')
@@ -243,6 +256,23 @@ export default function SolverDashboard() {
         finally { setStarting(false); }
     };
 
+    const openDetails = async (run: any) => {
+        setDetailsRun(run);
+        setDetailsDiag(null);
+        setShowUnassigned(false);
+        setLoadingDiag(true);
+        try {
+            const res = await fetch(`/api/solver/runs/${run.id}`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.diagnostics) {
+                    setDetailsDiag(data.diagnostics);
+                }
+            }
+        } catch { /* ignore */ }
+        finally { setLoadingDiag(false); }
+    };
+
     const activeRun = runs.find(r => r.status === "RUNNING" || r.status === "PENDING" || r.status === "PHASE_1" || r.status === "PHASE_2" || r.status === "PHASE_3" || r.status === "FINALIZATION");
 
     return (
@@ -279,7 +309,7 @@ export default function SolverDashboard() {
                                             <span className="font-semibold text-foreground">
                                                 {run.config?.name || "Default Configuration"}
                                             </span>
-                                            <Badge variant={run.status === "COMPLETE" ? "default" : run.status === "FAILED" ? "destructive" : "secondary"}>
+                                            <Badge variant={run.status.includes("COMPLETE") ? "default" : run.status === "FAILED" ? "destructive" : "secondary"}>
                                                 {run.status}
                                             </Badge>
                                         </div>
@@ -288,7 +318,7 @@ export default function SolverDashboard() {
                                         </div>
                                     </div>
 
-                                    {run.status === "COMPLETE" && (
+                                    {run.status.includes("COMPLETE") && (
                                         <div className="flex gap-6 text-sm">
                                             <div className="flex flex-col items-end">
                                                 <span className="text-muted-foreground text-xs uppercase">Assigned</span>
@@ -308,8 +338,8 @@ export default function SolverDashboard() {
                                     )}
 
                                     <div className="flex gap-2">
-                                        <Button variant="outline" size="sm">Details</Button>
-                                        {run.status === "COMPLETE" && (
+                                        <Button variant="outline" size="sm" onClick={() => openDetails(run)}>Details</Button>
+                                        {run.status.includes("COMPLETE") && (
                                             <Button variant="secondary" size="sm" onClick={() => window.location.href = `/schedule?runId=${run.id}`}>View Schedule</Button>
                                         )}
                                     </div>
@@ -325,6 +355,226 @@ export default function SolverDashboard() {
                     </div>
                 </CardContent>
             </Card>
+
+            {/* Run Details Dialog */}
+            <Dialog open={!!detailsRun} onOpenChange={(o) => { if (!o) { setDetailsRun(null); setDetailsDiag(null); } }}>
+                <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Run Details</DialogTitle>
+                        <DialogDescription>Performance metrics, diagnostics, and breakdown for this solver run.</DialogDescription>
+                    </DialogHeader>
+                    {detailsRun && (
+                        <div className="space-y-6 py-4">
+                            {/* Metrics Grid */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div className="space-y-1">
+                                    <div className="text-xs text-muted-foreground uppercase tracking-wider">Status</div>
+                                    <Badge variant={detailsRun.status.includes("COMPLETE") ? "default" : detailsRun.status === "FAILED" ? "destructive" : "secondary"}>
+                                        {detailsRun.status}
+                                    </Badge>
+                                </div>
+                                <div className="space-y-1">
+                                    <div className="text-xs text-muted-foreground uppercase tracking-wider">Config</div>
+                                    <div className="font-medium text-sm">{detailsRun.config?.name || "Default"}</div>
+                                </div>
+                                <div className="space-y-1">
+                                    <div className="text-xs text-muted-foreground uppercase tracking-wider">Exams Assigned</div>
+                                    <div className="font-medium text-sm">
+                                        {detailsRun.assignedExams ?? 0} / {detailsRun.totalExams ?? 0}
+                                        <span className="text-muted-foreground ml-1">
+                                            ({detailsRun.totalExams ? Math.round(((detailsRun.assignedExams ?? 0) / detailsRun.totalExams) * 100) : 0}%)
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="space-y-1">
+                                    <div className="text-xs text-muted-foreground uppercase tracking-wider">Time Taken</div>
+                                    <div className="font-medium text-sm">
+                                        {(detailsRun.startedAt && detailsRun.completedAt) ?
+                                            `${((new Date(detailsRun.completedAt).getTime() - new Date(detailsRun.startedAt).getTime()) / 1000).toFixed(1)}s` : "Unknown"}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div className="bg-background rounded-lg p-3 border">
+                                    <div className="text-xs text-muted-foreground mb-1 uppercase tracking-wider font-semibold">Total Penalty</div>
+                                    <div className="text-xl font-bold font-mono">{Math.round(detailsRun.totalPenalty ?? 0).toLocaleString()}</div>
+                                </div>
+                                <div className="bg-background rounded-lg p-3 border">
+                                    <div className="text-xs text-muted-foreground mb-1 uppercase tracking-wider font-semibold">Hard Conflicts</div>
+                                    <div className={`text-xl font-bold font-mono ${(detailsRun.directConflicts ?? 0) > 0 ? "text-destructive" : "text-emerald-500"}`}>
+                                        {detailsRun.directConflicts ?? 0}
+                                    </div>
+                                </div>
+                                <div className="bg-background rounded-lg p-3 border">
+                                    <div className="text-xs text-muted-foreground mb-1 uppercase tracking-wider font-semibold">Back-to-Back</div>
+                                    <div className="text-xl font-bold font-mono">{detailsRun.backToBackConflicts ?? 0}</div>
+                                </div>
+                                <div className="bg-background rounded-lg p-3 border">
+                                    <div className="text-xs text-muted-foreground mb-1 uppercase tracking-wider font-semibold">Iterations</div>
+                                    <div className="text-xl font-bold font-mono">{(detailsRun.iterations ?? 0).toLocaleString()}</div>
+                                </div>
+                            </div>
+
+                            {/* Diagnostics Section */}
+                            {loadingDiag && (
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    Loading diagnostics...
+                                </div>
+                            )}
+
+                            {detailsDiag && (
+                                <div className="space-y-4">
+                                    {/* Top Issues */}
+                                    {detailsDiag.topIssues && detailsDiag.topIssues.length > 0 && (
+                                        <div className="space-y-2">
+                                            <h4 className="text-sm font-semibold flex items-center gap-2">
+                                                <Info className="h-4 w-4 text-primary" />
+                                                Solver Analysis
+                                            </h4>
+                                            <div className="space-y-1.5">
+                                                {detailsDiag.topIssues.map((issue: string, i: number) => (
+                                                    <div key={i} className="text-sm flex items-start gap-2 p-2 rounded-md bg-muted/50 border">
+                                                        {issue.includes("successfully") ? (
+                                                            <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                                                        ) : issue.includes("reduced") ? (
+                                                            <Activity className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                                                        ) : (
+                                                            <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                                                        )}
+                                                        <span>{issue}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Phase Summaries */}
+                                    {detailsDiag.phaseSummaries && detailsDiag.phaseSummaries.length > 0 && (
+                                        <div className="space-y-2">
+                                            <h4 className="text-sm font-semibold">Phase Breakdown</h4>
+                                            <div className="border rounded-md overflow-hidden">
+                                                <table className="w-full text-xs">
+                                                    <thead className="bg-muted">
+                                                        <tr>
+                                                            <th className="text-left p-2 font-semibold">Phase</th>
+                                                            <th className="text-right p-2 font-semibold">Duration</th>
+                                                            <th className="text-right p-2 font-semibold">Iterations</th>
+                                                            <th className="text-right p-2 font-semibold">Accepted</th>
+                                                            <th className="text-right p-2 font-semibold">Start Obj</th>
+                                                            <th className="text-right p-2 font-semibold">End Obj</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y">
+                                                        {detailsDiag.phaseSummaries.map((ps: any, i: number) => (
+                                                            <tr key={i} className="hover:bg-muted/30">
+                                                                <td className="p-2 font-medium">{ps.phase}</td>
+                                                                <td className="p-2 text-right font-mono">{(ps.durationMs / 1000).toFixed(1)}s</td>
+                                                                <td className="p-2 text-right font-mono">{(ps.endIteration - ps.startIteration).toLocaleString()}</td>
+                                                                <td className="p-2 text-right font-mono">{ps.movesAccepted.toLocaleString()}</td>
+                                                                <td className="p-2 text-right font-mono">{Math.round(ps.startObjective).toLocaleString()}</td>
+                                                                <td className="p-2 text-right font-mono">
+                                                                    <span className={ps.endObjective < ps.startObjective ? "text-emerald-500" : ""}>
+                                                                        {Math.round(ps.endObjective).toLocaleString()}
+                                                                    </span>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Unassigned Exams */}
+                                    {detailsDiag.unassignedCount > 0 && (
+                                        <div className="space-y-2">
+                                            <button
+                                                onClick={() => setShowUnassigned(!showUnassigned)}
+                                                className="flex items-center gap-2 text-sm font-semibold hover:text-primary transition-colors w-full text-left"
+                                            >
+                                                {showUnassigned ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                                                <XCircle className="h-4 w-4 text-destructive" />
+                                                Unassigned Exams ({detailsDiag.unassignedCount})
+                                            </button>
+
+                                            {showUnassigned && (
+                                                <div className="border rounded-md overflow-hidden max-h-[300px] overflow-y-auto">
+                                                    <table className="w-full text-xs">
+                                                        <thead className="bg-muted sticky top-0">
+                                                            <tr>
+                                                                <th className="text-left p-2 font-semibold">Exam</th>
+                                                                <th className="text-right p-2 font-semibold">Students</th>
+                                                                <th className="text-left p-2 font-semibold">Reason</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y">
+                                                            {detailsDiag.examDiagnostics
+                                                                .filter((d: any) => !d.assigned)
+                                                                .map((d: any) => (
+                                                                    <tr key={d.examId} className="hover:bg-muted/30">
+                                                                        <td className="p-2 font-medium max-w-[160px] truncate" title={d.examName}>{d.examName}</td>
+                                                                        <td className="p-2 text-right font-mono">{d.examSize}</td>
+                                                                        <td className="p-2">
+                                                                            <div className="flex flex-wrap gap-1">
+                                                                                {d.failureReasons.map((r: string) => (
+                                                                                    <Badge key={r} variant="outline" className="text-[10px] py-0 px-1.5">
+                                                                                        {r.replace(/_/g, " ")}
+                                                                                    </Badge>
+                                                                                ))}
+                                                                            </div>
+                                                                            {d.details.length > 0 && (
+                                                                                <div className="text-[11px] text-muted-foreground mt-1">
+                                                                                    {d.details[0]}
+                                                                                </div>
+                                                                            )}
+                                                                        </td>
+                                                                    </tr>
+                                                                ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Period Rejection Summary */}
+                                    {detailsDiag.unassignedCount > 0 && (
+                                        <div className="space-y-2">
+                                            <h4 className="text-sm font-semibold">Failure Category Breakdown</h4>
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                                {(() => {
+                                                    const unassigned = detailsDiag.examDiagnostics.filter((d: any) => !d.assigned);
+                                                    const cats = [
+                                                        { label: "No Periods", count: unassigned.filter((d: any) => d.failureReasons.includes("NO_PERIODS_IN_DOMAIN")).length, color: "text-red-500" },
+                                                        { label: "No Rooms", count: unassigned.filter((d: any) => d.failureReasons.includes("NO_ROOMS_AVAILABLE")).length, color: "text-orange-500" },
+                                                        { label: "Student Avail.", count: unassigned.filter((d: any) => d.failureReasons.includes("STUDENT_UNAVAILABILITY")).length, color: "text-amber-500" },
+                                                        { label: "Hard Constraints", count: unassigned.filter((d: any) => d.failureReasons.includes("HARD_DISTRIBUTION_CONSTRAINT")).length, color: "text-violet-500" },
+                                                    ];
+                                                    return cats.filter(c => c.count > 0).map(c => (
+                                                        <div key={c.label} className="bg-background rounded-lg p-3 border">
+                                                            <div className="text-xs text-muted-foreground mb-1">{c.label}</div>
+                                                            <div className={`text-lg font-bold font-mono ${c.color}`}>{c.count}</div>
+                                                        </div>
+                                                    ));
+                                                })()}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {!loadingDiag && !detailsDiag && detailsRun.status === "FAILED" && (
+                                <div className="flex items-center gap-2 p-3 rounded-md bg-destructive/10 border border-destructive/20 text-sm">
+                                    <AlertCircle className="h-4 w-4 text-destructive flex-shrink-0" />
+                                    <span>This run failed before producing diagnostics. Check the server console for error details.</span>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
 
             {/* Start Run Dialog */}
             <Dialog open={startOpen} onOpenChange={setStartOpen}>

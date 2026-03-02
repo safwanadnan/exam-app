@@ -8,7 +8,7 @@ generator client {
 datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
-}
+  }
 
 // ============================================================================
 // AUTH & USERS
@@ -296,7 +296,7 @@ model Exam {
   featurePreferences  RoomFeaturePreference[]
   distributionConstraintsA DistributionConstraint[] @relation("DistConsA")
   distributionConstraintsB DistributionConstraint[] @relation("DistConsB")
-  assignment          ExamAssignment?
+  assignments         ExamAssignment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -451,7 +451,7 @@ model RoomFeaturePreference {
 // The solver's assignment: exam → period + rooms
 model ExamAssignment {
   id       String @id @default(cuid())
-  examId   String @unique // One assignment per exam
+  examId   String 
   periodId String
   runId    String?
 
@@ -462,6 +462,9 @@ model ExamAssignment {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // An exam can only have ONE assignment per solver run
+  @@unique([examId, runId])
 }
 
 // Junction table: assignment → rooms (an exam can be split across rooms)

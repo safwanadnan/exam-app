@@ -22,6 +22,54 @@ import { SolverPhase, SolverStatus, type SolverProgress, type SolverConfiguratio
 
 export type SolverProgressCallback = (progress: SolverProgress) => void;
 
+// ===================== DIAGNOSTICS =====================
+
+export type FailureReason =
+    | "NO_PERIODS_IN_DOMAIN"
+    | "ALL_PERIODS_INFEASIBLE"
+    | "NO_ROOMS_AVAILABLE"
+    | "STUDENT_UNAVAILABILITY"
+    | "INSTRUCTOR_UNAVAILABILITY"
+    | "HARD_DISTRIBUTION_CONSTRAINT"
+    | "INSUFFICIENT_ROOM_CAPACITY";
+
+export interface ExamDiagnostic {
+    examId: string;
+    examName: string;
+    examSize: number;
+    assigned: boolean;
+    failureReasons: FailureReason[];
+    details: string[];
+    periodsTried: number;
+    periodsInDomain: number;
+    periodRejections: {
+        studentConflicts: number;
+        instructorConflicts: number;
+        hardConstraints: number;
+        noRooms: number;
+    };
+}
+
+export interface PhaseSummary {
+    phase: string;
+    startIteration: number;
+    endIteration: number;
+    startObjective: number;
+    endObjective: number;
+    durationMs: number;
+    movesAccepted: number;
+    movesRejected: number;
+}
+
+export interface SolverDiagnostics {
+    examDiagnostics: ExamDiagnostic[];
+    phaseSummaries: PhaseSummary[];
+    unassignedCount: number;
+    assignedCount: number;
+    totalCount: number;
+    topIssues: string[];
+}
+
 export interface SolverResult {
     status: SolverStatus;
     totalExams: number;
@@ -32,6 +80,7 @@ export interface SolverResult {
     totalPenalty: number;
     iterations: number;
     timeMs: number;
+    diagnostics: SolverDiagnostics;
 }
 
 export class ExamSolver {
@@ -59,6 +108,15 @@ export class ExamSolver {
 
     // HC state
     private hcIdleIterations: number = 0;
+
+    // Diagnostics
+    private examDiagnostics: Map<string, ExamDiagnostic> = new Map();
+    private phaseSummaries: PhaseSummary[] = [];
+    private phaseMovesAccepted: number = 0;
+    private phaseMovesRejected: number = 0;
+    private phaseStartTime: number = 0;
+    private phaseStartIteration: number = 0;
+    private phaseStartObjective: number = 0;
 
     constructor(model: ExamModel) {
         this.model = model;
@@ -137,6 +195,7 @@ export class ExamSolver {
      */
     private async runConstruction(): Promise<void> {
         this.phase = SolverPhase.CONSTRUCTION;
+        this.beginPhaseTracking();
         console.log("[Solver] Phase 1: Construction");
 
         // Sort exams by priority (largest/most constrained first)
@@ -145,9 +204,13 @@ export class ExamSolver {
         for (const exam of examOrder) {
             if (this.shouldStop) return;
 
-            const bestPlacement = this.findBestPlacement(exam);
-            if (bestPlacement) {
-                this.model.assignExam(exam, bestPlacement);
+            const diagnostic = this.diagnoseAndPlace(exam);
+            this.examDiagnostics.set(exam.id, diagnostic);
+
+            if (diagnostic.assigned) {
+                this.phaseMovesAccepted++;
+            } else {
+                this.phaseMovesRejected++;
             }
 
             this.iteration++;
@@ -159,8 +222,115 @@ export class ExamSolver {
         }
 
         this.saveBestIfImproved();
+        this.endPhaseTracking("Construction");
         this.emitProgress();
         console.log(`[Solver] Construction complete: ${this.model.nrAssigned}/${this.model.exams.length} assigned`);
+
+        // Log unassigned exam reasons
+        const unassigned = [...this.examDiagnostics.values()].filter(d => !d.assigned);
+        if (unassigned.length > 0) {
+            console.log(`[Solver] ${unassigned.length} exams could not be assigned:`);
+            for (const d of unassigned.slice(0, 20)) {
+                console.log(`  - ${d.examName} (${d.examSize} students): ${d.details.join("; ")}`);
+            }
+            if (unassigned.length > 20) console.log(`  ... and ${unassigned.length - 20} more`);
+        }
+    }
+
+    /**
+     * Diagnose an exam's placement attempt and place it if possible.
+     * Returns detailed diagnostic information about what happened.
+     */
+    private diagnoseAndPlace(exam: Exam): ExamDiagnostic {
+        const diag: ExamDiagnostic = {
+            examId: exam.id,
+            examName: exam.name,
+            examSize: exam.size,
+            assigned: false,
+            failureReasons: [],
+            details: [],
+            periodsTried: 0,
+            periodsInDomain: exam.periodPlacements.length,
+            periodRejections: {
+                studentConflicts: 0,
+                instructorConflicts: 0,
+                hardConstraints: 0,
+                noRooms: 0,
+            },
+        };
+
+        if (exam.periodPlacements.length === 0) {
+            diag.failureReasons.push("NO_PERIODS_IN_DOMAIN");
+            diag.details.push("No periods available in domain (all prohibited or wrong exam type)");
+            return diag;
+        }
+
+        let bestPlacement: ExamPlacement | null = null;
+        let bestCost = Infinity;
+
+        for (const pp of exam.periodPlacements) {
+            diag.periodsTried++;
+
+            // Check hard constraints for this period (with detailed reasons)
+            const feasibility = this.checkPeriodFeasibility(exam, pp);
+            if (!feasibility.feasible) {
+                if (feasibility.reason === "STUDENT_UNAVAILABILITY") diag.periodRejections.studentConflicts++;
+                else if (feasibility.reason === "INSTRUCTOR_UNAVAILABILITY") diag.periodRejections.instructorConflicts++;
+                else if (feasibility.reason === "HARD_DISTRIBUTION_CONSTRAINT") diag.periodRejections.hardConstraints++;
+                continue;
+            }
+
+            // Find best rooms for this period
+            const assignedRooms = this.model.getAssignedRoomsInPeriod(pp.period.id);
+            const roomMap = new Map<string, Set<string>>();
+            roomMap.set(pp.period.id, assignedRooms);
+            const rooms = exam.findBestAvailableRooms(pp.period, roomMap);
+
+            if (rooms === null && exam.maxRooms > 0) {
+                diag.periodRejections.noRooms++;
+                continue;
+            }
+
+            const placement = new ExamPlacement(pp, rooms ?? []);
+            const cost = this.computePlacementCost(exam, placement);
+            if (cost < bestCost) {
+                bestCost = cost;
+                bestPlacement = placement;
+            }
+        }
+
+        if (bestPlacement) {
+            this.model.assignExam(exam, bestPlacement);
+            diag.assigned = true;
+        } else {
+            // Determine the primary failure reasons
+            const rej = diag.periodRejections;
+            if (rej.studentConflicts > 0 && rej.studentConflicts === diag.periodsTried) {
+                diag.failureReasons.push("STUDENT_UNAVAILABILITY");
+                diag.details.push(`All ${diag.periodsTried} periods rejected: students unavailable`);
+            }
+            if (rej.instructorConflicts > 0) {
+                diag.failureReasons.push("INSTRUCTOR_UNAVAILABILITY");
+                diag.details.push(`${rej.instructorConflicts} periods rejected: instructor unavailable`);
+            }
+            if (rej.hardConstraints > 0) {
+                diag.failureReasons.push("HARD_DISTRIBUTION_CONSTRAINT");
+                diag.details.push(`${rej.hardConstraints} periods rejected: hard distribution constraint violated`);
+            }
+            if (rej.noRooms > 0) {
+                diag.failureReasons.push("NO_ROOMS_AVAILABLE");
+                diag.details.push(`${rej.noRooms} periods rejected: no rooms with sufficient capacity (need ${exam.size} seats${exam.altSeating ? ", alt seating" : ""})`);
+            }
+            if (diag.failureReasons.length === 0 && diag.periodsInDomain > 0) {
+                diag.failureReasons.push("ALL_PERIODS_INFEASIBLE");
+                diag.details.push(`All ${diag.periodsInDomain} periods in domain were infeasible (mixed reasons)`);
+            }
+            if (diag.details.length === 0) {
+                diag.details.push("Unknown failure — no feasible placement found");
+            }
+        }
+
+        return diag;
     }
 
     /**
@@ -197,36 +367,36 @@ export class ExamSolver {
     }
 
     /**
-     * Check if a period is feasible for an exam (hard constraints only).
+     * Check period feasibility with detailed reason for rejection.
      */
-    private isPeriodFeasible(exam: Exam, pp: ExamPeriodPlacement): boolean {
+    private checkPeriodFeasibility(exam: Exam, pp: ExamPeriodPlacement): { feasible: boolean; reason?: FailureReason } {
         // Check distribution constraints
         for (const dc of exam.distributionConstraints) {
             if (!dc.hard) continue;
-
             const otherExamId = dc.examAId === exam.id ? dc.examBId : dc.examAId;
             const otherExam = this.model.getExam(otherExamId);
             if (!otherExam?.isAssigned) continue;
-
             if (dc.isPeriodRelated()) {
                 const examIsA = dc.examAId === exam.id;
                 const p1 = examIsA ? pp.period : otherExam.assignment!.period;
                 const p2 = examIsA ? otherExam.assignment!.period : pp.period;
-                if (!dc.isPeriodSatisfied(p1, p2)) return false;
+                if (!dc.isPeriodSatisfied(p1, p2)) return { feasible: false, reason: "HARD_DISTRIBUTION_CONSTRAINT" };
             }
         }
-
-        // Check student availability
         for (const student of exam.students) {
-            if (!student.isAvailable(pp.period)) return false;
+            if (!student.isAvailable(pp.period)) return { feasible: false, reason: "STUDENT_UNAVAILABILITY" };
         }
-
-        // Check instructor availability
         for (const instructor of exam.instructors) {
-            if (!instructor.isAvailable(pp.period)) return false;
+            if (!instructor.isAvailable(pp.period)) return { feasible: false, reason: "INSTRUCTOR_UNAVAILABILITY" };
         }
+        return { feasible: true };
+    }
 
-        return true;
+    /**
+     * Check if a period is feasible for an exam (hard constraints only).
+     */
+    private isPeriodFeasible(exam: Exam, pp: ExamPeriodPlacement): boolean {
+        return this.checkPeriodFeasibility(exam, pp).feasible;
     }
 
     /**
@@ -319,6 +489,7 @@ export class ExamSolver {
     private async runHillClimbing(): Promise<void> {
         this.phase = SolverPhase.HILL_CLIMBING;
         this.hcIdleIterations = 0;
+        this.beginPhaseTracking();
         console.log("[Solver] Phase 2: Hill Climbing");
 
         while (!this.shouldStop && !this.isTimedOut()) {
@@ -347,6 +518,7 @@ export class ExamSolver {
             }
         }
 
+        this.endPhaseTracking("Hill Climbing");
         console.log(`[Solver] Hill Climbing complete at iteration ${this.iteration}`);
     }
 
@@ -367,6 +539,7 @@ export class ExamSolver {
         this.saLastReheatIter = this.iteration;
         this.saAccepted = 0;
         this.saTotalMoves = 0;
+        this.beginPhaseTracking();
 
         const coolingRate = this.config.saCoolingRate;
         const reheatLength = this.config.saReheatLength;
@@ -405,6 +578,7 @@ export class ExamSolver {
             }
         }
 
+        this.endPhaseTracking("Simulated Annealing");
         console.log(`[Solver] Simulated Annealing complete at iteration ${this.iteration}`);
     }
 
@@ -449,6 +623,7 @@ export class ExamSolver {
     private async runGreatDeluge(): Promise<void> {
         this.phase = SolverPhase.GREAT_DELUGE;
         console.log("[Solver] Phase 3: Great Deluge");
+        this.beginPhaseTracking();
 
         const currentObj = this.model.getTotalObjective();
         this.gdBound = currentObj * 1.1; // Start with 10% above current
@@ -479,6 +654,7 @@ export class ExamSolver {
             }
         }
 
+        this.endPhaseTracking("Great Deluge");
         console.log(`[Solver] Great Deluge complete at iteration ${this.iteration}`);
     }
 
@@ -487,6 +663,7 @@ export class ExamSolver {
     private async runFinalization(): Promise<void> {
         this.phase = SolverPhase.FINALIZATION;
         console.log("[Solver] Phase 4: Finalization");
+        this.beginPhaseTracking();
 
         this.hcIdleIterations = 0;
         const maxIdle = this.config.hcMaxIdleIterations;
@@ -514,6 +691,7 @@ export class ExamSolver {
             }
         }
 
+        this.endPhaseTracking("Finalization");
         console.log(`[Solver] Finalization complete at iteration ${this.iteration}`);
     }
 
@@ -592,6 +770,87 @@ export class ExamSolver {
         return new Promise(resolve => setTimeout(resolve, 0));
     }
 
+    // ===================== PHASE TRACKING =====================
+
+    private beginPhaseTracking(): void {
+        this.phaseStartTime = Date.now();
+        this.phaseStartIteration = this.iteration;
+        this.phaseStartObjective = this.model.getTotalObjective();
+        this.phaseMovesAccepted = 0;
+        this.phaseMovesRejected = 0;
+    }
+
+    private endPhaseTracking(phaseName: string): void {
+        this.phaseSummaries.push({
+            phase: phaseName,
+            startIteration: this.phaseStartIteration,
+            endIteration: this.iteration,
+            startObjective: this.phaseStartObjective,
+            endObjective: this.model.getTotalObjective(),
+            durationMs: Date.now() - this.phaseStartTime,
+            movesAccepted: this.phaseMovesAccepted,
+            movesRejected: this.phaseMovesRejected,
+        });
+    }
+
+    // ===================== DIAGNOSTICS BUILDER =====================
+
+    private buildDiagnostics(): SolverDiagnostics {
+        const examDiagnostics = [...this.examDiagnostics.values()];
+        const unassigned = examDiagnostics.filter(d => !d.assigned);
+        const assigned = examDiagnostics.filter(d => d.assigned);
+
+        // Build top issues summary
+        const topIssues: string[] = [];
+
+        const noPeriods = unassigned.filter(d => d.failureReasons.includes("NO_PERIODS_IN_DOMAIN"));
+        if (noPeriods.length > 0) {
+            topIssues.push(`${noPeriods.length} exam(s) have no periods in their domain — check that exam types have periods assigned`);
+        }
+
+        const noRooms = unassigned.filter(d => d.failureReasons.includes("NO_ROOMS_AVAILABLE"));
+        if (noRooms.length > 0) {
+            const maxSize = Math.max(...noRooms.map(d => d.examSize));
+            topIssues.push(`${noRooms.length} exam(s) couldn’t find rooms with enough capacity (largest: ${maxSize} seats needed)`);
+        }
+
+        const studentBlock = unassigned.filter(d => d.failureReasons.includes("STUDENT_UNAVAILABILITY"));
+        if (studentBlock.length > 0) {
+            topIssues.push(`${studentBlock.length} exam(s) blocked by student unavailability in all periods`);
+        }
+
+        const instrBlock = unassigned.filter(d => d.failureReasons.includes("INSTRUCTOR_UNAVAILABILITY"));
+        if (instrBlock.length > 0) {
+            topIssues.push(`${instrBlock.length} exam(s) blocked by instructor unavailability`);
+        }
+
+        const hardConst = unassigned.filter(d => d.failureReasons.includes("HARD_DISTRIBUTION_CONSTRAINT"));
+        if (hardConst.length > 0) {
+            topIssues.push(`${hardConst.length} exam(s) blocked by hard distribution constraints`);
+        }
+
+        if (unassigned.length === 0) {
+            topIssues.push("All exams were successfully assigned!");
+        }
+
+        // Add optimization phase summaries
+        for (const ps of this.phaseSummaries) {
+            const improvement = ps.startObjective - ps.endObjective;
+            if (ps.phase !== "Construction" && improvement > 0) {
+                topIssues.push(`${ps.phase}: reduced penalty by ${Math.round(improvement)} (${ps.movesAccepted} moves accepted in ${(ps.durationMs / 1000).toFixed(1)}s)`);
+            }
+        }
+
+        return {
+            examDiagnostics,
+            phaseSummaries: this.phaseSummaries,
+            unassignedCount: unassigned.length,
+            assignedCount: assigned.length,
+            totalCount: examDiagnostics.length,
+            topIssues,
+        };
+    }
+
     private buildResult(status: SolverStatus): SolverResult {
         this.status = status;
         return {
@@ -604,6 +863,7 @@ export class ExamSolver {
             totalPenalty: this.model.getTotalObjective(),
             iterations: this.iteration,
             timeMs: Date.now() - this.startTime,
+            diagnostics: this.buildDiagnostics(),
         };
     }
 }
