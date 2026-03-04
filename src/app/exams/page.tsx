@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, GraduationCap, Search, MoreHorizontal, Loader2, Tags } from "lucide-react";
+import { Plus, GraduationCap, Search, MoreHorizontal, Loader2, Tags, Users, Clock, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { HelpTip, Tip } from "@/components/tip";
 
@@ -17,6 +19,8 @@ interface Exam {
     id: string; name: string; length: number; maxRooms: number; altSeating: boolean;
     examType: { name: string; code: string };
     _count: { studentEnrollments: number; instructorAssignments: number };
+    owners?: { section: { sectionNumber: string; course: { courseNumber: string; subjectId: string } } }[];
+    instructorAssignments?: { instructor: { name: string } }[];
 }
 
 function ExamDialog({ exam, open, onOpenChange, onSaved }: {
@@ -163,6 +167,10 @@ export default function ExamsPage() {
     const [preferences, setPreferences] = useState<{ id: string; penalty: number }[]>([]);
     const [savingFeatures, setSavingFeatures] = useState(false);
 
+    // Detail panel
+    const [detailOpen, setDetailOpen] = useState(false);
+    const [detailExam, setDetailExam] = useState<Exam | null>(null);
+
     const fetchExams = async () => {
         setLoading(true);
         try {
@@ -269,9 +277,9 @@ export default function ExamsPage() {
                                 </TableHeader>
                                 <TableBody>
                                     {filtered.map(exam => (
-                                        <TableRow key={exam.id}>
+                                        <TableRow key={exam.id} className="cursor-pointer hover:bg-muted/40" onClick={() => { setDetailExam(exam); setDetailOpen(true); }}>
                                             <TableCell className="font-medium">{exam.name || "Unnamed Exam"}</TableCell>
-                                            <TableCell>{exam.examType?.name || "—"}</TableCell>
+                                            <TableCell><Badge variant="outline" className="text-[11px]">{exam.examType?.name || "—"}</Badge></TableCell>
                                             <TableCell className="text-right font-medium">{exam.length}m</TableCell>
                                             <TableCell className="text-right"><span className="font-medium text-primary">{exam._count.studentEnrollments}</span></TableCell>
                                             <TableCell className="text-right text-muted-foreground">{exam.maxRooms}</TableCell>
@@ -281,7 +289,7 @@ export default function ExamsPage() {
                                                 ) : <span className="text-muted-foreground text-xs">—</span>}
                                             </TableCell>
                                             <TableCell>
-                                                <div className="flex justify-end gap-1">
+                                                <div className="flex justify-end gap-1" onClick={e => e.stopPropagation()}>
                                                     <Tip content="Room Feature Requirements"><Button variant="ghost" size="sm" onClick={() => openFeatures(exam)}>
                                                         <Tags className="h-4 w-4" />
                                                     </Button></Tip>
@@ -305,6 +313,80 @@ export default function ExamsPage() {
 
             <ExamDialog exam={editExam} open={editOpen} onOpenChange={setEditOpen} onSaved={fetchExams} />
             <DeleteDialog open={!!deleteTarget} onOpenChange={o => { if (!o) setDeleteTarget(null); }} onConfirm={handleDelete} title={deleteTarget?.name || "this exam"} />
+
+            {/* ── Exam Detail Panel ── */}
+            <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+                <DialogContent className="sm:max-w-[520px] max-h-[85vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2"><GraduationCap className="h-5 w-5" />Exam Details</DialogTitle>
+                    </DialogHeader>
+                    {detailExam && (
+                        <div className="space-y-5">
+                            <div className="bg-muted/40 rounded-xl p-4 border">
+                                <div className="text-xl font-bold">{detailExam.name || "Unnamed Exam"}</div>
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                    <Badge variant="outline">{detailExam.examType?.name}</Badge>
+                                    {detailExam.altSeating && <Badge className="bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-400/30">Alt Seating</Badge>}
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-3">
+                                <div className="bg-muted/30 border rounded-lg p-3">
+                                    <div className="text-xs font-semibold uppercase text-muted-foreground tracking-wider flex items-center gap-1 mb-1"><Clock className="h-3 w-3" />Duration</div>
+                                    <div className="text-2xl font-bold">{detailExam.length}m</div>
+                                </div>
+                                <div className="bg-muted/30 border rounded-lg p-3">
+                                    <div className="text-xs font-semibold uppercase text-muted-foreground tracking-wider flex items-center gap-1 mb-1"><Users className="h-3 w-3" />Students</div>
+                                    <div className="text-2xl font-bold">{detailExam._count.studentEnrollments}</div>
+                                </div>
+                                <div className="bg-muted/30 border rounded-lg p-3">
+                                    <div className="text-xs font-semibold uppercase text-muted-foreground tracking-wider mb-1">Max Rooms</div>
+                                    <div className="text-2xl font-bold">{detailExam.maxRooms}</div>
+                                </div>
+                            </div>
+
+                            {/* Instructors */}
+                            <div className="space-y-1.5">
+                                <div className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">Instructors</div>
+                                {(detailExam.instructorAssignments || []).length > 0 ? (
+                                    <div className="flex flex-wrap gap-2">
+                                        {detailExam.instructorAssignments!.map((ia, i) => (
+                                            <span key={i} className="text-sm bg-muted px-2.5 py-1 rounded-md border">{ia.instructor.name}</span>
+                                        ))}
+                                    </div>
+                                ) : <p className="text-sm text-muted-foreground italic">No instructors assigned</p>}
+                            </div>
+
+                            {/* Course Sections */}
+                            <div className="space-y-1.5">
+                                <div className="text-xs font-semibold uppercase text-muted-foreground tracking-wider flex items-center gap-1.5"><BookOpen className="h-3.5 w-3.5" />Course Sections</div>
+                                {(detailExam.owners || []).length > 0 ? (
+                                    <div className="border rounded-lg divide-y overflow-hidden">
+                                        {detailExam.owners!.map((o, i) => (
+                                            <div key={i} className="px-3 py-2 text-sm">
+                                                <span className="font-medium">{o.section.course.subjectId} {o.section.course.courseNumber}</span>
+                                                <span className="text-muted-foreground ml-2">Section {o.section.sectionNumber}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : <p className="text-sm text-muted-foreground italic">No sections attached</p>}
+                            </div>
+
+                            <div className="flex gap-2 pt-2 border-t">
+                                <Button variant="outline" size="sm" className="flex-1" onClick={() => { setDetailOpen(false); setEditExam(detailExam); setEditOpen(true); }}>
+                                    Edit Exam
+                                </Button>
+                                <Button variant="outline" size="sm" onClick={() => { setDetailOpen(false); openFeatures(detailExam); }}>
+                                    <Tags className="h-4 w-4 mr-1" />Features
+                                </Button>
+                                <Button variant="destructive" size="sm" onClick={() => { setDetailOpen(false); setDeleteTarget(detailExam); }}>
+                                    Delete
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
 
             {/* Feature Preferences Dialog */}
             <Dialog open={!!showFeatures} onOpenChange={() => setShowFeatures(null)}>

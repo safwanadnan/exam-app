@@ -38,7 +38,10 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
             include: {
                 examType: { select: { name: true, code: true } },
                 _count: { select: { studentEnrollments: true, instructorAssignments: true } },
-                assignment: { select: { periodId: true, rooms: { select: { roomId: true } } } },
+                owners: {
+                    include: { section: { include: { course: { select: { courseNumber: true, subjectId: true } } } } }
+                },
+                instructorAssignments: { include: { instructor: { select: { name: true } } } },
             },
         }),
         prisma.exam.count({ where }),

@@ -15,7 +15,23 @@ export const GET = withErrorHandling(async (_req: NextRequest, ctx: RouteContext
     const student = await prisma.student.findUnique({
         where: { id },
         include: {
-            enrollments: { include: { exam: { select: { id: true, name: true, length: true } } } },
+            enrollments: {
+                include: {
+                    exam: {
+                        select: {
+                            id: true, name: true, length: true,
+                            examType: { select: { name: true } },
+                            assignments: {
+                                take: 1,
+                                orderBy: { createdAt: "desc" },
+                                include: {
+                                    period: { select: { date: true, startTime: true, endTime: true } }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
             _count: { select: { enrollments: true } },
         },
     });

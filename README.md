@@ -1,33 +1,123 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Exam App
 
-## Getting Started
+A custom scheduling application built on Next.js and Prisma, with exam-solving logic inspired by the UniTime solver.
 
-First, run the development server:
+## Setup & Development 🔧
+
+1. **Clone the repository** and install dependencies:
+
+   ```bash
+   git clone <repo-url>
+   cd exam-app
+   npm install     # or yarn / pnpm
+   ```
+
+2. **Configure environment variables** (see below).
+3. **Initialize the database with Prisma** (commands listed in the next section).
+4. **Start the development server**:
+
+   ```bash
+   npm run dev
+   ```
+
+   The app will be available at `http://localhost:3000` by default.
+
+
+## Prisma Commands 🛠️
+
+This project uses Prisma for database access. After setting `DATABASE_URL` in your env file, run the following as needed:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Generate the Prisma client (run after editing schema.prisma)
+npx prisma generate
+
+# Create/migrate the database schema (development mode)
+npx prisma migrate dev --name init
+
+# Push the model to the database without a migration (useful for simple changes)
+npx prisma db push
+
+# Open Prisma Studio (web UI for inspecting the database)
+npx prisma studio
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+> **Tip:** If you change `schema.prisma`, always regenerate the client.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Environment Configuration 💡
 
-## Learn More
+This project relies on several environment variables for connecting to services (database, authentication, etc.) and configuring the exam solver. To get started, create a file named `.env.local` in the root of the repository and fill in the values as shown below.
 
-To learn more about Next.js, take a look at the following resources:
+```env
+# env.example - copy to .env.local and modify values
+# ------------------------------------------------------------------
+# Database connection (PostgreSQL/SQLite/etc.)
+DATABASE_URL="postgresql://user:password@localhost:5432/exams?schema=public"
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# NextAuth configuration
+NEXTAUTH_SECRET="a-very-secret-string"
+NEXTAUTH_URL="http://localhost:3000"
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# Solver configuration (if applicable)
+SOLVER_API_URL="http://localhost:8080"        # URL of the backend solver service
+SOLVER_API_KEY="your-solver-api-key"
+
+# Any additional variables used throughout the application
+# e.g. feature flags, external service credentials, etc.
+# ------------------------------------------------------------------
+```
+
+> **Tip:** You can commit `env.example` to version control but never commit `.env.local` since it may contain sensitive information.
+
+### Running with the Environment
+
+After creating `.env.local`, install dependencies and start the development server as described above. The app will automatically load environment variables from `.env.local`.
+
+```bash
+npm install   # or yarn / pnpm
+npm run dev
+```
+
+This project relies on several environment variables for connecting to services (database, authentication, etc.) and configuring the exam solver. To get started, create a file named `.env.local` in the root of the repository and fill in the values as shown below.
+
+```env
+# env.example - copy to .env.local and modify values
+# ------------------------------------------------------------------
+# Database connection (PostgreSQL/SQLite/etc.)
+DATABASE_URL="postgresql://user:password@localhost:5432/exams?schema=public"
+
+# NextAuth configuration
+NEXTAUTH_SECRET="a-very-secret-string"
+NEXTAUTH_URL="http://localhost:3000"
+
+# Solver configuration (if applicable)
+SOLVER_API_URL="http://localhost:8080"        # URL of the backend solver service
+SOLVER_API_KEY="your-solver-api-key"
+
+# Any additional variables used throughout the application
+# e.g. feature flags, external service credentials, etc.
+# ------------------------------------------------------------------
+```
+
+> **Tip:** You can commit `env.example` to version control but never commit `.env.local` since it may contain sensitive information.
+
+### Running with the Environment
+
+After creating `.env.local`, install dependencies and start the development server as described above. The app will automatically load environment variables from `.env.local`.
+
+```bash
+npm install   # or yarn / pnpm
+npm run dev
+```
+
+
+## Acknowledgements 🙏
+
+This scheduling/solver functionality is built upon the **UniTime** exam scheduling engine. UniTime is an open-source project for university timetabling that provides a powerful solver and modelling framework. Many of the algorithms and ideas implemented here draw inspiration from that work.
+
+For more information about UniTime, visit the [UniTime website](https://www.unitime.org/) or check out the [GitHub repository](https://github.com/unitime/unitime).
+
+---
 
 ## Deploy on Vercel
 
