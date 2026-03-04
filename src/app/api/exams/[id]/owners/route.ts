@@ -1,35 +1,36 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+type RouteContext = { params: Promise<{ id: string }> };
+
+export async function GET(_request: Request, { params }: RouteContext) {
     try {
+        const { id } = await params;
         const owners = await prisma.examOwner.findMany({
-            where: { examId: params.id },
+            where: { examId: id },
             include: { section: { include: { course: { include: { subject: true } } } } }
         });
         return NextResponse.json({ owners });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: "Failed to fetch exam owners" }, { status: 500 });
     }
 }
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, { params }: RouteContext) {
     try {
+        const { id } = await params;
         const { sectionIds } = await request.json();
 
-        // Remove existing and recreate
-        await prisma.examOwner.deleteMany({
-            where: { examId: params.id }
-        });
+        await prisma.examOwner.deleteMany({ where: { examId: id } });
 
         if (sectionIds && sectionIds.length > 0) {
             await prisma.examOwner.createMany({
-                data: sectionIds.map((sid: string) => ({ examId: params.id, sectionId: sid }))
+                data: sectionIds.map((sid: string) => ({ examId: id, sectionId: sid }))
             });
         }
 
         return NextResponse.json({ success: true });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: "Failed to update exam owners" }, { status: 500 });
     }
 }

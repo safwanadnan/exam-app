@@ -1,34 +1,35 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+type RouteContext = { params: Promise<{ id: string }> };
+
+export async function GET(_request: Request, { params }: RouteContext) {
     try {
+        const { id } = await params;
         const unavailability = await prisma.studentUnavailability.findMany({
-            where: { studentId: params.id },
-            include: { period: true }
+            where: { studentId: id },
         });
         return NextResponse.json({ unavailability });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: "Failed to fetch unavailability" }, { status: 500 });
     }
 }
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, { params }: RouteContext) {
     try {
+        const { id } = await params;
         const { periodIds } = await request.json();
 
-        await prisma.studentUnavailability.deleteMany({
-            where: { studentId: params.id }
-        });
+        await prisma.studentUnavailability.deleteMany({ where: { studentId: id } });
 
         if (periodIds && periodIds.length > 0) {
             await prisma.studentUnavailability.createMany({
-                data: periodIds.map((pid: string) => ({ studentId: params.id, periodId: pid }))
+                data: periodIds.map((pid: string) => ({ studentId: id, periodId: pid }))
             });
         }
 
         return NextResponse.json({ success: true });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: "Failed to update unavailability" }, { status: 500 });
     }
 }

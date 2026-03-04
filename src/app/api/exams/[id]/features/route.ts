@@ -1,30 +1,32 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+type RouteContext = { params: Promise<{ id: string }> };
+
+export async function GET(_request: Request, { params }: RouteContext) {
     try {
+        const { id } = await params;
         const preferences = await prisma.roomFeaturePreference.findMany({
-            where: { examId: params.id },
+            where: { examId: id },
             include: { feature: true }
         });
         return NextResponse.json({ preferences });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: "Failed to fetch exam feature preferences" }, { status: 500 });
     }
 }
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, { params }: RouteContext) {
     try {
-        const { features } = await request.json(); // { id: string, penalty: number }[]
+        const { id } = await params;
+        const { features } = await request.json();
 
-        await prisma.roomFeaturePreference.deleteMany({
-            where: { examId: params.id }
-        });
+        await prisma.roomFeaturePreference.deleteMany({ where: { examId: id } });
 
         if (features && features.length > 0) {
             await prisma.roomFeaturePreference.createMany({
                 data: features.map((f: any) => ({
-                    examId: params.id,
+                    examId: id,
                     featureId: f.id,
                     penalty: f.penalty
                 }))
@@ -32,7 +34,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
         }
 
         return NextResponse.json({ success: true });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: "Failed to update exam feature preferences" }, { status: 500 });
     }
 }
