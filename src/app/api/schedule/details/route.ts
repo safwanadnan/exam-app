@@ -1,8 +1,12 @@
 export const dynamic = 'force-dynamic';
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma, jsonResponse, withErrorHandling } from "@/lib/api-helpers";
 
+/**
+ * GET /api/schedule/details?assignmentId=…
+ * Returns deep exam details + clashing student names.
+ */
 export const GET = withErrorHandling(async (req: NextRequest) => {
     const url = new URL(req.url);
     const assignmentId = url.searchParams.get("assignmentId");
@@ -19,31 +23,23 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
                 include: {
                     owners: {
                         include: {
-                            section: {
-                                include: {
-                                    course: true
-                                }
-                            }
+                            section: { include: { course: true } }
                         }
                     },
                     instructorAssignments: {
-                        include: {
-                            instructor: true
-                        }
+                        include: { instructor: true }
                     },
                     studentEnrollments: {
-                        select: { studentId: true }
+                        include: {
+                            student: { select: { id: true, name: true, externalId: true } }
+                        }
                     }
                 }
             },
             period: true,
             rooms: {
                 include: {
-                    room: {
-                        include: {
-                            building: true
-                        }
-                    }
+                    room: { include: { building: true } }
                 }
             }
         }
@@ -53,7 +49,7 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
         return jsonResponse({ error: "Assignment not found" }, 404);
     }
 
-    // 2. Fetch all OTHER assignments in the exact SAME period and run to compute clashes
+    // 2. Fetch all OTHER assignments in the exact SAME period and run
     const concurrentAssignments = await prisma.examAssignment.findMany({
         where: {
             runId: assignment.runId,
@@ -64,26 +60,37 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
             exam: {
                 include: {
                     studentEnrollments: {
-                        select: { studentId: true }
+                        include: {
+                            student: { select: { id: true, name: true, externalId: true } }
+                        }
                     }
                 }
             }
         }
     });
 
-    // Extract this exam's student IDs into a Set for fast intersection
-    const studentIds = new Set(assignment.exam.studentEnrollments.map(e => e.studentId));
+    // Build a map of studentId → student info for this exam
+    const thisExamStudents = new Map(
+        assignment.exam.studentEnrollments.map(e => [e.student.id, e.student])
+    );
 
-    // 3. Compute direct clashes (students enrolled in THIS exam and ANOTHER concurrent exam)
+    // 3. Compute clashes with student names
     const clashes = concurrentAssignments.map(concurrent => {
-        const concurrentStudentIds = concurrent.exam.studentEnrollments.map(e => e.studentId);
-        const conflictingStudents = concurrentStudentIds.filter(id => studentIds.has(id));
+        const clashingStudents = concurrent.exam.studentEnrollments
+            .filter(e => thisExamStudents.has(e.student.id))
+            .map(e => ({
+                id: e.student.id,
+                name: e.student.name,
+                externalId: e.student.externalId,
+            }));
 
-        if (conflictingStudents.length > 0) {
+        if (clashingStudents.length > 0) {
             return {
                 concurrentExamName: concurrent.exam.name || "Unnamed Exam",
                 concurrentExamId: concurrent.exam.id,
-                clashCount: conflictingStudents.length
+                concurrentAssignmentId: concurrent.id,
+                clashCount: clashingStudents.length,
+                clashingStudents,
             };
         }
         return null;
@@ -95,9 +102,14 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
             id: assignment.id,
             examName: assignment.exam.name,
             examLength: assignment.exam.length,
-            totalStudents: studentIds.size,
-            courses: assignment.exam.owners.map(o => `${o.section.course.subjectId} ${o.section.course.courseNumber} - ${o.section.sectionNumber}`),
+            totalStudents: thisExamStudents.size,
+            courses: assignment.exam.owners.map(o =>
+                `${o.section.course.subjectId} ${o.section.course.courseNumber} - ${o.section.sectionNumber}`
+            ),
             instructors: assignment.exam.instructorAssignments.map(i => i.instructor.name),
+            students: Array.from(thisExamStudents.values()).map(s => ({
+                id: s.id, name: s.name, externalId: s.externalId
+            })),
             period: {
                 date: assignment.period.date,
                 startTime: assignment.period.startTime,

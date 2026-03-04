@@ -34,10 +34,13 @@ interface DetailedAssignment {
     rooms: { name: string; capacity: number }[];
 }
 
+interface ClashStudent { id: string; name: string; externalId: string; }
 interface Clash {
     concurrentExamName: string;
     concurrentExamId: string;
+    concurrentAssignmentId: string;
     clashCount: number;
+    clashingStudents: ClashStudent[];
 }
 
 interface Period { id: string; date: string; startTime: string; endTime: string; length: number; }
@@ -85,6 +88,7 @@ export default function SchedulePage() {
     // Highlighted card (from "jump to" in modal)
     const [highlightedId, setHighlightedId] = useState<string | null>(null);
     const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
+    const [expandedClash, setExpandedClash] = useState<number | null>(null);
 
     // Modal state
     const [detailLoading, setDetailLoading] = useState(false);
@@ -95,6 +99,7 @@ export default function SchedulePage() {
     const openAssignmentDetails = async (assignmentId: string) => {
         setIsDialogOpen(true);
         setDetailLoading(true);
+        setExpandedClash(null);
         try {
             const res = await fetch(`/api/schedule/details?assignmentId=${assignmentId}`);
             const data = await res.json();
@@ -566,22 +571,42 @@ export default function SchedulePage() {
                                         {clashes.length} Student Clash{clashes.length !== 1 ? "es" : ""} Detected
                                     </div>
                                     <p className="text-xs text-destructive/70">
-                                        These exams run at the same time and share enrolled students.
+                                        These exams run at the same time and share enrolled students. Click to see affected students.
                                     </p>
                                     <ul className="space-y-2">
                                         {clashes.map((c, i) => {
                                             const severity = c.clashCount >= 5 ? "🔴 High" : c.clashCount >= 2 ? "🟡 Moderate" : "🟠 Low";
+                                            const isExpanded = expandedClash === i;
                                             return (
-                                                <li key={i} className="flex items-center justify-between rounded-lg bg-destructive/10 px-3 py-2 text-sm">
-                                                    <div className="flex flex-col">
-                                                        <span className="font-medium text-destructive">{c.concurrentExamName}</span>
-                                                        <span className="text-xs text-destructive/60">{severity}</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <Badge variant="destructive" className="text-[11px]">
-                                                            {c.clashCount} student{c.clashCount !== 1 ? "s" : ""}
-                                                        </Badge>
-                                                    </div>
+                                                <li key={i} className="rounded-lg bg-destructive/10 overflow-hidden">
+                                                    <button
+                                                        className="w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-destructive/15 transition-colors"
+                                                        onClick={() => setExpandedClash(isExpanded ? null : i)}
+                                                    >
+                                                        <div className="flex flex-col items-start">
+                                                            <span className="font-medium text-destructive">{c.concurrentExamName}</span>
+                                                            <span className="text-xs text-destructive/60">{severity}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <Badge variant="destructive" className="text-[11px]">
+                                                                {c.clashCount} student{c.clashCount !== 1 ? "s" : ""}
+                                                            </Badge>
+                                                            {isExpanded ? <ChevronUp className="h-3 w-3 text-destructive" /> : <ChevronDown className="h-3 w-3 text-destructive" />}
+                                                        </div>
+                                                    </button>
+                                                    {isExpanded && (
+                                                        <div className="px-3 pb-3 border-t border-destructive/20">
+                                                            <p className="text-xs font-semibold text-destructive/70 uppercase tracking-wider mt-2 mb-1.5">Affected Students</p>
+                                                            <ul className="space-y-1">
+                                                                {c.clashingStudents.map(s => (
+                                                                    <li key={s.id} className="flex items-center justify-between text-xs rounded-md bg-destructive/10 px-2.5 py-1.5">
+                                                                        <span className="font-medium text-destructive">{s.name}</span>
+                                                                        <span className="text-destructive/50 font-mono">{s.externalId}</span>
+                                                                    </li>
+                                                                ))}
+                                                            </ul>
+                                                        </div>
+                                                    )}
                                                 </li>
                                             );
                                         })}
