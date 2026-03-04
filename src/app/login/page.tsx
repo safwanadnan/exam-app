@@ -1,90 +1,16 @@
-"use client";
+import { redirect } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import LoginClient from "./login-client";
 
-import { useState } from "react";
-import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { CalendarCheck, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "sonner";
+export default async function LoginPage() {
+    // Check if any users exist in the database
+    const userCount = await prisma.user.count();
 
-export default function LoginPage() {
-    const router = useRouter();
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [loading, setLoading] = useState(false);
+    // If no users exist, mandate that they go to the signup page first
+    if (userCount === 0) {
+        redirect("/signup");
+    }
 
-    const handleLogin = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-
-        try {
-            const res = await signIn("credentials", {
-                email,
-                password,
-                redirect: false,
-            });
-
-            if (res?.error) {
-                toast.error(res.error);
-            } else {
-                toast.success("Logged in successfully");
-                router.push("/");
-                router.refresh(); // Refresh to update server components with session
-            }
-        } catch (error) {
-            toast.error("An error occurred during login");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    return (
-        <div className="flex h-screen w-full items-center justify-center bg-muted/20 px-4">
-            <Card className="w-full max-w-sm">
-                <CardHeader className="space-y-2 text-center">
-                    <div className="flex justify-center mb-2">
-                        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                            <CalendarCheck className="h-6 w-6 text-primary" />
-                        </div>
-                    </div>
-                    <CardTitle className="text-2xl font-bold">Exam Scheduler</CardTitle>
-                    <CardDescription>Enter your email and password to access your account</CardDescription>
-                </CardHeader>
-                <form onSubmit={handleLogin}>
-                    <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="email">Email</Label>
-                            <Input
-                                id="email"
-                                type="email"
-                                placeholder="admin@example.com"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="password">Password</Label>
-                            <Input
-                                id="password"
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                            />
-                        </div>
-                    </CardContent>
-                    <CardFooter>
-                        <Button type="submit" className="w-full" disabled={loading}>
-                            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Sign In
-                        </Button>
-                    </CardFooter>
-                </form>
-            </Card>
-        </div>
-    );
+    // If users do exist, show the login form and hide the signup link
+    return <LoginClient hasUsers={userCount > 0} />;
 }

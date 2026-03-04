@@ -12,10 +12,11 @@ export const config = {
          * Match all request paths except for the ones starting with:
          * - api/auth (auth endpoints)
          * - login (login page)
+         * - signup (signup page)
          * - _next/static (static files)
          * - _next/image (image optimization files)
          * - favicon.ico (favicon file)
          */
-        "/((?!api/auth|login|_next/static|_next/image|favicon.ico).*)",
+        "/((?!api/auth|login|signup|_next/static|_next/image|favicon.ico).*)",
     ],
 };
