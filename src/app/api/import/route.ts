@@ -42,6 +42,17 @@ const importSchema = z.object({
             size: z.number().int(),
             maxRooms: z.number().int().default(4),
             altSeating: z.boolean().default(false),
+            courseCode: z.string().optional(),
+            courseTitle: z.string().optional(),
+            sectionNumber: z.string().optional(),
+            instructors: z.array(z.object({
+                externalId: z.string(),
+                name: z.string(),
+            })).optional(),
+            students: z.array(z.object({
+                externalId: z.string(),
+                name: z.string(),
+            })).optional()
         })).optional()
     })).optional(),
 });
@@ -88,6 +99,9 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
 
         // 3. Create Exam Types, Periods & Exams
         if (data.examTypes) {
+            let defaultDeptId = "";
+            let defaultSubjId = "";
+
             for (const et of data.examTypes) {
                 const examType = await tx.examType.create({
                     data: {
@@ -95,21 +109,95 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
                         code: et.code,
                         sessionId: session.id,
                         periods: {
-                            create: et.periods.map(p => ({
+                            create: et.periods.map((p: any) => ({
                                 ...p,
                                 date: new Date(p.date)
                             }))
-                        },
-                        exams: et.exams ? {
-                            create: et.exams.map(e => ({
-                                ...e
-                            }))
-                        } : undefined
+                        }
                     }
                 });
                 stats.examTypes++;
                 stats.periods += et.periods.length;
                 stats.exams += et.exams?.length || 0;
+
+                if (et.exams) {
+                    for (const currExam of et.exams) {
+                        // Handle Course/Section
+                        let sectionId: string | undefined = undefined;
+                        if (currExam.courseCode) {
+                            if (!defaultDeptId) {
+                                const dept = await tx.department.upsert({
+                                    where: { code_sessionId: { code: "GEN", sessionId: session.id } },
+                                    create: { code: "GEN", name: "General Dept", sessionId: session.id },
+                                    update: {}
+                                });
+                                defaultDeptId = dept.id;
+                                const subj = await tx.subject.upsert({
+                                    where: { code_departmentId: { code: "GEN", departmentId: dept.id } },
+                                    create: { code: "GEN", name: "General Subject", departmentId: dept.id },
+                                    update: {}
+                                });
+                                defaultSubjId = subj.id;
+                            }
+
+                            const course = await tx.course.upsert({
+                                where: { courseNumber_subjectId_sessionId: { courseNumber: currExam.courseCode, subjectId: defaultSubjId, sessionId: session.id } },
+                                create: { courseNumber: currExam.courseCode, title: currExam.courseTitle || currExam.courseCode, subjectId: defaultSubjId, sessionId: session.id },
+                                update: {}
+                            });
+
+                            const section = await tx.section.upsert({
+                                where: { sectionNumber_courseId: { sectionNumber: currExam.sectionNumber || "001", courseId: course.id } },
+                                create: { sectionNumber: currExam.sectionNumber || "001", courseId: course.id },
+                                update: {}
+                            });
+                            sectionId = section.id;
+                        }
+
+                        // Create the Exam
+                        const exam = await tx.exam.create({
+                            data: {
+                                name: currExam.name,
+                                length: currExam.length,
+                                size: currExam.size,
+                                maxRooms: currExam.maxRooms,
+                                altSeating: currExam.altSeating,
+                                examTypeId: examType.id,
+                                owners: sectionId ? {
+                                    create: [{ sectionId }]
+                                } : undefined
+                            }
+                        });
+
+                        // Create Instructors
+                        if (currExam.instructors) {
+                            for (const ins of currExam.instructors) {
+                                const instructor = await tx.instructor.upsert({
+                                    where: { externalId: ins.externalId },
+                                    create: { externalId: ins.externalId, name: ins.name },
+                                    update: {}
+                                });
+                                await tx.instructorAssignment.create({
+                                    data: { instructorId: instructor.id, examId: exam.id }
+                                });
+                            }
+                        }
+
+                        // Create Students & Enrollments
+                        if (currExam.students && sectionId) {
+                            for (const stu of currExam.students) {
+                                const student = await tx.student.upsert({
+                                    where: { externalId: stu.externalId },
+                                    create: { externalId: stu.externalId, name: stu.name },
+                                    update: {}
+                                });
+                                await tx.studentEnrollment.create({
+                                    data: { studentId: student.id, sectionId: sectionId, examId: exam.id }
+                                });
+                            }
+                        }
+                    }
+                }
             }
         }
 
