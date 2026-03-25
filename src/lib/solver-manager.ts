@@ -51,12 +51,42 @@ export async function startSolverRun(runId: string, sessionId: string, configId:
     };
     activeSolvers.set(runId, state);
 
+    let lastPersistedAt = 0;
+    let persistInFlight = false;
+
     // Set up progress reporting
     solver.setProgressCallback((progress) => {
         state.latestProgress = progress;
         // Emit custom event
         const event = new CustomEvent("progress", { detail: progress });
         emitter.dispatchEvent(event);
+
+        // Persist snapshots periodically so other worker processes can stream progress.
+        const now = Date.now();
+        if (persistInFlight || now - lastPersistedAt < 1500) return;
+
+        lastPersistedAt = now;
+        persistInFlight = true;
+
+        prisma.solverRun.update({
+            where: { id: runId },
+            data: {
+                status: "RUNNING",
+                phase: progress.phase,
+                iterations: progress.iteration,
+                totalExams: progress.totalExams,
+                assignedExams: progress.assignedExams,
+                directConflicts: progress.directConflicts,
+                backToBackConflicts: progress.backToBackConflicts,
+                moreThan2ADay: progress.moreThan2ADay,
+                totalPenalty: progress.totalPenalty,
+                bestObjective: progress.bestObjective,
+            },
+        }).catch((e) => {
+            console.error("[SolverManager] Failed to persist progress snapshot:", e);
+        }).finally(() => {
+            persistInFlight = false;
+        });
     });
 
     // Run the solver in the background

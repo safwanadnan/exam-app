@@ -11,7 +11,7 @@
  * The solver runs asynchronously and emits progress events.
  */
 import { ExamModel, Exam, ExamPlacement, ExamPeriodPlacement } from "./model";
-import { type ExamNeighbour, ExamSimpleNeighbour } from "./neighbours/ExamNeighbour";
+import { type ExamNeighbour } from "./neighbours/ExamNeighbour";
 import {
     generateRandomMove,
     generateTimeMove,
@@ -91,6 +91,7 @@ export class ExamSolver {
     private iteration: number = 0;
     private startTime: number = 0;
     private bestObjective: number = Infinity;
+    private bestAssignedCount: number = 0;
     private bestAssignments: Map<string, ExamPlacement> = new Map();
     private shouldStop: boolean = false;
     private onProgress: SolverProgressCallback | null = null;
@@ -148,6 +149,7 @@ export class ExamSolver {
         this.shouldStop = false;
         this.iteration = 0;
         this.bestObjective = Infinity;
+        this.bestAssignedCount = 0;
 
         try {
             // PHASE 1: Construction
@@ -717,7 +719,11 @@ export class ExamSolver {
     /** Save current solution if it's the best so far */
     private saveBestIfImproved(): void {
         const obj = this.model.getTotalObjective();
-        if (obj < this.bestObjective) {
+        const assigned = this.model.nrAssigned;
+        const better = assigned > this.bestAssignedCount || (assigned === this.bestAssignedCount && obj < this.bestObjective);
+
+        if (better) {
+            this.bestAssignedCount = assigned;
             this.bestObjective = obj;
             this.bestAssignments.clear();
             for (const exam of this.model.exams) {
@@ -796,7 +802,32 @@ export class ExamSolver {
     // ===================== DIAGNOSTICS BUILDER =====================
 
     private buildDiagnostics(): SolverDiagnostics {
-        const examDiagnostics = [...this.examDiagnostics.values()];
+        const examDiagnostics = this.model.exams.map((exam) => {
+            const existing = this.examDiagnostics.get(exam.id);
+            if (existing) {
+                return {
+                    ...existing,
+                    assigned: exam.isAssigned,
+                };
+            }
+
+            return {
+                examId: exam.id,
+                examName: exam.name,
+                examSize: exam.size,
+                assigned: exam.isAssigned,
+                failureReasons: [],
+                details: exam.isAssigned ? [] : ["Exam is unassigned in final solution"],
+                periodsTried: 0,
+                periodsInDomain: exam.periodPlacements.length,
+                periodRejections: {
+                    studentConflicts: 0,
+                    instructorConflicts: 0,
+                    hardConstraints: 0,
+                    noRooms: 0,
+                },
+            };
+        });
         const unassigned = examDiagnostics.filter(d => !d.assigned);
         const assigned = examDiagnostics.filter(d => d.assigned);
 
@@ -831,6 +862,8 @@ export class ExamSolver {
 
         if (unassigned.length === 0) {
             topIssues.push("All exams were successfully assigned!");
+        } else {
+            topIssues.push(`${unassigned.length} exam(s) remain unassigned in the final solution.`);
         }
 
         // Add optimization phase summaries

@@ -341,6 +341,11 @@ export class ExamModel {
         const cfg = this.config;
         let total = 0;
 
+        // Strongly prioritize complete assignment before conflict minimization.
+        // Without this, partially-assigned schedules can look artificially "better".
+        const unassignedPenalty = cfg.directConflictWeight * 100;
+        total += this.nrUnassigned * unassignedPenalty;
+
         total += this.countDirectConflicts() * cfg.directConflictWeight;
         total += this.countBackToBackConflicts() * cfg.backToBackConflictWeight;
         total += this.countMoreThan2ADay() * cfg.moreThan2ADayWeight;
