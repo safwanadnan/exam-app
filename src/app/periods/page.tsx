@@ -12,6 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { HelpTip } from "@/components/tip";
+import { DataPagination } from "@/components/data-pagination";
 
 interface Period {
     id: string; date: string; startTime: string; endTime: string;
@@ -108,18 +109,21 @@ export default function PeriodsPage() {
     const [editPeriod, setEditPeriod] = useState<Period | null>(null);
     const [editOpen, setEditOpen] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<Period | null>(null);
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
 
-    const fetchPeriods = async () => {
+    const fetchPeriods = async (currentPage = page) => {
         setLoading(true);
         try {
-            const res = await fetch("/api/periods?limit=100");
+            const res = await fetch(`/api/periods?page=${currentPage}&limit=50`);
             const data = await res.json();
             setPeriods(data.periods || []);
+            setTotalPages(Math.ceil((data.total || 0) / 50) || 1);
         } catch { toast.error("Failed to load periods"); }
         finally { setLoading(false); }
     };
 
-    useEffect(() => { fetchPeriods(); }, []);
+    useEffect(() => { fetchPeriods(page); }, [page]);
 
     const handleDelete = async () => {
         if (!deleteTarget) return;
@@ -206,7 +210,8 @@ export default function PeriodsPage() {
                     )}
                 </CardContent>
             </Card>
-            <PeriodDialog period={editPeriod} open={editOpen} onOpenChange={setEditOpen} onSaved={fetchPeriods} />
+            <DataPagination page={page} totalPages={totalPages} onPageChange={setPage} />
+            <PeriodDialog period={editPeriod} open={editOpen} onOpenChange={setEditOpen} onSaved={() => fetchPeriods(page)} />
             <DeleteDialog open={!!deleteTarget} onOpenChange={o => { if (!o) setDeleteTarget(null); }} onConfirm={handleDelete} title={deleteTarget ? `${deleteTarget.startTime} on ${format(new Date(deleteTarget.date), "MMM d")}` : ""} />
         </div>
     );

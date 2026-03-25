@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { HelpTip, Tip } from "@/components/tip";
 import { format } from "date-fns";
+import { DataPagination } from "@/components/data-pagination";
 
 interface Student {
     id: string; externalId: string; name: string;
@@ -79,6 +80,8 @@ export default function StudentsPage() {
     const [loading, setLoading] = useState(true);
     const [total, setTotal] = useState(0);
     const [search, setSearch] = useState("");
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
     const [addOpen, setAddOpen] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<Student | null>(null);
 
@@ -93,22 +96,25 @@ export default function StudentsPage() {
     const [selectedPeriods, setSelectedPeriods] = useState<string[]>([]);
     const [saving, setSaving] = useState(false);
 
-    const fetchStudents = async (q = search) => {
+    const fetchStudents = async (q = search, currentPage = page) => {
         setLoading(true);
         try {
-            const params = new URLSearchParams({ limit: "50" });
+            const params = new URLSearchParams({ limit: "50", page: currentPage.toString() });
             if (q) params.set("search", q);
             const res = await fetch(`/api/students?${params}`);
             const data = await res.json();
-            setStudents(data.students || []); setTotal(data.total || 0);
+            setStudents(data.students || []);
+            setTotal(data.total || 0);
+            setTotalPages(Math.ceil((data.total || 0) / 50) || 1);
         } catch { toast.error("Failed to load students"); }
         finally { setLoading(false); }
     };
 
-    useEffect(() => { fetchStudents(); }, []);
+    useEffect(() => { fetchStudents(search, page); }, [page]);
 
     useEffect(() => {
-        const t = setTimeout(() => fetchStudents(search), 300);
+        setPage(1);
+        const t = setTimeout(() => fetchStudents(search, 1), 300);
         return () => clearTimeout(t);
     }, [search]);
 
@@ -232,6 +238,7 @@ export default function StudentsPage() {
                     )}
                 </CardContent>
             </Card>
+            <DataPagination page={page} totalPages={totalPages} onPageChange={setPage} />
 
             {/* ── Student Detail Panel ── */}
             <Dialog open={detailOpen} onOpenChange={setDetailOpen}>

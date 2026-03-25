@@ -103,19 +103,42 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
             let defaultSubjId = "";
 
             for (const et of data.examTypes) {
-                const examType = await tx.examType.create({
-                    data: {
+                const examType = await tx.examType.upsert({
+                    where: { code_sessionId: { code: et.code, sessionId: session.id } },
+                    create: {
                         name: et.name,
                         code: et.code,
                         sessionId: session.id,
-                        periods: {
-                            create: et.periods.map((p: any) => ({
-                                ...p,
-                                date: new Date(p.date)
-                            }))
-                        }
+                    },
+                    update: {
+                        name: et.name,
                     }
                 });
+
+                // Import periods safely with Upsert
+                for (const p of et.periods) {
+                    await tx.examPeriod.upsert({
+                        where: {
+                            date_startTime_examTypeId: {
+                                date: new Date(p.date),
+                                startTime: p.startTime,
+                                examTypeId: examType.id
+                            }
+                        },
+                        create: {
+                            ...p,
+                            date: new Date(p.date),
+                            examTypeId: examType.id
+                        },
+                        update: {
+                            endTime: p.endTime,
+                            length: p.length,
+                            day: p.day,
+                            timeIndex: p.timeIndex,
+                            penalty: p.penalty
+                        }
+                    });
+                }
                 stats.examTypes++;
                 stats.periods += et.periods.length;
                 stats.exams += et.exams?.length || 0;

@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { HelpTip, Tip } from "@/components/tip";
+import { DataPagination } from "@/components/data-pagination";
 
 interface Instructor {
     id: string; externalId: string; name: string;
@@ -35,6 +36,8 @@ export default function InstructorsPage() {
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
 
     // Detail panel
     const [detailOpen, setDetailOpen] = useState(false);
@@ -63,19 +66,25 @@ export default function InstructorsPage() {
     const [selectedPeriods, setSelectedPeriods] = useState<string[]>([]);
 
     useEffect(() => {
+        setPage(1);
         const t = setTimeout(() => setDebouncedSearch(search), 300);
         return () => clearTimeout(t);
     }, [search]);
 
-    const fetchInstructors = useCallback(() => {
+    const fetchInstructors = useCallback((currentPage = page) => {
         setLoading(true);
-        fetch(`/api/instructors?search=${encodeURIComponent(debouncedSearch)}&limit=100`)
+        fetch(`/api/instructors?search=${encodeURIComponent(debouncedSearch)}&page=${currentPage}&limit=50`)
             .then(r => r.json())
-            .then(d => { setInstructors(d.instructors || []); setTotal(d.total || 0); setLoading(false); })
+            .then(d => {
+                setInstructors(d.instructors || []);
+                setTotal(d.total || 0);
+                setTotalPages(Math.ceil((d.total || 0) / 50) || 1);
+                setLoading(false);
+            })
             .catch(() => setLoading(false));
-    }, [debouncedSearch]);
+    }, [debouncedSearch, page]);
 
-    useEffect(() => { fetchInstructors(); }, [fetchInstructors]);
+    useEffect(() => { fetchInstructors(page); }, [fetchInstructors, page]);
 
     const openDetail = async (instructor: Instructor) => {
         setDetailOpen(true);
@@ -257,6 +266,7 @@ export default function InstructorsPage() {
                     )}
                 </CardContent>
             </Card>
+            <DataPagination page={page} totalPages={totalPages} onPageChange={setPage} />
 
             {/* ── Detail Panel ── */}
             <Dialog open={detailOpen} onOpenChange={setDetailOpen}>

@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { DataPagination } from "@/components/data-pagination";
 
 export default function AcademicStructurePage() {
     const [sessions, setSessions] = useState<any[]>([]);
@@ -30,6 +31,8 @@ export default function AcademicStructurePage() {
     const [createType, setCreateType] = useState<"dept" | "subj" | "course" | "section" | null>(null);
     const [createParentId, setCreateParentId] = useState<string>("");
     const [formData, setFormData] = useState({ code: "", name: "", title: "", length: 0 });
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
 
     useEffect(() => {
         fetch("/api/sessions").then(r => r.json()).then(data => {
@@ -40,12 +43,17 @@ export default function AcademicStructurePage() {
         });
     }, []);
 
-    useEffect(() => {
+    const fetchDepartments = async (currentPage = page) => {
         if (!selectedSessionId) return;
-        fetch(`/api/departments?sessionId=${selectedSessionId}`).then(r => r.json()).then(data => {
+        try {
+            const res = await fetch(`/api/departments?sessionId=${selectedSessionId}&page=${currentPage}&limit=50`);
+            const data = await res.json();
             setDepartments(data.departments || []);
-        });
-    }, [selectedSessionId]);
+            setTotalPages(Math.ceil((data.total || 0) / 50) || 1);
+        } catch { toast.error("Failed to load departments"); }
+    };
+
+    useEffect(() => { fetchDepartments(page); }, [selectedSessionId, page]);
 
     const toggleDept = async (deptId: string) => {
         const newSet = new Set(expandedDepts);
@@ -117,9 +125,7 @@ export default function AcademicStructurePage() {
 
             // Re-fetch parent level
             if (createType === "dept") {
-                const dRes = await fetch(`/api/departments?sessionId=${selectedSessionId}`);
-                const dData = await dRes.json();
-                setDepartments(dData.departments);
+                fetchDepartments(page);
             } else if (createType === "subj") {
                 const sRes = await fetch(`/api/subjects?departmentId=${createParentId}`);
                 const sData = await sRes.json();
@@ -257,6 +263,7 @@ export default function AcademicStructurePage() {
                     )}
                 </CardContent>
             </Card>
+            <DataPagination page={page} totalPages={totalPages} onPageChange={setPage} />
 
             {/* Shared Creation Dialogs for intermediate levels */}
             <Dialog open={createType !== null && createType !== "dept"} onOpenChange={(o) => !o && setCreateType(null)}>

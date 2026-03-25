@@ -1,34 +1,38 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { NextRequest, NextResponse } from "next/server";
+import { prisma, jsonResponse, getPagination, withErrorHandling, parseBody } from "@/lib/api-helpers";
+import { z } from "zod";
 
-export async function GET(request: Request) {
-    const { searchParams } = new URL(request.url);
-    const sessionId = searchParams.get("sessionId");
+export const GET = withErrorHandling(async (req: NextRequest) => {
+    const { skip, limit, page } = getPagination(req);
+    const url = new URL(req.url);
+    const sessionId = url.searchParams.get("sessionId");
+    const where = sessionId ? { sessionId } : {};
 
-    try {
-        const departments = await prisma.department.findMany({
-            where: sessionId ? { sessionId } : undefined,
+    const [departments, total] = await Promise.all([
+        prisma.department.findMany({
+            where,
             include: { _count: { select: { subjects: true } } },
-            orderBy: { code: 'asc' }
-        });
-        return NextResponse.json({ departments });
-    } catch (error) {
-        return NextResponse.json({ error: "Failed to fetch departments" }, { status: 500 });
-    }
-}
+            orderBy: { code: 'asc' },
+            skip,
+            take: limit,
+        }),
+        prisma.department.count({ where })
+    ]);
+    return jsonResponse({ departments, total, page, limit });
+});
 
-export async function POST(request: Request) {
-    try {
-        const body = await request.json();
-        const department = await prisma.department.create({
-            data: {
-                code: body.code,
-                name: body.name,
-                sessionId: body.sessionId,
-            }
-        });
-        return NextResponse.json({ department });
-    } catch (error) {
-        return NextResponse.json({ error: "Failed to create department" }, { status: 500 });
-    }
-}
+const departmentSchema = z.object({
+    code: z.string().min(1),
+    name: z.string().min(1),
+    sessionId: z.string().min(1),
+});
+
+export const POST = withErrorHandling(async (req: NextRequest) => {
+    const parsed = await parseBody(req, departmentSchema);
+    if (parsed.error) return parsed.error;
+
+    const department = await prisma.department.create({
+        data: parsed.data
+    });
+    return jsonResponse(department, 201);
+});

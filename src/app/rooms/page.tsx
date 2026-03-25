@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { HelpTip, Tip } from "@/components/tip";
+import { DataPagination } from "@/components/data-pagination";
 
 interface Room {
     id: string; name: string; capacity: number; altCapacity: number | null;
@@ -163,6 +164,8 @@ export default function RoomsPage() {
     const [buildings, setBuildings] = useState<BuildingData[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
     const [buildingDialogOpen, setBuildingDialogOpen] = useState(false);
     const [editBuilding, setEditBuilding] = useState<BuildingData | null>(null);
     const [roomDialogOpen, setRoomDialogOpen] = useState(false);
@@ -181,17 +184,18 @@ export default function RoomsPage() {
     const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
     const [savingFeatures, setSavingFeatures] = useState(false);
 
-    const fetchData = async () => {
+    const fetchData = async (currentPage = page) => {
         setLoading(true);
         try {
-            const res = await fetch("/api/buildings?limit=100");
+            const res = await fetch(`/api/buildings?page=${currentPage}&limit=50`);
             const data = await res.json();
             setBuildings(data.buildings || []);
+            setTotalPages(Math.ceil((data.total || 0) / 50) || 1);
         } catch { toast.error("Failed to load buildings"); }
         finally { setLoading(false); }
     };
 
-    useEffect(() => { fetchData(); }, []);
+    useEffect(() => { fetchData(page); }, [page]);
 
     const handleDelete = async () => {
         if (!deleteTarget) return;
@@ -351,10 +355,11 @@ export default function RoomsPage() {
                         </Card>
                     ))
                 )}
+                <DataPagination page={page} totalPages={totalPages} onPageChange={setPage} />
             </div>
 
-            <BuildingDialog building={editBuilding} open={buildingDialogOpen} onOpenChange={setBuildingDialogOpen} onSaved={fetchData} />
-            <RoomDialog room={editRoom} buildings={buildings} open={roomDialogOpen} onOpenChange={setRoomDialogOpen} onSaved={fetchData} />
+            <BuildingDialog building={editBuilding} open={buildingDialogOpen} onOpenChange={setBuildingDialogOpen} onSaved={() => fetchData(page)} />
+            <RoomDialog room={editRoom} buildings={buildings} open={roomDialogOpen} onOpenChange={setRoomDialogOpen} onSaved={() => fetchData(page)} />
             <DeleteDialog open={!!deleteTarget} onOpenChange={o => { if (!o) setDeleteTarget(null); }} onConfirm={handleDelete} title={deleteTarget?.name || ""} />
 
             {/* Room Unavailability Dialog */}

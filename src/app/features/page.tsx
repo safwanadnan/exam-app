@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { HelpTip } from "@/components/tip";
+import { DataPagination } from "@/components/data-pagination";
 
 interface Feature {
     id: string; name: string; code: string;
@@ -67,6 +68,8 @@ export default function FeaturesPage() {
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
     const [addOpen, setAddOpen] = useState(false);
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
 
     useEffect(() => {
         fetch("/api/sessions").then(r => r.json()).then(data => {
@@ -77,18 +80,19 @@ export default function FeaturesPage() {
         });
     }, []);
 
-    const fetchFeatures = async () => {
+    const fetchFeatures = async (currentPage = page) => {
         if (!selectedSessionId) return;
         setLoading(true);
         try {
-            const res = await fetch(`/api/features?sessionId=${selectedSessionId}`);
+            const res = await fetch(`/api/features?sessionId=${selectedSessionId}&page=${currentPage}&limit=50`);
             const data = await res.json();
             setFeatures(data.features || []);
+            setTotalPages(Math.ceil((data.total || 0) / 50) || 1);
         } catch { toast.error("Failed to load features"); }
         finally { setLoading(false); }
     };
 
-    useEffect(() => { fetchFeatures(); }, [selectedSessionId]);
+    useEffect(() => { fetchFeatures(page); }, [selectedSessionId, page]);
 
     const filtered = features.filter(f => search === "" || f.name.toLowerCase().includes(search.toLowerCase()) || f.code.toLowerCase().includes(search.toLowerCase()));
 
@@ -143,8 +147,9 @@ export default function FeaturesPage() {
                     )}
                 </CardContent>
             </Card>
+            <DataPagination page={page} totalPages={totalPages} onPageChange={setPage} />
 
-            <FeatureDialog open={addOpen} onOpenChange={setAddOpen} onSaved={fetchFeatures} sessionId={selectedSessionId} />
+            <FeatureDialog open={addOpen} onOpenChange={setAddOpen} onSaved={() => fetchFeatures(page)} sessionId={selectedSessionId} />
         </div>
     );
 }

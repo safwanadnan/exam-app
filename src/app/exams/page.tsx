@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { HelpTip, Tip } from "@/components/tip";
+import { DataPagination } from "@/components/data-pagination";
 
 interface Exam {
     id: string; name: string; length: number; maxRooms: number; altSeating: boolean;
@@ -160,6 +161,8 @@ export default function ExamsPage() {
     const [editExam, setEditExam] = useState<Exam | null>(null);
     const [editOpen, setEditOpen] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<Exam | null>(null);
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
 
     // Features
     const [showFeatures, setShowFeatures] = useState<Exam | null>(null);
@@ -171,17 +174,18 @@ export default function ExamsPage() {
     const [detailOpen, setDetailOpen] = useState(false);
     const [detailExam, setDetailExam] = useState<Exam | null>(null);
 
-    const fetchExams = async () => {
+    const fetchExams = async (currentPage = page) => {
         setLoading(true);
         try {
-            const res = await fetch("/api/exams?limit=100");
+            const res = await fetch(`/api/exams?page=${currentPage}&limit=50`);
             const data = await res.json();
             setExams(data.exams || []);
+            setTotalPages(Math.ceil((data.total || 0) / 50) || 1);
         } catch { toast.error("Failed to load exams"); }
         finally { setLoading(false); }
     };
 
-    useEffect(() => { fetchExams(); }, []);
+    useEffect(() => { fetchExams(page); }, [page]);
 
     const handleDelete = async () => {
         if (!deleteTarget) return;
@@ -310,8 +314,9 @@ export default function ExamsPage() {
                     )}
                 </CardContent>
             </Card>
+            <DataPagination page={page} totalPages={totalPages} onPageChange={setPage} />
 
-            <ExamDialog exam={editExam} open={editOpen} onOpenChange={setEditOpen} onSaved={fetchExams} />
+            <ExamDialog exam={editExam} open={editOpen} onOpenChange={setEditOpen} onSaved={() => fetchExams(page)} />
             <DeleteDialog open={!!deleteTarget} onOpenChange={o => { if (!o) setDeleteTarget(null); }} onConfirm={handleDelete} title={deleteTarget?.name || "this exam"} />
 
             {/* ── Exam Detail Panel ── */}

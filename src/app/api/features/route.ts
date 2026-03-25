@@ -1,33 +1,37 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { NextRequest, NextResponse } from "next/server";
+import { prisma, jsonResponse, getPagination, withErrorHandling, parseBody } from "@/lib/api-helpers";
+import { z } from "zod";
 
-export async function GET(request: Request) {
-    const { searchParams } = new URL(request.url);
-    const sessionId = searchParams.get("sessionId");
+export const GET = withErrorHandling(async (req: NextRequest) => {
+    const { skip, limit, page } = getPagination(req);
+    const url = new URL(req.url);
+    const sessionId = url.searchParams.get("sessionId");
+    const where = sessionId ? { sessionId } : {};
 
-    try {
-        const features = await prisma.roomFeature.findMany({
-            where: sessionId ? { sessionId } : undefined,
-            orderBy: { name: 'asc' }
-        });
-        return NextResponse.json({ features });
-    } catch (error) {
-        return NextResponse.json({ error: "Failed to fetch features" }, { status: 500 });
-    }
-}
+    const [features, total] = await Promise.all([
+        prisma.roomFeature.findMany({
+            where,
+            orderBy: { name: 'asc' },
+            skip,
+            take: limit,
+        }),
+        prisma.roomFeature.count({ where })
+    ]);
+    return jsonResponse({ features, total, page, limit });
+});
 
-export async function POST(request: Request) {
-    try {
-        const body = await request.json();
-        const feature = await prisma.roomFeature.create({
-            data: {
-                name: body.name,
-                code: body.code,
-                sessionId: body.sessionId,
-            }
-        });
-        return NextResponse.json({ feature });
-    } catch (error) {
-        return NextResponse.json({ error: "Failed to create feature" }, { status: 500 });
-    }
-}
+const featureSchema = z.object({
+    name: z.string().min(1),
+    code: z.string().min(1),
+    sessionId: z.string().min(1),
+});
+
+export const POST = withErrorHandling(async (req: NextRequest) => {
+    const parsed = await parseBody(req, featureSchema);
+    if (parsed.error) return parsed.error;
+
+    const feature = await prisma.roomFeature.create({
+        data: parsed.data
+    });
+    return jsonResponse(feature, 201);
+});

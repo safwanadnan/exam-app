@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { HelpTip } from "@/components/tip";
+import { DataPagination } from "@/components/data-pagination";
 
 const CONSTRAINT_TYPES = [
     "SAME_ROOM", "DIFF_ROOM", "SAME_PERIOD", "DIFF_PERIOD",
@@ -141,20 +142,23 @@ export default function ConstraintsPage() {
     const [formOpen, setFormOpen] = useState(false);
     const [editConstraint, setEditConstraint] = useState<Constraint | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<Constraint | null>(null);
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
 
-    const fetchData = async () => {
+    const fetchData = async (currentPage = page) => {
         setLoading(true);
         try {
-            const [cRes, eRes] = await Promise.all([fetch("/api/constraints?limit=100"), fetch("/api/exams?limit=500")]);
+            const [cRes, eRes] = await Promise.all([fetch(`/api/constraints?page=${currentPage}&limit=50`), fetch("/api/exams?limit=500")]);
             const cData = await cRes.json();
             const eData = await eRes.json();
             setConstraints(cData.constraints || []);
+            setTotalPages(Math.ceil((cData.total || 0) / 50) || 1);
             setExams((eData.exams || []).map((e: any) => ({ id: e.id, name: e.name || "Unnamed" })));
         } catch { toast.error("Failed to load data"); }
         finally { setLoading(false); }
     };
 
-    useEffect(() => { fetchData(); }, []);
+    useEffect(() => { fetchData(page); }, [page]);
 
     const handleDelete = async () => {
         if (!deleteTarget) return;
@@ -237,8 +241,9 @@ export default function ConstraintsPage() {
                     )}
                 </CardContent>
             </Card>
+            <DataPagination page={page} totalPages={totalPages} onPageChange={setPage} />
 
-            <ConstraintDialog constraint={editConstraint} exams={exams} open={formOpen} onOpenChange={setFormOpen} onSaved={fetchData} />
+            <ConstraintDialog constraint={editConstraint} exams={exams} open={formOpen} onOpenChange={setFormOpen} onSaved={() => fetchData(page)} />
             <DeleteDialog open={!!deleteTarget} onOpenChange={o => { if (!o) setDeleteTarget(null); }} onConfirm={handleDelete} />
         </div>
     );

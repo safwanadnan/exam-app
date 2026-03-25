@@ -19,6 +19,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { HelpTip, Tip } from "@/components/tip";
+import { DataPagination } from "@/components/data-pagination";
 
 interface Session {
     id: string;
@@ -202,13 +203,16 @@ export default function SessionsPage() {
     const [formOpen, setFormOpen] = useState(false);
     const [editSession, setEditSession] = useState<Session | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<Session | null>(null);
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
 
-    const fetchSessions = async () => {
+    const fetchSessions = async (currentPage = page) => {
         setLoading(true);
         try {
-            const res = await fetch("/api/sessions");
+            const res = await fetch(`/api/sessions?page=${currentPage}&limit=50`);
             const data = await res.json();
             setSessions(data.sessions || []);
+            setTotalPages(Math.ceil((data.total || 0) / 50) || 1);
         } catch {
             toast.error("Failed to load sessions");
         } finally {
@@ -216,7 +220,7 @@ export default function SessionsPage() {
         }
     };
 
-    useEffect(() => { fetchSessions(); }, []);
+    useEffect(() => { fetchSessions(page); }, [page]);
 
     const handleDelete = async () => {
         if (!deleteTarget) return;
@@ -322,12 +326,13 @@ export default function SessionsPage() {
                     )}
                 </CardContent>
             </Card>
+            <DataPagination page={page} totalPages={totalPages} onPageChange={setPage} />
 
             <SessionFormDialog
                 session={editSession}
                 open={formOpen}
                 onOpenChange={setFormOpen}
-                onSaved={fetchSessions}
+                onSaved={() => fetchSessions(page)}
             />
 
             <DeleteConfirmDialog

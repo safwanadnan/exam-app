@@ -437,11 +437,11 @@ export default function SolverDashboard() {
                                                 {detailsDiag.topIssues.map((issue: string, i: number) => (
                                                     <div key={i} className="text-sm flex items-start gap-2 p-2 rounded-md bg-muted/50 border">
                                                         {issue.includes("successfully") ? (
-                                                            <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                                                            <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
                                                         ) : issue.includes("reduced") ? (
-                                                            <Activity className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                                                            <Activity className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
                                                         ) : (
-                                                            <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                                                            <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
                                                         )}
                                                         <span>{issue}</span>
                                                     </div>
@@ -567,7 +567,7 @@ export default function SolverDashboard() {
 
                             {!loadingDiag && !detailsDiag && detailsRun.status === "FAILED" && (
                                 <div className="flex items-center gap-2 p-3 rounded-md bg-destructive/10 border border-destructive/20 text-sm">
-                                    <AlertCircle className="h-4 w-4 text-destructive flex-shrink-0" />
+                                    <AlertCircle className="h-4 w-4 text-destructive shrink-0" />
                                     <span>This run failed before producing diagnostics. Check the server console for error details.</span>
                                 </div>
                             )}
