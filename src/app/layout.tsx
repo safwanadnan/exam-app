@@ -38,7 +38,7 @@ export default function RootLayout({
           >
             <TooltipProvider delayDuration={300}>
               <div className="grid h-full lg:grid-cols-[250px_1fr]">
-                <div className="hidden border-r bg-muted/10 lg:block h-full">
+                <div className="hidden border-r bg-muted/10 lg:block h-full overflow-hidden">
                   <Sidebar />
                 </div>
                 <div className="flex flex-col h-full overflow-hidden">

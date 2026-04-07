@@ -26,8 +26,8 @@ export function MobileNav() {
                         className="fixed inset-0 bg-black/50"
                         onClick={() => setOpen(false)}
                     />
-                    <div className="fixed inset-y-0 left-0 w-[280px] bg-background border-r shadow-lg">
-                        <div className="flex items-center justify-end p-4">
+                    <div className="fixed inset-y-0 left-0 w-[280px] bg-background border-r shadow-lg flex flex-col">
+                        <div className="flex items-center justify-end p-2 flex-none">
                             <Button
                                 variant="ghost"
                                 size="icon"
@@ -36,7 +36,7 @@ export function MobileNav() {
                                 <X className="h-5 w-5" />
                             </Button>
                         </div>
-                        <div onClick={() => setOpen(false)}>
+                        <div className="flex-1 overflow-y-auto" onClick={() => setOpen(false)}>
                             <Sidebar />
                         </div>
                     </div>
