@@ -3,11 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
-import { Building2, CalendarDays, GraduationCap, Users, Clock, Settings2, Activity, Loader2, TrendingUp, ArrowRight } from "lucide-react";
+import { Building2, CalendarDays, GraduationCap, Users, Clock, Settings2, Activity, Loader2, TrendingUp, ArrowRight, ChevronDown } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useAcademicSession } from "@/components/academic-session-provider";
 
 interface DashboardData {
   counts: { sessions: number; rooms: number; exams: number; students: number; periods: number; constraints: number };
@@ -18,7 +20,7 @@ interface DashboardData {
 
 const statCards = [
   { key: "sessions", label: "Sessions", icon: CalendarDays, href: "/sessions", desc: "Terms configured", color: "text-blue-500" },
-  { key: "exams", label: "Total Exams", icon: GraduationCap, href: "/exams", desc: "Across all sessions", color: "text-emerald-500" },
+  { key: "exams", label: "Total Exams", icon: GraduationCap, href: "/exams", desc: "Filtered by session", color: "text-emerald-500" },
   { key: "students", label: "Students", icon: Users, href: "/students", desc: "Enrolled in system", color: "text-violet-500" },
   { key: "rooms", label: "Rooms", icon: Building2, href: "/rooms", desc: "Available for scheduling", color: "text-amber-500" },
   { key: "periods", label: "Periods", icon: Clock, href: "/periods", desc: "Time slots configured", color: "text-rose-500" },
@@ -26,17 +28,20 @@ const statCards = [
 ] as const;
 
 export default function DashboardPage() {
+  const { currentSessionId, setCurrentSessionId, sessions } = useAcademicSession();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/stats")
+    setLoading(true);
+    const url = currentSessionId ? `/api/stats?sessionId=${currentSessionId}` : "/api/stats";
+    fetch(url)
       .then(r => r.json())
       .then(d => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));
-  }, []);
+  }, [currentSessionId]);
 
-  if (loading) {
+  if (loading && !data) {
     return (
       <div className="flex flex-1 items-center justify-center p-8">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -52,14 +57,33 @@ export default function DashboardPage() {
 
   return (
     <div className="flex-1 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-          <p className="text-muted-foreground mt-1">Overview of your exam scheduling system</p>
+          <p className="text-muted-foreground mt-1 text-sm">
+            {currentSessionId 
+              ? `Filtering data for ${sessions.find(s => s.id === currentSessionId)?.name || 'selected session'}`
+              : "Overview of your exam scheduling system"}
+          </p>
         </div>
         <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">Active Session:</span>
+            <Select value={currentSessionId || ""} onValueChange={setCurrentSessionId}>
+              <SelectTrigger className="w-[200px] h-9 bg-background shadow-sm border-primary/20">
+                <SelectValue placeholder="Select a session" />
+              </SelectTrigger>
+              <SelectContent>
+                {sessions.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.name} ({s.year})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           {(data?.activeRuns ?? 0) > 0 && (
-            <div className="flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary animate-pulse">
+            <div className="hidden sm:flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary animate-pulse">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
@@ -67,7 +91,7 @@ export default function DashboardPage() {
               {data?.activeRuns} Active {data?.activeRuns === 1 ? 'Run' : 'Runs'}
             </div>
           )}
-          <Button asChild><Link href="/solver"><Activity className="mr-2 h-4 w-4" />Go to Solver</Link></Button>
+          <Button asChild size="sm" className="hidden lg:flex"><Link href="/solver"><Activity className="mr-2 h-4 w-4" />Go to Solver</Link></Button>
         </div>
       </div>
 

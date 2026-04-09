@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { toast } from "sonner";
 import { HelpTip } from "@/components/tip";
 import { DataPagination } from "@/components/data-pagination";
+import { useAcademicSession } from "@/components/academic-session-provider";
 
 interface Period {
     id: string; date: string; startTime: string; endTime: string;
@@ -103,6 +104,7 @@ function DeleteDialog({ open, onOpenChange, onConfirm, title }: { open: boolean;
 }
 
 export default function PeriodsPage() {
+    const { currentSessionId } = useAcademicSession();
     const [periods, setPeriods] = useState<Period[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
@@ -115,7 +117,10 @@ export default function PeriodsPage() {
     const fetchPeriods = async (currentPage = page) => {
         setLoading(true);
         try {
-            const res = await fetch(`/api/periods?page=${currentPage}&limit=50`);
+            const url = currentSessionId 
+                ? `/api/periods?page=${currentPage}&limit=50&sessionId=${currentSessionId}` 
+                : `/api/periods?page=${currentPage}&limit=50`;
+            const res = await fetch(url);
             const data = await res.json();
             setPeriods(data.periods || []);
             setTotalPages(Math.ceil((data.total || 0) / 50) || 1);
@@ -123,7 +128,7 @@ export default function PeriodsPage() {
         finally { setLoading(false); }
     };
 
-    useEffect(() => { fetchPeriods(page); }, [page]);
+    useEffect(() => { fetchPeriods(page); }, [page, currentSessionId]);
 
     const handleDelete = async () => {
         if (!deleteTarget) return;

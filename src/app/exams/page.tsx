@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { HelpTip, Tip } from "@/components/tip";
 import { DataPagination } from "@/components/data-pagination";
+import { useAcademicSession } from "@/components/academic-session-provider";
 
 interface Exam {
     id: string; name: string; length: number; maxRooms: number; altSeating: boolean;
@@ -155,6 +156,7 @@ function DeleteDialog({ open, onOpenChange, onConfirm, title }: { open: boolean;
 }
 
 export default function ExamsPage() {
+    const { currentSessionId } = useAcademicSession();
     const [exams, setExams] = useState<Exam[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
@@ -177,7 +179,10 @@ export default function ExamsPage() {
     const fetchExams = async (currentPage = page) => {
         setLoading(true);
         try {
-            const res = await fetch(`/api/exams?page=${currentPage}&limit=50`);
+            const url = currentSessionId 
+                ? `/api/exams?page=${currentPage}&limit=50&sessionId=${currentSessionId}` 
+                : `/api/exams?page=${currentPage}&limit=50`;
+            const res = await fetch(url);
             const data = await res.json();
             setExams(data.exams || []);
             setTotalPages(Math.ceil((data.total || 0) / 50) || 1);
@@ -185,7 +190,7 @@ export default function ExamsPage() {
         finally { setLoading(false); }
     };
 
-    useEffect(() => { fetchExams(page); }, [page]);
+    useEffect(() => { fetchExams(page); }, [page, currentSessionId]);
 
     const handleDelete = async () => {
         if (!deleteTarget) return;

@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+import { useAcademicSession } from "@/components/academic-session-provider";
 
 
 // Mock progress component for the active solver 
@@ -206,6 +207,7 @@ function ActiveSolverPanel({ runId }: { runId: string }) {
 }
 
 export default function SolverDashboard() {
+    const { currentSessionId } = useAcademicSession();
     const [runs, setRuns] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [startOpen, setStartOpen] = useState(false);
@@ -220,12 +222,14 @@ export default function SolverDashboard() {
     const [showUnassigned, setShowUnassigned] = useState(false);
 
     const fetchRuns = () => {
-        fetch('/api/solver/runs')
+        setLoading(true);
+        const url = currentSessionId ? `/api/solver/runs?sessionId=${currentSessionId}` : '/api/solver/runs';
+        fetch(url)
             .then(res => res.json())
             .then(data => { setRuns(data.runs || []); setLoading(false); });
     };
 
-    useEffect(() => { fetchRuns(); }, []);
+    useEffect(() => { fetchRuns(); }, [currentSessionId]);
 
     const openStartDialog = async () => {
         try {
@@ -236,7 +240,9 @@ export default function SolverDashboard() {
             const cData = await cRes.json();
             setSessions(sData.sessions || []);
             setConfigs(cData.configs || []);
-            if (sData.sessions?.length) setSelectedSession(sData.sessions[0].id);
+            if (currentSessionId) setSelectedSession(currentSessionId);
+            else if (sData.sessions?.length) setSelectedSession(sData.sessions[0].id);
+            
             if (cData.configs?.length) setSelectedConfig(cData.configs[0].id);
             setStartOpen(true);
         } catch { toast.error("Failed to load sessions/configs"); }

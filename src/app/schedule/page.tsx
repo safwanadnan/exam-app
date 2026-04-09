@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { toast } from "sonner";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { useAcademicSession } from "@/components/academic-session-provider";
 
 interface Assignment {
     id: string;
@@ -73,6 +74,7 @@ function StatCard({ label, value, icon: Icon, highlight }: { label: string; valu
 }
 
 export default function SchedulePage() {
+    const { currentSessionId } = useAcademicSession();
     const [loading, setLoading] = useState(true);
     const [runs, setRuns] = useState<Run[]>([]);
     const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
@@ -135,13 +137,21 @@ export default function SchedulePage() {
     };
 
     useEffect(() => {
-        fetch("/api/solver/runs").then(r => r.json()).then(data => {
+        const url = currentSessionId ? `/api/solver/runs?sessionId=${currentSessionId}` : "/api/solver/runs";
+        fetch(url).then(r => r.json()).then(data => {
             const completed = (data.runs || []).filter((r: Run) => r.status === "COMPLETED" || r.status === "COMPLETE");
             setRuns(completed);
-            if (completed.length > 0) setSelectedRunId(completed[0].id);
+            if (completed.length > 0) {
+                // Keep the current selected run if it exists in the new list, otherwise pick the first one
+                if (!selectedRunId || !completed.find((r: Run) => r.id === selectedRunId)) {
+                    setSelectedRunId(completed[0].id);
+                }
+            } else {
+                setSelectedRunId(null);
+            }
             setLoading(false);
         }).catch(() => { setLoading(false); toast.error("Failed to load runs"); });
-    }, []);
+    }, [currentSessionId]);
 
     useEffect(() => {
         if (!selectedRunId) return;

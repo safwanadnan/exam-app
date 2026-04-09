@@ -1,4 +1,4 @@
-﻿export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic';
 /**
  * GET /api/students â€” List students (filter by sessionId via exam enrollment)
  * POST /api/students â€” Create a student
@@ -16,15 +16,20 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
     const { skip, limit, page } = getPagination(req);
     const url = new URL(req.url);
     const search = url.searchParams.get("search");
+    const sessionId = url.searchParams.get("sessionId");
 
-    const where = search
+    const where: any = search
         ? {
             OR: [
-                { name: { contains: search } },
-                { externalId: { contains: search } },
+                { name: { contains: search, mode: "insensitive" } as any },
+                { externalId: { contains: search, mode: "insensitive" } as any },
             ]
         }
         : {};
+
+    if (sessionId) {
+        where.enrollments = { some: { exam: { examType: { sessionId } } } };
+    }
 
     const [students, total] = await Promise.all([
         prisma.student.findMany({
@@ -33,7 +38,11 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
             take: limit,
             orderBy: { name: "asc" },
             include: {
-                _count: { select: { enrollments: true } },
+                _count: { 
+                    select: { 
+                        enrollments: sessionId ? { where: { exam: { examType: { sessionId } } } } : true 
+                    } 
+                },
             },
         }),
         prisma.student.count({ where }),

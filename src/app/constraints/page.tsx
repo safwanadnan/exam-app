@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { HelpTip } from "@/components/tip";
 import { DataPagination } from "@/components/data-pagination";
+import { useAcademicSession } from "@/components/academic-session-provider";
 
 const CONSTRAINT_TYPES = [
     "SAME_ROOM", "DIFF_ROOM", "SAME_PERIOD", "DIFF_PERIOD",
@@ -135,6 +136,7 @@ function DeleteDialog({ open, onOpenChange, onConfirm }: { open: boolean; onOpen
 }
 
 export default function ConstraintsPage() {
+    const { currentSessionId } = useAcademicSession();
     const [constraints, setConstraints] = useState<Constraint[]>([]);
     const [exams, setExams] = useState<ExamOption[]>([]);
     const [loading, setLoading] = useState(true);
@@ -148,7 +150,18 @@ export default function ConstraintsPage() {
     const fetchData = async (currentPage = page) => {
         setLoading(true);
         try {
-            const [cRes, eRes] = await Promise.all([fetch(`/api/constraints?page=${currentPage}&limit=50`), fetch("/api/exams?limit=500")]);
+            const constraintUrl = currentSessionId 
+                ? `/api/constraints?page=${currentPage}&limit=50&sessionId=${currentSessionId}` 
+                : `/api/constraints?page=${currentPage}&limit=50`;
+            const examUrl = currentSessionId 
+                ? `/api/exams?limit=500&sessionId=${currentSessionId}` 
+                : "/api/exams?limit=500";
+                
+            const [cRes, eRes] = await Promise.all([
+                fetch(constraintUrl), 
+                fetch(examUrl)
+            ]);
+            
             const cData = await cRes.json();
             const eData = await eRes.json();
             setConstraints(cData.constraints || []);
@@ -158,7 +171,7 @@ export default function ConstraintsPage() {
         finally { setLoading(false); }
     };
 
-    useEffect(() => { fetchData(page); }, [page]);
+    useEffect(() => { fetchData(page); }, [page, currentSessionId]);
 
     const handleDelete = async () => {
         if (!deleteTarget) return;

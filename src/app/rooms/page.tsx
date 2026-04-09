@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { HelpTip, Tip } from "@/components/tip";
 import { DataPagination } from "@/components/data-pagination";
+import { useAcademicSession } from "@/components/academic-session-provider";
 
 interface Room {
     id: string; name: string; capacity: number; altCapacity: number | null;
@@ -161,6 +162,7 @@ function DeleteDialog({ open, onOpenChange, onConfirm, title }: { open: boolean;
 }
 
 export default function RoomsPage() {
+    const { currentSessionId } = useAcademicSession();
     const [buildings, setBuildings] = useState<BuildingData[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
@@ -210,8 +212,9 @@ export default function RoomsPage() {
 
     const openUnavail = async (r: Room) => {
         setShowUnavail(r);
+        const url = currentSessionId ? `/api/periods?limit=200&sessionId=${currentSessionId}` : "/api/periods?limit=200";
         const [perRes, unRes] = await Promise.all([
-            fetch("/api/periods?limit=200").then(res => res.json()),
+            fetch(url).then(res => res.json()),
             fetch(`/api/rooms/${r.id}/unavailability`).then(res => res.json())
         ]);
         setPeriods(perRes.periods || []);

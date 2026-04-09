@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { HelpTip, Tip } from "@/components/tip";
 import { format } from "date-fns";
 import { DataPagination } from "@/components/data-pagination";
+import { useAcademicSession } from "@/components/academic-session-provider";
 
 interface Student {
     id: string; externalId: string; name: string;
@@ -76,6 +77,7 @@ function StudentDialog({ open, onOpenChange, onSaved }: {
 }
 
 export default function StudentsPage() {
+    const { currentSessionId } = useAcademicSession();
     const [students, setStudents] = useState<Student[]>([]);
     const [loading, setLoading] = useState(true);
     const [total, setTotal] = useState(0);
@@ -101,6 +103,7 @@ export default function StudentsPage() {
         try {
             const params = new URLSearchParams({ limit: "50", page: currentPage.toString() });
             if (q) params.set("search", q);
+            if (currentSessionId) params.set("sessionId", currentSessionId);
             const res = await fetch(`/api/students?${params}`);
             const data = await res.json();
             setStudents(data.students || []);
@@ -110,7 +113,7 @@ export default function StudentsPage() {
         finally { setLoading(false); }
     };
 
-    useEffect(() => { fetchStudents(search, page); }, [page]);
+    useEffect(() => { fetchStudents(search, page); }, [page, currentSessionId]);
 
     useEffect(() => {
         setPage(1);
@@ -143,8 +146,9 @@ export default function StudentsPage() {
 
     const openUnavail = async (s: Student) => {
         setShowUnavail(s);
+        const url = currentSessionId ? `/api/periods?limit=200&sessionId=${currentSessionId}` : "/api/periods?limit=200";
         const [perRes, unRes] = await Promise.all([
-            fetch("/api/periods?limit=200").then(r => r.json()),
+            fetch(url).then(r => r.json()),
             fetch(`/api/students/${s.id}/unavailability`).then(r => r.json())
         ]);
         setPeriods(perRes.periods || []);

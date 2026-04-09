@@ -11,21 +11,30 @@ const instructorSchema = z.object({
 export const GET = withErrorHandling(async (req: NextRequest) => {
     const url = new URL(req.url);
     const search = url.searchParams.get("search") || "";
+    const sessionId = url.searchParams.get("sessionId");
     const page = parseInt(url.searchParams.get("page") || "1");
     const limit = parseInt(url.searchParams.get("limit") || "50");
 
-    const where = search ? {
+    const where: any = search ? {
         OR: [
-            { name: { contains: search } },
-            { externalId: { contains: search } },
+            { name: { contains: search, mode: "insensitive" } as any },
+            { externalId: { contains: search, mode: "insensitive" } as any },
         ],
     } : {};
+
+    if (sessionId) {
+        where.assignments = { some: { exam: { examType: { sessionId } } } };
+    }
 
     const [instructors, total] = await Promise.all([
         prisma.instructor.findMany({
             where,
             include: {
-                _count: { select: { assignments: true } },
+                _count: { 
+                    select: { 
+                        assignments: sessionId ? { where: { exam: { examType: { sessionId } } } } : true 
+                    } 
+                },
             },
             orderBy: { name: "asc" },
             skip: (page - 1) * limit,

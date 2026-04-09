@@ -17,6 +17,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { HelpTip, Tip } from "@/components/tip";
 import { DataPagination } from "@/components/data-pagination";
+import { useAcademicSession } from "@/components/academic-session-provider";
 
 interface Instructor {
     id: string; externalId: string; name: string;
@@ -31,6 +32,7 @@ interface DetailedInstructor {
 }
 
 export default function InstructorsPage() {
+    const { currentSessionId } = useAcademicSession();
     const [instructors, setInstructors] = useState<Instructor[]>([]);
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(true);
@@ -73,7 +75,10 @@ export default function InstructorsPage() {
 
     const fetchInstructors = useCallback((currentPage = page) => {
         setLoading(true);
-        fetch(`/api/instructors?search=${encodeURIComponent(debouncedSearch)}&page=${currentPage}&limit=50`)
+        const url = currentSessionId 
+            ? `/api/instructors?search=${encodeURIComponent(debouncedSearch)}&page=${currentPage}&limit=50&sessionId=${currentSessionId}` 
+            : `/api/instructors?search=${encodeURIComponent(debouncedSearch)}&page=${currentPage}&limit=50`;
+        fetch(url)
             .then(r => r.json())
             .then(d => {
                 setInstructors(d.instructors || []);
@@ -84,7 +89,7 @@ export default function InstructorsPage() {
             .catch(() => setLoading(false));
     }, [debouncedSearch, page]);
 
-    useEffect(() => { fetchInstructors(page); }, [fetchInstructors, page]);
+    useEffect(() => { fetchInstructors(page); }, [fetchInstructors, page, currentSessionId]);
 
     const openDetail = async (instructor: Instructor) => {
         setDetailOpen(true);
@@ -128,9 +133,10 @@ export default function InstructorsPage() {
 
     const openAssignments = async (i: Instructor) => {
         setShowAssign(i);
+        const examUrl = currentSessionId ? `/api/exams?limit=500&sessionId=${currentSessionId}` : "/api/exams?limit=500";
         const [instrRes, examsRes] = await Promise.all([
             fetch(`/api/instructors/${i.id}`).then(r => r.json()),
-            fetch("/api/exams?limit=500").then(r => r.json()),
+            fetch(examUrl).then(r => r.json()),
         ]);
         setAssignments(instrRes.assignments || []);
         setExams(examsRes.exams || []);
@@ -165,8 +171,9 @@ export default function InstructorsPage() {
 
     const openUnavail = async (i: Instructor) => {
         setShowUnavail(i);
+        const url = currentSessionId ? `/api/periods?limit=200&sessionId=${currentSessionId}` : "/api/periods?limit=200";
         const [perRes, unRes] = await Promise.all([
-            fetch("/api/periods?limit=200").then(r => r.json()),
+            fetch(url).then(r => r.json()),
             fetch(`/api/instructors/${i.id}/unavailability`).then(r => r.json())
         ]);
         setPeriods(perRes.periods || []);
