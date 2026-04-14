@@ -1,4 +1,4 @@
-﻿export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic';
 /**
  * POST /api/import â€” Bulk data import
  */
@@ -97,22 +97,84 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
             }
         }
 
-        // 3. Create Exam Types, Periods & Exams
+        // 3. Collect Unique Persons
+        const uniqueStudents = new Map<string, { externalId: string; name: string }>();
+        const uniqueInstructors = new Map<string, { externalId: string; name: string }>();
+
+        if (data.examTypes) {
+            for (const et of data.examTypes) {
+                if (et.exams) {
+                    for (const currExam of et.exams) {
+                        if (currExam.students) {
+                            for (const stu of currExam.students) {
+                                uniqueStudents.set(stu.externalId, { externalId: stu.externalId, name: stu.name });
+                            }
+                        }
+                        if (currExam.instructors) {
+                            for (const ins of currExam.instructors) {
+                                uniqueInstructors.set(ins.externalId, { externalId: ins.externalId, name: ins.name });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 4. Bulk Insert Persons
+        const studentValues = Array.from(uniqueStudents.values());
+        if (studentValues.length > 0) {
+            await tx.student.createMany({
+                data: studentValues,
+                skipDuplicates: true
+            });
+        }
+
+        const instructorValues = Array.from(uniqueInstructors.values());
+        if (instructorValues.length > 0) {
+            await tx.instructor.createMany({
+                data: instructorValues,
+                skipDuplicates: true
+            });
+        }
+
+        // Retrieve Person IDs Map
+        const studentIdMap = new Map<string, string>();
+        if (studentValues.length > 0) {
+            const dbStudents = await tx.student.findMany({
+                where: { externalId: { in: studentValues.map(s => s.externalId) } },
+                select: { id: true, externalId: true }
+            });
+            for (const s of dbStudents) {
+                studentIdMap.set(s.externalId, s.id);
+            }
+        }
+
+        const instructorIdMap = new Map<string, string>();
+        if (instructorValues.length > 0) {
+            const dbInstructors = await tx.instructor.findMany({
+                where: { externalId: { in: instructorValues.map(i => i.externalId) } },
+                select: { id: true, externalId: true }
+            });
+            for (const i of dbInstructors) {
+                instructorIdMap.set(i.externalId, i.id);
+            }
+        }
+
+        // 5. Create Exam Types, Periods & Exams
         if (data.examTypes) {
             let defaultDeptId = "";
             let defaultSubjId = "";
 
+            const bulkExams: any[] = [];
+            const bulkExamOwners: any[] = [];
+            const bulkInstructorAssignments: any[] = [];
+            const bulkStudentEnrollments: any[] = [];
+
             for (const et of data.examTypes) {
                 const examType = await tx.examType.upsert({
                     where: { code_sessionId: { code: et.code, sessionId: session.id } },
-                    create: {
-                        name: et.name,
-                        code: et.code,
-                        sessionId: session.id,
-                    },
-                    update: {
-                        name: et.name,
-                    }
+                    create: { name: et.name, code: et.code, sessionId: session.id },
+                    update: { name: et.name }
                 });
 
                 // Import periods safely with Upsert
@@ -145,8 +207,9 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
 
                 if (et.exams) {
                     for (const currExam of et.exams) {
-                        // Handle Course/Section
                         let sectionId: string | undefined = undefined;
+
+                        // Create courses safely
                         if (currExam.courseCode) {
                             if (!defaultDeptId) {
                                 const dept = await tx.department.upsert({
@@ -177,58 +240,74 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
                             sectionId = section.id;
                         }
 
-                        // Create the Exam
-                        const exam = await tx.exam.create({
-                            data: {
-                                name: currExam.name,
-                                length: currExam.length,
-                                size: currExam.size,
-                                maxRooms: currExam.maxRooms,
-                                altSeating: currExam.altSeating,
-                                examTypeId: examType.id,
-                                owners: sectionId ? {
-                                    create: [{ sectionId }]
-                                } : undefined
-                            }
+                        // Generate an ID for the Exam to link relations securely
+                        const examId = crypto.randomUUID();
+
+                        bulkExams.push({
+                            id: examId,
+                            name: currExam.name,
+                            length: currExam.length,
+                            size: currExam.size,
+                            maxRooms: currExam.maxRooms,
+                            altSeating: currExam.altSeating,
+                            examTypeId: examType.id,
                         });
 
-                        // Create Instructors
+                        if (sectionId) {
+                            bulkExamOwners.push({
+                                examId: examId,
+                                sectionId: sectionId
+                            });
+                        }
+
                         if (currExam.instructors) {
                             for (const ins of currExam.instructors) {
-                                const instructor = await tx.instructor.upsert({
-                                    where: { externalId: ins.externalId },
-                                    create: { externalId: ins.externalId, name: ins.name },
-                                    update: {}
-                                });
-                                await tx.instructorAssignment.create({
-                                    data: { instructorId: instructor.id, examId: exam.id }
-                                });
+                                const id = instructorIdMap.get(ins.externalId);
+                                if (id) {
+                                    bulkInstructorAssignments.push({
+                                        instructorId: id,
+                                        examId: examId
+                                    });
+                                }
                             }
                         }
 
-                        // Create Students & Enrollments
                         if (currExam.students && sectionId) {
                             for (const stu of currExam.students) {
-                                const student = await tx.student.upsert({
-                                    where: { externalId: stu.externalId },
-                                    create: { externalId: stu.externalId, name: stu.name },
-                                    update: {}
-                                });
-                                await tx.studentEnrollment.create({
-                                    data: { studentId: student.id, sectionId: sectionId, examId: exam.id }
-                                });
+                                const id = studentIdMap.get(stu.externalId);
+                                if (id) {
+                                    bulkStudentEnrollments.push({
+                                        studentId: id,
+                                        sectionId: sectionId,
+                                        examId: examId
+                                    });
+                                }
                             }
                         }
                     }
                 }
             }
+
+            // 6. Bulk Insert Exams and Relations
+            if (bulkExams.length > 0) {
+                await tx.exam.createMany({ data: bulkExams });
+            }
+            if (bulkExamOwners.length > 0) {
+                await tx.examOwner.createMany({ data: bulkExamOwners });
+            }
+            if (bulkInstructorAssignments.length > 0) {
+                // Ignore duplicates if for some reason an instructor is assigned twice to the same exam
+                await tx.instructorAssignment.createMany({ data: bulkInstructorAssignments, skipDuplicates: true });
+            }
+            if (bulkStudentEnrollments.length > 0) {
+                await tx.studentEnrollment.createMany({ data: bulkStudentEnrollments, skipDuplicates: true });
+            }
         }
 
         return { sessionId: session.id, stats };
     }, {
-        timeout: 30000 // Allow up to 30s for complex imports
+        timeout: 6000000 // Allow up to 60s for massive structural imports
     });
 
     return jsonResponse({ success: true, message: "Import completed successfully", result }, 201);
 });
-
