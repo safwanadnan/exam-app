@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Settings2, Search, MoreHorizontal, Loader2 } from "lucide-react";
+import { Check, ChevronDown, Plus, Settings2, Search, MoreHorizontal, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { HelpTip } from "@/components/tip";
 import { DataPagination } from "@/components/data-pagination";
 import { useAcademicSession } from "@/components/academic-session-provider";
+import { cn } from "@/lib/utils";
 
 const CONSTRAINT_TYPES = [
     "SAME_ROOM", "DIFF_ROOM", "SAME_PERIOD", "DIFF_PERIOD",
@@ -31,10 +32,103 @@ interface Constraint {
 
 interface ExamOption { id: string; name: string; }
 
-function ConstraintDialog({ constraint, exams, open, onOpenChange, onSaved }: {
-    constraint?: Constraint | null; exams: ExamOption[]; open: boolean;
+function SearchableExamSelect({ value, onValueChange, sessionId, initialName }: { 
+    value: string; 
+    onValueChange: (v: string) => void; 
+    sessionId?: string | null;
+    initialName?: string;
+}) {
+    const [open, setOpen] = useState(false);
+    const [search, setSearch] = useState("");
+    const [options, setOptions] = useState<ExamOption[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [selectedName, setSelectedName] = useState(initialName || "");
+
+    useEffect(() => {
+        if (initialName) setSelectedName(initialName);
+    }, [initialName]);
+
+    const fetchExams = async (query = "") => {
+        setLoading(true);
+        try {
+            const url = sessionId 
+                ? `/api/exams?limit=50&minimal=true&sessionId=${sessionId}${query ? `&search=${encodeURIComponent(query)}` : ""}`
+                : `/api/exams?limit=50&minimal=true${query ? `&search=${encodeURIComponent(query)}` : ""}`;
+            const res = await fetch(url);
+            const data = await res.json();
+            setOptions(data.exams || []);
+        } catch { toast.error("Failed to fetch exams"); }
+        finally { setLoading(false); }
+    };
+
+    useEffect(() => {
+        if (open) fetchExams(search);
+    }, [open]);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (open) fetchExams(search);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [search, open]);
+
+    return (
+        <div className="relative">
+            <Button 
+                variant="outline" 
+                type="button" 
+                className="w-full justify-between font-normal" 
+                onClick={() => setOpen(!open)}
+            >
+                <span className="truncate">{selectedName || "Select exam..."}</span>
+                <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+            {open && (
+                <>
+                    <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+                    <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in fade-in-0 zoom-in-95">
+                        <div className="p-2 border-b">
+                            <Input 
+                                placeholder="Search exams..." 
+                                value={search} 
+                                onChange={e => setSearch(e.target.value)}
+                                className="h-8"
+                                autoFocus
+                            />
+                        </div>
+                        <div className="max-h-60 overflow-y-auto p-1">
+                            {loading && <div className="p-2 text-xs text-center text-muted-foreground">Loading...</div>}
+                            {!loading && options.length === 0 && <div className="p-2 text-xs text-center text-muted-foreground">No exams found.</div>}
+                            {options.map(exam => (
+                                <div 
+                                    key={exam.id}
+                                    className={cn(
+                                        "relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-sm outline-none hover:bg-accent hover:text-accent-foreground",
+                                        value === exam.id && "bg-accent"
+                                    )}
+                                    onClick={() => {
+                                        onValueChange(exam.id);
+                                        setSelectedName(exam.name);
+                                        setOpen(false);
+                                    }}
+                                >
+                                    <span className="truncate">{exam.name}</span>
+                                    {value === exam.id && <Check className="absolute right-2 h-4 w-4" />}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </>
+            )}
+        </div>
+    );
+}
+
+function ConstraintDialog({ constraint, open, onOpenChange, onSaved }: {
+    constraint?: Constraint | null; open: boolean;
     onOpenChange: (o: boolean) => void; onSaved: () => void;
 }) {
+    const { currentSessionId } = useAcademicSession();
     const isEditing = !!constraint;
     const [saving, setSaving] = useState(false);
     const [type, setType] = useState("SAME_PERIOD");
@@ -49,9 +143,9 @@ function ConstraintDialog({ constraint, exams, open, onOpenChange, onSaved }: {
             setExamAId(constraint.examAId); setExamBId(constraint.examBId);
         } else {
             setType("SAME_PERIOD"); setHard(false); setWeight(1);
-            setExamAId(exams[0]?.id || ""); setExamBId(exams[1]?.id || exams[0]?.id || "");
+            setExamAId(""); setExamBId("");
         }
-    }, [constraint, open, exams]);
+    }, [constraint, open]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault(); setSaving(true);
@@ -83,17 +177,21 @@ function ConstraintDialog({ constraint, exams, open, onOpenChange, onSaved }: {
                         </div>
                         <div className="grid gap-2">
                             <Label>Primary Exam (A) <HelpTip text="The first exam in the constraint pair. For PRECEDENCE, this exam must come before Exam B." /></Label>
-                            <Select value={examAId} onValueChange={setExamAId}>
-                                <SelectTrigger><SelectValue placeholder="Select exam" /></SelectTrigger>
-                                <SelectContent>{exams.map(e => <SelectItem key={e.id} value={e.id}>{e.name || "Unnamed"}</SelectItem>)}</SelectContent>
-                            </Select>
+                            <SearchableExamSelect 
+                                value={examAId} 
+                                onValueChange={setExamAId} 
+                                sessionId={currentSessionId}
+                                initialName={constraint?.examA?.name}
+                            />
                         </div>
                         <div className="grid gap-2">
                             <Label>Secondary Exam (B) <HelpTip text="The second exam in the constraint pair" /></Label>
-                            <Select value={examBId} onValueChange={setExamBId}>
-                                <SelectTrigger><SelectValue placeholder="Select exam" /></SelectTrigger>
-                                <SelectContent>{exams.map(e => <SelectItem key={e.id} value={e.id}>{e.name || "Unnamed"}</SelectItem>)}</SelectContent>
-                            </Select>
+                            <SearchableExamSelect 
+                                value={examBId} 
+                                onValueChange={setExamBId} 
+                                sessionId={currentSessionId}
+                                initialName={constraint?.examB?.name}
+                            />
                         </div>
                         <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-2">
@@ -153,20 +251,11 @@ export default function ConstraintsPage() {
             const constraintUrl = currentSessionId 
                 ? `/api/constraints?page=${currentPage}&limit=50&sessionId=${currentSessionId}` 
                 : `/api/constraints?page=${currentPage}&limit=50`;
-            const examUrl = currentSessionId 
-                ? `/api/exams?limit=500&sessionId=${currentSessionId}` 
-                : "/api/exams?limit=500";
                 
-            const [cRes, eRes] = await Promise.all([
-                fetch(constraintUrl), 
-                fetch(examUrl)
-            ]);
-            
+            const cRes = await fetch(constraintUrl);
             const cData = await cRes.json();
-            const eData = await eRes.json();
             setConstraints(cData.constraints || []);
             setTotalPages(Math.ceil((cData.total || 0) / 50) || 1);
-            setExams((eData.exams || []).map((e: any) => ({ id: e.id, name: e.name || "Unnamed" })));
         } catch { toast.error("Failed to load data"); }
         finally { setLoading(false); }
     };
@@ -256,7 +345,7 @@ export default function ConstraintsPage() {
             </Card>
             <DataPagination page={page} totalPages={totalPages} onPageChange={setPage} />
 
-            <ConstraintDialog constraint={editConstraint} exams={exams} open={formOpen} onOpenChange={setFormOpen} onSaved={() => fetchData(page)} />
+            <ConstraintDialog constraint={editConstraint} open={formOpen} onOpenChange={setFormOpen} onSaved={() => fetchData(page)} />
             <DeleteDialog open={!!deleteTarget} onOpenChange={o => { if (!o) setDeleteTarget(null); }} onConfirm={handleDelete} />
         </div>
     );
