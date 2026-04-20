@@ -382,7 +382,6 @@ export type ExamAssignmentRoomCreateOrConnectWithoutRoomInput = {
 
 export type ExamAssignmentRoomCreateManyRoomInputEnvelope = {
   data: Prisma.ExamAssignmentRoomCreateManyRoomInput | Prisma.ExamAssignmentRoomCreateManyRoomInput[]
-  skipDuplicates?: boolean
 }
 
 export type ExamAssignmentRoomUpsertWithWhereUniqueWithoutRoomInput = {
@@ -427,7 +426,6 @@ export type ExamAssignmentRoomCreateOrConnectWithoutAssignmentInput = {
 
 export type ExamAssignmentRoomCreateManyAssignmentInputEnvelope = {
   data: Prisma.ExamAssignmentRoomCreateManyAssignmentInput | Prisma.ExamAssignmentRoomCreateManyAssignmentInput[]
-  skipDuplicates?: boolean
 }
 
 export type ExamAssignmentRoomUpsertWithWhereUniqueWithoutAssignmentInput = {
@@ -1199,7 +1197,6 @@ export type ExamAssignmentRoomCreateManyArgs<ExtArgs extends runtime.Types.Exten
    * The data used to create many ExamAssignmentRooms.
    */
   data: Prisma.ExamAssignmentRoomCreateManyInput | Prisma.ExamAssignmentRoomCreateManyInput[]
-  skipDuplicates?: boolean
 }
 
 /**
@@ -1218,7 +1215,6 @@ export type ExamAssignmentRoomCreateManyAndReturnArgs<ExtArgs extends runtime.Ty
    * The data used to create many ExamAssignmentRooms.
    */
   data: Prisma.ExamAssignmentRoomCreateManyInput | Prisma.ExamAssignmentRoomCreateManyInput[]
-  skipDuplicates?: boolean
   /**
    * Choose, which related nodes to fetch as well
    */

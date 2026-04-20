@@ -382,7 +382,6 @@ export type RoomFeatureAssignmentCreateOrConnectWithoutRoomInput = {
 
 export type RoomFeatureAssignmentCreateManyRoomInputEnvelope = {
   data: Prisma.RoomFeatureAssignmentCreateManyRoomInput | Prisma.RoomFeatureAssignmentCreateManyRoomInput[]
-  skipDuplicates?: boolean
 }
 
 export type RoomFeatureAssignmentUpsertWithWhereUniqueWithoutRoomInput = {
@@ -427,7 +426,6 @@ export type RoomFeatureAssignmentCreateOrConnectWithoutFeatureInput = {
 
 export type RoomFeatureAssignmentCreateManyFeatureInputEnvelope = {
   data: Prisma.RoomFeatureAssignmentCreateManyFeatureInput | Prisma.RoomFeatureAssignmentCreateManyFeatureInput[]
-  skipDuplicates?: boolean
 }
 
 export type RoomFeatureAssignmentUpsertWithWhereUniqueWithoutFeatureInput = {
@@ -1199,7 +1197,6 @@ export type RoomFeatureAssignmentCreateManyArgs<ExtArgs extends runtime.Types.Ex
    * The data used to create many RoomFeatureAssignments.
    */
   data: Prisma.RoomFeatureAssignmentCreateManyInput | Prisma.RoomFeatureAssignmentCreateManyInput[]
-  skipDuplicates?: boolean
 }
 
 /**
@@ -1218,7 +1215,6 @@ export type RoomFeatureAssignmentCreateManyAndReturnArgs<ExtArgs extends runtime
    * The data used to create many RoomFeatureAssignments.
    */
   data: Prisma.RoomFeatureAssignmentCreateManyInput | Prisma.RoomFeatureAssignmentCreateManyInput[]
-  skipDuplicates?: boolean
   /**
    * Choose, which related nodes to fetch as well
    */

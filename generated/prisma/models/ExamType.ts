@@ -413,7 +413,6 @@ export type ExamTypeCreateOrConnectWithoutSessionInput = {
 
 export type ExamTypeCreateManySessionInputEnvelope = {
   data: Prisma.ExamTypeCreateManySessionInput | Prisma.ExamTypeCreateManySessionInput[]
-  skipDuplicates?: boolean
 }
 
 export type ExamTypeUpsertWithWhereUniqueWithoutSessionInput = {
@@ -1325,7 +1324,6 @@ export type ExamTypeCreateManyArgs<ExtArgs extends runtime.Types.Extensions.Inte
    * The data used to create many ExamTypes.
    */
   data: Prisma.ExamTypeCreateManyInput | Prisma.ExamTypeCreateManyInput[]
-  skipDuplicates?: boolean
 }
 
 /**
@@ -1344,7 +1342,6 @@ export type ExamTypeCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Extens
    * The data used to create many ExamTypes.
    */
   data: Prisma.ExamTypeCreateManyInput | Prisma.ExamTypeCreateManyInput[]
-  skipDuplicates?: boolean
   /**
    * Choose, which related nodes to fetch as well
    */

@@ -871,7 +871,6 @@ export type ExamPeriodCreateOrConnectWithoutExamTypeInput = {
 
 export type ExamPeriodCreateManyExamTypeInputEnvelope = {
   data: Prisma.ExamPeriodCreateManyExamTypeInput | Prisma.ExamPeriodCreateManyExamTypeInput[]
-  skipDuplicates?: boolean
 }
 
 export type ExamPeriodUpsertWithWhereUniqueWithoutExamTypeInput = {
@@ -2183,7 +2182,6 @@ export type ExamPeriodCreateManyArgs<ExtArgs extends runtime.Types.Extensions.In
    * The data used to create many ExamPeriods.
    */
   data: Prisma.ExamPeriodCreateManyInput | Prisma.ExamPeriodCreateManyInput[]
-  skipDuplicates?: boolean
 }
 
 /**
@@ -2202,7 +2200,6 @@ export type ExamPeriodCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Exte
    * The data used to create many ExamPeriods.
    */
   data: Prisma.ExamPeriodCreateManyInput | Prisma.ExamPeriodCreateManyInput[]
-  skipDuplicates?: boolean
   /**
    * Choose, which related nodes to fetch as well
    */

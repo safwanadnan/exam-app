@@ -1247,7 +1247,6 @@ export type RoomFeatureCreateManyArgs<ExtArgs extends runtime.Types.Extensions.I
    * The data used to create many RoomFeatures.
    */
   data: Prisma.RoomFeatureCreateManyInput | Prisma.RoomFeatureCreateManyInput[]
-  skipDuplicates?: boolean
 }
 
 /**
@@ -1266,7 +1265,6 @@ export type RoomFeatureCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Ext
    * The data used to create many RoomFeatures.
    */
   data: Prisma.RoomFeatureCreateManyInput | Prisma.RoomFeatureCreateManyInput[]
-  skipDuplicates?: boolean
 }
 
 /**

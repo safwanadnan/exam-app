@@ -382,7 +382,6 @@ export type ExamOwnerCreateOrConnectWithoutSectionInput = {
 
 export type ExamOwnerCreateManySectionInputEnvelope = {
   data: Prisma.ExamOwnerCreateManySectionInput | Prisma.ExamOwnerCreateManySectionInput[]
-  skipDuplicates?: boolean
 }
 
 export type ExamOwnerUpsertWithWhereUniqueWithoutSectionInput = {
@@ -427,7 +426,6 @@ export type ExamOwnerCreateOrConnectWithoutExamInput = {
 
 export type ExamOwnerCreateManyExamInputEnvelope = {
   data: Prisma.ExamOwnerCreateManyExamInput | Prisma.ExamOwnerCreateManyExamInput[]
-  skipDuplicates?: boolean
 }
 
 export type ExamOwnerUpsertWithWhereUniqueWithoutExamInput = {
@@ -1199,7 +1197,6 @@ export type ExamOwnerCreateManyArgs<ExtArgs extends runtime.Types.Extensions.Int
    * The data used to create many ExamOwners.
    */
   data: Prisma.ExamOwnerCreateManyInput | Prisma.ExamOwnerCreateManyInput[]
-  skipDuplicates?: boolean
 }
 
 /**
@@ -1218,7 +1215,6 @@ export type ExamOwnerCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Exten
    * The data used to create many ExamOwners.
    */
   data: Prisma.ExamOwnerCreateManyInput | Prisma.ExamOwnerCreateManyInput[]
-  skipDuplicates?: boolean
   /**
    * Choose, which related nodes to fetch as well
    */

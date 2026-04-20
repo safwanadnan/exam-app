@@ -1211,7 +1211,6 @@ export type InstructorCreateManyArgs<ExtArgs extends runtime.Types.Extensions.In
    * The data used to create many Instructors.
    */
   data: Prisma.InstructorCreateManyInput | Prisma.InstructorCreateManyInput[]
-  skipDuplicates?: boolean
 }
 
 /**
@@ -1230,7 +1229,6 @@ export type InstructorCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Exte
    * The data used to create many Instructors.
    */
   data: Prisma.InstructorCreateManyInput | Prisma.InstructorCreateManyInput[]
-  skipDuplicates?: boolean
 }
 
 /**

@@ -1211,7 +1211,6 @@ export type StudentCreateManyArgs<ExtArgs extends runtime.Types.Extensions.Inter
    * The data used to create many Students.
    */
   data: Prisma.StudentCreateManyInput | Prisma.StudentCreateManyInput[]
-  skipDuplicates?: boolean
 }
 
 /**
@@ -1230,7 +1229,6 @@ export type StudentCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Extensi
    * The data used to create many Students.
    */
   data: Prisma.StudentCreateManyInput | Prisma.StudentCreateManyInput[]
-  skipDuplicates?: boolean
 }
 
 /**

@@ -406,7 +406,6 @@ export type PeriodPreferenceCreateOrConnectWithoutPeriodInput = {
 
 export type PeriodPreferenceCreateManyPeriodInputEnvelope = {
   data: Prisma.PeriodPreferenceCreateManyPeriodInput | Prisma.PeriodPreferenceCreateManyPeriodInput[]
-  skipDuplicates?: boolean
 }
 
 export type PeriodPreferenceUpsertWithWhereUniqueWithoutPeriodInput = {
@@ -454,7 +453,6 @@ export type PeriodPreferenceCreateOrConnectWithoutExamInput = {
 
 export type PeriodPreferenceCreateManyExamInputEnvelope = {
   data: Prisma.PeriodPreferenceCreateManyExamInput | Prisma.PeriodPreferenceCreateManyExamInput[]
-  skipDuplicates?: boolean
 }
 
 export type PeriodPreferenceUpsertWithWhereUniqueWithoutExamInput = {
@@ -1240,7 +1238,6 @@ export type PeriodPreferenceCreateManyArgs<ExtArgs extends runtime.Types.Extensi
    * The data used to create many PeriodPreferences.
    */
   data: Prisma.PeriodPreferenceCreateManyInput | Prisma.PeriodPreferenceCreateManyInput[]
-  skipDuplicates?: boolean
 }
 
 /**
@@ -1259,7 +1256,6 @@ export type PeriodPreferenceCreateManyAndReturnArgs<ExtArgs extends runtime.Type
    * The data used to create many PeriodPreferences.
    */
   data: Prisma.PeriodPreferenceCreateManyInput | Prisma.PeriodPreferenceCreateManyInput[]
-  skipDuplicates?: boolean
   /**
    * Choose, which related nodes to fetch as well
    */

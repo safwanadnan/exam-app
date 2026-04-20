@@ -526,7 +526,6 @@ export type ExamAssignmentCreateOrConnectWithoutPeriodInput = {
 
 export type ExamAssignmentCreateManyPeriodInputEnvelope = {
   data: Prisma.ExamAssignmentCreateManyPeriodInput | Prisma.ExamAssignmentCreateManyPeriodInput[]
-  skipDuplicates?: boolean
 }
 
 export type ExamAssignmentUpsertWithWhereUniqueWithoutPeriodInput = {
@@ -582,7 +581,6 @@ export type ExamAssignmentCreateOrConnectWithoutExamInput = {
 
 export type ExamAssignmentCreateManyExamInputEnvelope = {
   data: Prisma.ExamAssignmentCreateManyExamInput | Prisma.ExamAssignmentCreateManyExamInput[]
-  skipDuplicates?: boolean
 }
 
 export type ExamAssignmentUpsertWithWhereUniqueWithoutExamInput = {
@@ -678,7 +676,6 @@ export type ExamAssignmentCreateOrConnectWithoutRunInput = {
 
 export type ExamAssignmentCreateManyRunInputEnvelope = {
   data: Prisma.ExamAssignmentCreateManyRunInput | Prisma.ExamAssignmentCreateManyRunInput[]
-  skipDuplicates?: boolean
 }
 
 export type ExamAssignmentUpsertWithWhereUniqueWithoutRunInput = {
@@ -1573,7 +1570,6 @@ export type ExamAssignmentCreateManyArgs<ExtArgs extends runtime.Types.Extension
    * The data used to create many ExamAssignments.
    */
   data: Prisma.ExamAssignmentCreateManyInput | Prisma.ExamAssignmentCreateManyInput[]
-  skipDuplicates?: boolean
 }
 
 /**
@@ -1592,7 +1588,6 @@ export type ExamAssignmentCreateManyAndReturnArgs<ExtArgs extends runtime.Types.
    * The data used to create many ExamAssignments.
    */
   data: Prisma.ExamAssignmentCreateManyInput | Prisma.ExamAssignmentCreateManyInput[]
-  skipDuplicates?: boolean
   /**
    * Choose, which related nodes to fetch as well
    */

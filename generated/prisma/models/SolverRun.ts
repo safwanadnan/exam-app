@@ -852,7 +852,6 @@ export type SolverRunCreateOrConnectWithoutSessionInput = {
 
 export type SolverRunCreateManySessionInputEnvelope = {
   data: Prisma.SolverRunCreateManySessionInput | Prisma.SolverRunCreateManySessionInput[]
-  skipDuplicates?: boolean
 }
 
 export type SolverRunUpsertWithWhereUniqueWithoutSessionInput = {
@@ -1044,7 +1043,6 @@ export type SolverRunCreateOrConnectWithoutConfigInput = {
 
 export type SolverRunCreateManyConfigInputEnvelope = {
   data: Prisma.SolverRunCreateManyConfigInput | Prisma.SolverRunCreateManyConfigInput[]
-  skipDuplicates?: boolean
 }
 
 export type SolverRunUpsertWithWhereUniqueWithoutConfigInput = {
@@ -2065,7 +2063,6 @@ export type SolverRunCreateManyArgs<ExtArgs extends runtime.Types.Extensions.Int
    * The data used to create many SolverRuns.
    */
   data: Prisma.SolverRunCreateManyInput | Prisma.SolverRunCreateManyInput[]
-  skipDuplicates?: boolean
 }
 
 /**
@@ -2084,7 +2081,6 @@ export type SolverRunCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Exten
    * The data used to create many SolverRuns.
    */
   data: Prisma.SolverRunCreateManyInput | Prisma.SolverRunCreateManyInput[]
-  skipDuplicates?: boolean
   /**
    * Choose, which related nodes to fetch as well
    */

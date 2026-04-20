@@ -1564,7 +1564,6 @@ export type SolverConfigCreateOrConnectWithoutSessionInput = {
 
 export type SolverConfigCreateManySessionInputEnvelope = {
   data: Prisma.SolverConfigCreateManySessionInput | Prisma.SolverConfigCreateManySessionInput[]
-  skipDuplicates?: boolean
 }
 
 export type SolverConfigUpsertWithWhereUniqueWithoutSessionInput = {
@@ -2994,7 +2993,6 @@ export type SolverConfigCreateManyArgs<ExtArgs extends runtime.Types.Extensions.
    * The data used to create many SolverConfigs.
    */
   data: Prisma.SolverConfigCreateManyInput | Prisma.SolverConfigCreateManyInput[]
-  skipDuplicates?: boolean
 }
 
 /**
@@ -3013,7 +3011,6 @@ export type SolverConfigCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Ex
    * The data used to create many SolverConfigs.
    */
   data: Prisma.SolverConfigCreateManyInput | Prisma.SolverConfigCreateManyInput[]
-  skipDuplicates?: boolean
   /**
    * Choose, which related nodes to fetch as well
    */

@@ -338,7 +338,6 @@ export type StudentUnavailabilityCreateOrConnectWithoutStudentInput = {
 
 export type StudentUnavailabilityCreateManyStudentInputEnvelope = {
   data: Prisma.StudentUnavailabilityCreateManyStudentInput | Prisma.StudentUnavailabilityCreateManyStudentInput[]
-  skipDuplicates?: boolean
 }
 
 export type StudentUnavailabilityUpsertWithWhereUniqueWithoutStudentInput = {
@@ -1091,7 +1090,6 @@ export type StudentUnavailabilityCreateManyArgs<ExtArgs extends runtime.Types.Ex
    * The data used to create many StudentUnavailabilities.
    */
   data: Prisma.StudentUnavailabilityCreateManyInput | Prisma.StudentUnavailabilityCreateManyInput[]
-  skipDuplicates?: boolean
 }
 
 /**
@@ -1110,7 +1108,6 @@ export type StudentUnavailabilityCreateManyAndReturnArgs<ExtArgs extends runtime
    * The data used to create many StudentUnavailabilities.
    */
   data: Prisma.StudentUnavailabilityCreateManyInput | Prisma.StudentUnavailabilityCreateManyInput[]
-  skipDuplicates?: boolean
   /**
    * Choose, which related nodes to fetch as well
    */

@@ -382,7 +382,6 @@ export type InstructorAssignmentCreateOrConnectWithoutExamInput = {
 
 export type InstructorAssignmentCreateManyExamInputEnvelope = {
   data: Prisma.InstructorAssignmentCreateManyExamInput | Prisma.InstructorAssignmentCreateManyExamInput[]
-  skipDuplicates?: boolean
 }
 
 export type InstructorAssignmentUpsertWithWhereUniqueWithoutExamInput = {
@@ -427,7 +426,6 @@ export type InstructorAssignmentCreateOrConnectWithoutInstructorInput = {
 
 export type InstructorAssignmentCreateManyInstructorInputEnvelope = {
   data: Prisma.InstructorAssignmentCreateManyInstructorInput | Prisma.InstructorAssignmentCreateManyInstructorInput[]
-  skipDuplicates?: boolean
 }
 
 export type InstructorAssignmentUpsertWithWhereUniqueWithoutInstructorInput = {
@@ -1199,7 +1197,6 @@ export type InstructorAssignmentCreateManyArgs<ExtArgs extends runtime.Types.Ext
    * The data used to create many InstructorAssignments.
    */
   data: Prisma.InstructorAssignmentCreateManyInput | Prisma.InstructorAssignmentCreateManyInput[]
-  skipDuplicates?: boolean
 }
 
 /**
@@ -1218,7 +1215,6 @@ export type InstructorAssignmentCreateManyAndReturnArgs<ExtArgs extends runtime.
    * The data used to create many InstructorAssignments.
    */
   data: Prisma.InstructorAssignmentCreateManyInput | Prisma.InstructorAssignmentCreateManyInput[]
-  skipDuplicates?: boolean
   /**
    * Choose, which related nodes to fetch as well
    */

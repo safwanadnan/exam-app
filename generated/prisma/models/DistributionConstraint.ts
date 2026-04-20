@@ -499,7 +499,6 @@ export type DistributionConstraintCreateOrConnectWithoutExamAInput = {
 
 export type DistributionConstraintCreateManyExamAInputEnvelope = {
   data: Prisma.DistributionConstraintCreateManyExamAInput | Prisma.DistributionConstraintCreateManyExamAInput[]
-  skipDuplicates?: boolean
 }
 
 export type DistributionConstraintCreateWithoutExamBInput = {
@@ -525,7 +524,6 @@ export type DistributionConstraintCreateOrConnectWithoutExamBInput = {
 
 export type DistributionConstraintCreateManyExamBInputEnvelope = {
   data: Prisma.DistributionConstraintCreateManyExamBInput | Prisma.DistributionConstraintCreateManyExamBInput[]
-  skipDuplicates?: boolean
 }
 
 export type DistributionConstraintUpsertWithWhereUniqueWithoutExamAInput = {
@@ -1367,7 +1365,6 @@ export type DistributionConstraintCreateManyArgs<ExtArgs extends runtime.Types.E
    * The data used to create many DistributionConstraints.
    */
   data: Prisma.DistributionConstraintCreateManyInput | Prisma.DistributionConstraintCreateManyInput[]
-  skipDuplicates?: boolean
 }
 
 /**
@@ -1386,7 +1383,6 @@ export type DistributionConstraintCreateManyAndReturnArgs<ExtArgs extends runtim
    * The data used to create many DistributionConstraints.
    */
   data: Prisma.DistributionConstraintCreateManyInput | Prisma.DistributionConstraintCreateManyInput[]
-  skipDuplicates?: boolean
   /**
    * Choose, which related nodes to fetch as well
    */

@@ -406,7 +406,6 @@ export type RoomFeaturePreferenceCreateOrConnectWithoutFeatureInput = {
 
 export type RoomFeaturePreferenceCreateManyFeatureInputEnvelope = {
   data: Prisma.RoomFeaturePreferenceCreateManyFeatureInput | Prisma.RoomFeaturePreferenceCreateManyFeatureInput[]
-  skipDuplicates?: boolean
 }
 
 export type RoomFeaturePreferenceUpsertWithWhereUniqueWithoutFeatureInput = {
@@ -454,7 +453,6 @@ export type RoomFeaturePreferenceCreateOrConnectWithoutExamInput = {
 
 export type RoomFeaturePreferenceCreateManyExamInputEnvelope = {
   data: Prisma.RoomFeaturePreferenceCreateManyExamInput | Prisma.RoomFeaturePreferenceCreateManyExamInput[]
-  skipDuplicates?: boolean
 }
 
 export type RoomFeaturePreferenceUpsertWithWhereUniqueWithoutExamInput = {
@@ -1240,7 +1238,6 @@ export type RoomFeaturePreferenceCreateManyArgs<ExtArgs extends runtime.Types.Ex
    * The data used to create many RoomFeaturePreferences.
    */
   data: Prisma.RoomFeaturePreferenceCreateManyInput | Prisma.RoomFeaturePreferenceCreateManyInput[]
-  skipDuplicates?: boolean
 }
 
 /**
@@ -1259,7 +1256,6 @@ export type RoomFeaturePreferenceCreateManyAndReturnArgs<ExtArgs extends runtime
    * The data used to create many RoomFeaturePreferences.
    */
   data: Prisma.RoomFeaturePreferenceCreateManyInput | Prisma.RoomFeaturePreferenceCreateManyInput[]
-  skipDuplicates?: boolean
   /**
    * Choose, which related nodes to fetch as well
    */

@@ -1777,7 +1777,6 @@ export type AcademicSessionCreateManyArgs<ExtArgs extends runtime.Types.Extensio
    * The data used to create many AcademicSessions.
    */
   data: Prisma.AcademicSessionCreateManyInput | Prisma.AcademicSessionCreateManyInput[]
-  skipDuplicates?: boolean
 }
 
 /**
@@ -1796,7 +1795,6 @@ export type AcademicSessionCreateManyAndReturnArgs<ExtArgs extends runtime.Types
    * The data used to create many AcademicSessions.
    */
   data: Prisma.AcademicSessionCreateManyInput | Prisma.AcademicSessionCreateManyInput[]
-  skipDuplicates?: boolean
 }
 
 /**

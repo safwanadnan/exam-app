@@ -438,7 +438,6 @@ export type DepartmentCreateOrConnectWithoutSessionInput = {
 
 export type DepartmentCreateManySessionInputEnvelope = {
   data: Prisma.DepartmentCreateManySessionInput | Prisma.DepartmentCreateManySessionInput[]
-  skipDuplicates?: boolean
 }
 
 export type DepartmentUpsertWithWhereUniqueWithoutSessionInput = {
@@ -1313,7 +1312,6 @@ export type DepartmentCreateManyArgs<ExtArgs extends runtime.Types.Extensions.In
    * The data used to create many Departments.
    */
   data: Prisma.DepartmentCreateManyInput | Prisma.DepartmentCreateManyInput[]
-  skipDuplicates?: boolean
 }
 
 /**
@@ -1332,7 +1330,6 @@ export type DepartmentCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Exte
    * The data used to create many Departments.
    */
   data: Prisma.DepartmentCreateManyInput | Prisma.DepartmentCreateManyInput[]
-  skipDuplicates?: boolean
   /**
    * Choose, which related nodes to fetch as well
    */

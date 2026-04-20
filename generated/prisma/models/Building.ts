@@ -1243,7 +1243,6 @@ export type BuildingCreateManyArgs<ExtArgs extends runtime.Types.Extensions.Inte
    * The data used to create many Buildings.
    */
   data: Prisma.BuildingCreateManyInput | Prisma.BuildingCreateManyInput[]
-  skipDuplicates?: boolean
 }
 
 /**
@@ -1262,7 +1261,6 @@ export type BuildingCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Extens
    * The data used to create many Buildings.
    */
   data: Prisma.BuildingCreateManyInput | Prisma.BuildingCreateManyInput[]
-  skipDuplicates?: boolean
 }
 
 /**

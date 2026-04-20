@@ -437,7 +437,6 @@ export type SectionCreateOrConnectWithoutCourseInput = {
 
 export type SectionCreateManyCourseInputEnvelope = {
   data: Prisma.SectionCreateManyCourseInput | Prisma.SectionCreateManyCourseInput[]
-  skipDuplicates?: boolean
 }
 
 export type SectionUpsertWithWhereUniqueWithoutCourseInput = {
@@ -1368,7 +1367,6 @@ export type SectionCreateManyArgs<ExtArgs extends runtime.Types.Extensions.Inter
    * The data used to create many Sections.
    */
   data: Prisma.SectionCreateManyInput | Prisma.SectionCreateManyInput[]
-  skipDuplicates?: boolean
 }
 
 /**
@@ -1387,7 +1385,6 @@ export type SectionCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Extensi
    * The data used to create many Sections.
    */
   data: Prisma.SectionCreateManyInput | Prisma.SectionCreateManyInput[]
-  skipDuplicates?: boolean
   /**
    * Choose, which related nodes to fetch as well
    */

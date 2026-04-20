@@ -125,7 +125,6 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
         if (studentValues.length > 0) {
             await tx.student.createMany({
                 data: studentValues,
-                skipDuplicates: true
             });
         }
 
@@ -133,7 +132,6 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
         if (instructorValues.length > 0) {
             await tx.instructor.createMany({
                 data: instructorValues,
-                skipDuplicates: true
             });
         }
 
@@ -297,10 +295,10 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
             }
             if (bulkInstructorAssignments.length > 0) {
                 // Ignore duplicates if for some reason an instructor is assigned twice to the same exam
-                await tx.instructorAssignment.createMany({ data: bulkInstructorAssignments, skipDuplicates: true });
+                await tx.instructorAssignment.createMany({ data: bulkInstructorAssignments });
             }
             if (bulkStudentEnrollments.length > 0) {
-                await tx.studentEnrollment.createMany({ data: bulkStudentEnrollments, skipDuplicates: true });
+                await tx.studentEnrollment.createMany({ data: bulkStudentEnrollments });
             }
         }
 

@@ -474,7 +474,6 @@ export type RoomPeriodAvailabilityCreateOrConnectWithoutRoomInput = {
 
 export type RoomPeriodAvailabilityCreateManyRoomInputEnvelope = {
   data: Prisma.RoomPeriodAvailabilityCreateManyRoomInput | Prisma.RoomPeriodAvailabilityCreateManyRoomInput[]
-  skipDuplicates?: boolean
 }
 
 export type RoomPeriodAvailabilityUpsertWithWhereUniqueWithoutRoomInput = {
@@ -525,7 +524,6 @@ export type RoomPeriodAvailabilityCreateOrConnectWithoutPeriodInput = {
 
 export type RoomPeriodAvailabilityCreateManyPeriodInputEnvelope = {
   data: Prisma.RoomPeriodAvailabilityCreateManyPeriodInput | Prisma.RoomPeriodAvailabilityCreateManyPeriodInput[]
-  skipDuplicates?: boolean
 }
 
 export type RoomPeriodAvailabilityUpsertWithWhereUniqueWithoutPeriodInput = {
@@ -1325,7 +1323,6 @@ export type RoomPeriodAvailabilityCreateManyArgs<ExtArgs extends runtime.Types.E
    * The data used to create many RoomPeriodAvailabilities.
    */
   data: Prisma.RoomPeriodAvailabilityCreateManyInput | Prisma.RoomPeriodAvailabilityCreateManyInput[]
-  skipDuplicates?: boolean
 }
 
 /**
@@ -1344,7 +1341,6 @@ export type RoomPeriodAvailabilityCreateManyAndReturnArgs<ExtArgs extends runtim
    * The data used to create many RoomPeriodAvailabilities.
    */
   data: Prisma.RoomPeriodAvailabilityCreateManyInput | Prisma.RoomPeriodAvailabilityCreateManyInput[]
-  skipDuplicates?: boolean
   /**
    * Choose, which related nodes to fetch as well
    */

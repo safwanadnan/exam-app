@@ -641,7 +641,6 @@ export type RoomCreateOrConnectWithoutBuildingInput = {
 
 export type RoomCreateManyBuildingInputEnvelope = {
   data: Prisma.RoomCreateManyBuildingInput | Prisma.RoomCreateManyBuildingInput[]
-  skipDuplicates?: boolean
 }
 
 export type RoomUpsertWithWhereUniqueWithoutBuildingInput = {
@@ -1846,7 +1845,6 @@ export type RoomCreateManyArgs<ExtArgs extends runtime.Types.Extensions.Internal
    * The data used to create many Rooms.
    */
   data: Prisma.RoomCreateManyInput | Prisma.RoomCreateManyInput[]
-  skipDuplicates?: boolean
 }
 
 /**
@@ -1865,7 +1863,6 @@ export type RoomCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Extensions
    * The data used to create many Rooms.
    */
   data: Prisma.RoomCreateManyInput | Prisma.RoomCreateManyInput[]
-  skipDuplicates?: boolean
   /**
    * Choose, which related nodes to fetch as well
    */

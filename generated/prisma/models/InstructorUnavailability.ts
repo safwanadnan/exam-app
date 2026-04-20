@@ -338,7 +338,6 @@ export type InstructorUnavailabilityCreateOrConnectWithoutInstructorInput = {
 
 export type InstructorUnavailabilityCreateManyInstructorInputEnvelope = {
   data: Prisma.InstructorUnavailabilityCreateManyInstructorInput | Prisma.InstructorUnavailabilityCreateManyInstructorInput[]
-  skipDuplicates?: boolean
 }
 
 export type InstructorUnavailabilityUpsertWithWhereUniqueWithoutInstructorInput = {
@@ -1091,7 +1090,6 @@ export type InstructorUnavailabilityCreateManyArgs<ExtArgs extends runtime.Types
    * The data used to create many InstructorUnavailabilities.
    */
   data: Prisma.InstructorUnavailabilityCreateManyInput | Prisma.InstructorUnavailabilityCreateManyInput[]
-  skipDuplicates?: boolean
 }
 
 /**
@@ -1110,7 +1108,6 @@ export type InstructorUnavailabilityCreateManyAndReturnArgs<ExtArgs extends runt
    * The data used to create many InstructorUnavailabilities.
    */
   data: Prisma.InstructorUnavailabilityCreateManyInput | Prisma.InstructorUnavailabilityCreateManyInput[]
-  skipDuplicates?: boolean
   /**
    * Choose, which related nodes to fetch as well
    */
