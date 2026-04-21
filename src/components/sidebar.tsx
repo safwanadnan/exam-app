@@ -17,7 +17,8 @@ import {
     PieChart,
     FileSpreadsheet,
     LogOut,
-    Tags
+    Tags,
+    Layers
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tip } from "@/components/tip";
@@ -27,6 +28,7 @@ const navigation = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard, tip: "Live overview of your scheduling data and solver activity" },
     { name: "Sessions", href: "/sessions", icon: CalendarDays, tip: "Manage academic terms/semesters for exam scheduling" },
     { name: "Academic Structure", href: "/academic-structure", icon: Building2, tip: "Manage departments, courses, and sections hierarchy" },
+    { name: "Section Groups", href: "/section-groups", icon: Layers, tip: "Control which course sections must share the same exam day (same-day hard constraint toggle)" },
     { name: "Rooms & Buildings", href: "/rooms", icon: Building2, tip: "Configure buildings and rooms available for exam scheduling" },
     { name: "Room Features", href: "/features", icon: Tags, tip: "Define equipment and properties available in rooms" },
     { name: "Exams & Courses", href: "/exams", icon: GraduationCap, tip: "View and manage exams, their duration, and room requirements" },

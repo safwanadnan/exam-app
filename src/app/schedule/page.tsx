@@ -491,14 +491,14 @@ export default function SchedulePage() {
                             {/* Title & time */}
                             <div className="space-y-1">
                                 <h3 className="text-xl font-bold">{detailedAssignment.examName || "Unnamed Exam"}</h3>
-                                <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                <div className="text-sm text-muted-foreground flex items-center gap-2">
                                     <CalendarDays className="h-4 w-4" />
                                     {format(new Date(detailedAssignment.period.date), "EEEE, MMM d, yyyy")}
                                     <span className="opacity-40">|</span>
                                     <Clock className="h-4 w-4" />
                                     {detailedAssignment.period.startTime} – {detailedAssignment.period.endTime}
                                     <Badge variant="outline" className="ml-1">{detailedAssignment.examLength}m</Badge>
-                                </p>
+                                </div>
                             </div>
 
                             {/* Overview chips */}

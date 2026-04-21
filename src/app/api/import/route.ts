@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 /**
- * POST /api/import â€” Bulk data import
+ * POST /api/import Bulk data import
  */
 import { NextRequest } from "next/server";
 import { z } from "zod";
@@ -79,21 +79,41 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
         // 2. Create Buildings & Rooms
         if (data.buildings) {
             for (const b of data.buildings) {
-                await tx.building.create({
-                    data: {
+                // Upsert Building
+                const building = await tx.building.upsert({
+                    where: { code: b.code },
+                    create: {
                         code: b.code,
                         name: b.name,
-                        rooms: {
-                            create: b.rooms.map(r => ({
-                                name: r.name,
-                                capacity: r.capacity,
-                                altCapacity: r.altCapacity,
-                            }))
-                        }
+                    },
+                    update: {
+                        name: b.name,
                     }
                 });
+
+                // Handle Rooms individually for idempotency
+                for (const r of b.rooms) {
+                    await tx.room.upsert({
+                        where: {
+                            name_buildingId: {
+                                name: r.name,
+                                buildingId: building.id
+                            }
+                        },
+                        create: {
+                            name: r.name,
+                            capacity: r.capacity,
+                            altCapacity: r.altCapacity,
+                            buildingId: building.id
+                        },
+                        update: {
+                            capacity: r.capacity,
+                            altCapacity: r.altCapacity
+                        }
+                    });
+                    stats.rooms++;
+                }
                 stats.buildings++;
-                stats.rooms += b.rooms.length;
             }
         }
 
@@ -120,18 +140,22 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
             }
         }
 
-        // 4. Bulk Insert Persons
+        // 4. Bulk Upsert Persons
         const studentValues = Array.from(uniqueStudents.values());
-        if (studentValues.length > 0) {
-            await tx.student.createMany({
-                data: studentValues,
+        for (const s of studentValues) {
+            await tx.student.upsert({
+                where: { externalId: s.externalId },
+                create: s,
+                update: { name: s.name }
             });
         }
 
         const instructorValues = Array.from(uniqueInstructors.values());
-        if (instructorValues.length > 0) {
-            await tx.instructor.createMany({
-                data: instructorValues,
+        for (const i of instructorValues) {
+            await tx.instructor.upsert({
+                where: { externalId: i.externalId },
+                create: i,
+                update: { name: i.name }
             });
         }
 

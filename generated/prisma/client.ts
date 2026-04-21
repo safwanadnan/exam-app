@@ -87,6 +87,16 @@ export type Course = Prisma.CourseModel
  */
 export type Section = Prisma.SectionModel
 /**
+ * Model SectionGroup
+ * 
+ */
+export type SectionGroup = Prisma.SectionGroupModel
+/**
+ * Model SectionGroupMember
+ * 
+ */
+export type SectionGroupMember = Prisma.SectionGroupMemberModel
+/**
  * Model Building
  * 
  */

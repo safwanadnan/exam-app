@@ -60,6 +60,8 @@ export const ModelName = {
   Subject: 'Subject',
   Course: 'Course',
   Section: 'Section',
+  SectionGroup: 'SectionGroup',
+  SectionGroupMember: 'SectionGroupMember',
   Building: 'Building',
   Room: 'Room',
   RoomFeature: 'RoomFeature',
@@ -211,6 +213,27 @@ export const SectionScalarFieldEnum = {
 } as const
 
 export type SectionScalarFieldEnum = (typeof SectionScalarFieldEnum)[keyof typeof SectionScalarFieldEnum]
+
+
+export const SectionGroupScalarFieldEnum = {
+  id: 'id',
+  courseId: 'courseId',
+  instructorKey: 'instructorKey',
+  sameDayRequired: 'sameDayRequired',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SectionGroupScalarFieldEnum = (typeof SectionGroupScalarFieldEnum)[keyof typeof SectionGroupScalarFieldEnum]
+
+
+export const SectionGroupMemberScalarFieldEnum = {
+  id: 'id',
+  sectionGroupId: 'sectionGroupId',
+  sectionId: 'sectionId'
+} as const
+
+export type SectionGroupMemberScalarFieldEnum = (typeof SectionGroupMemberScalarFieldEnum)[keyof typeof SectionGroupMemberScalarFieldEnum]
 
 
 export const BuildingScalarFieldEnum = {

@@ -472,7 +472,7 @@ export class ExamSolver {
 
             if (!dc.isSatisfied(p1, p2)) {
                 if (dc.hard) {
-                    cost += 100000; // Large penalty for hard constraint violation
+                    cost += 1000000; // Increased penalty for hard constraint violation
                 } else {
                     cost += dc.weight * cfg.distributionWeight;
                 }

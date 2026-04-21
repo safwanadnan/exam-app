@@ -245,9 +245,14 @@ export async function loadExamModel(
     // Load distribution constraints
     const dbConstraints = await prisma.distributionConstraint.findMany({
         where: {
-            examA: { examType: { sessionId } },
+            OR: [
+                { examA: { examType: { sessionId } } },
+                { examB: { examType: { sessionId } } },
+            ],
         },
     });
+
+    console.log(`[DataLoader] Loaded ${dbConstraints.length} distribution constraints for session ${sessionId}`);
 
     for (const dbCon of dbConstraints) {
         const dc = new ExamDistributionConstraint({

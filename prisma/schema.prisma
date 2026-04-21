@@ -126,9 +126,10 @@ model Course {
   subjectId   String
   sessionId   String
 
-  subject  Subject         @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  session  AcademicSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  sections Section[]
+  subject       Subject         @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  session       AcademicSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sections      Section[]
+  sectionGroups SectionGroup[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -137,18 +138,47 @@ model Course {
 }
 
 model Section {
-  id         String @id @default(cuid())
+  id            String @id @default(cuid())
   sectionNumber String // e.g., "001"
-  courseId    String
+  courseId      String
 
-  course      Course              @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  enrollments StudentEnrollment[]
-  examOwners  ExamOwner[]
+  course           Course               @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  enrollments      StudentEnrollment[]
+  examOwners       ExamOwner[]
+  groupMemberships SectionGroupMember[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([sectionNumber, courseId])
+}
+
+// Groups sections that share the same course + instructor set.
+// When sameDayRequired=true, all exams in the group get a SAME_DAY hard constraint.
+model SectionGroup {
+  id              String  @id @default(cuid())
+  courseId        String
+  instructorKey   String  // sorted instructor externalIds joined by "|"
+  sameDayRequired Boolean @default(true)
+
+  course   Course              @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  members  SectionGroupMember[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([courseId, instructorKey])
+}
+
+model SectionGroupMember {
+  id             String @id @default(cuid())
+  sectionGroupId String
+  sectionId      String
+
+  group   SectionGroup @relation(fields: [sectionGroupId], references: [id], onDelete: Cascade)
+  section Section      @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  @@unique([sectionGroupId, sectionId])
 }
 
 // ============================================================================

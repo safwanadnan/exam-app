@@ -393,6 +393,8 @@ export const ModelName = {
   Subject: 'Subject',
   Course: 'Course',
   Section: 'Section',
+  SectionGroup: 'SectionGroup',
+  SectionGroupMember: 'SectionGroupMember',
   Building: 'Building',
   Room: 'Room',
   RoomFeature: 'RoomFeature',
@@ -431,7 +433,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "account" | "session" | "verificationToken" | "academicSession" | "department" | "subject" | "course" | "section" | "building" | "room" | "roomFeature" | "roomFeatureAssignment" | "roomPeriodAvailability" | "examType" | "examPeriod" | "exam" | "examOwner" | "student" | "studentEnrollment" | "studentUnavailability" | "instructor" | "instructorAssignment" | "instructorUnavailability" | "distributionConstraint" | "periodPreference" | "roomPreference" | "roomFeaturePreference" | "examAssignment" | "examAssignmentRoom" | "solverConfig" | "solverRun"
+    modelProps: "user" | "account" | "session" | "verificationToken" | "academicSession" | "department" | "subject" | "course" | "section" | "sectionGroup" | "sectionGroupMember" | "building" | "room" | "roomFeature" | "roomFeatureAssignment" | "roomPeriodAvailability" | "examType" | "examPeriod" | "exam" | "examOwner" | "student" | "studentEnrollment" | "studentUnavailability" | "instructor" | "instructorAssignment" | "instructorUnavailability" | "distributionConstraint" | "periodPreference" | "roomPreference" | "roomFeaturePreference" | "examAssignment" | "examAssignmentRoom" | "solverConfig" | "solverRun"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1098,6 +1100,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.SectionCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.SectionCountAggregateOutputType> | number
+        }
+      }
+    }
+    SectionGroup: {
+      payload: Prisma.$SectionGroupPayload<ExtArgs>
+      fields: Prisma.SectionGroupFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.SectionGroupFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SectionGroupPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.SectionGroupFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SectionGroupPayload>
+        }
+        findFirst: {
+          args: Prisma.SectionGroupFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SectionGroupPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.SectionGroupFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SectionGroupPayload>
+        }
+        findMany: {
+          args: Prisma.SectionGroupFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SectionGroupPayload>[]
+        }
+        create: {
+          args: Prisma.SectionGroupCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SectionGroupPayload>
+        }
+        createMany: {
+          args: Prisma.SectionGroupCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.SectionGroupCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SectionGroupPayload>[]
+        }
+        delete: {
+          args: Prisma.SectionGroupDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SectionGroupPayload>
+        }
+        update: {
+          args: Prisma.SectionGroupUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SectionGroupPayload>
+        }
+        deleteMany: {
+          args: Prisma.SectionGroupDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.SectionGroupUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.SectionGroupUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SectionGroupPayload>[]
+        }
+        upsert: {
+          args: Prisma.SectionGroupUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SectionGroupPayload>
+        }
+        aggregate: {
+          args: Prisma.SectionGroupAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateSectionGroup>
+        }
+        groupBy: {
+          args: Prisma.SectionGroupGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SectionGroupGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.SectionGroupCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SectionGroupCountAggregateOutputType> | number
+        }
+      }
+    }
+    SectionGroupMember: {
+      payload: Prisma.$SectionGroupMemberPayload<ExtArgs>
+      fields: Prisma.SectionGroupMemberFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.SectionGroupMemberFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SectionGroupMemberPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.SectionGroupMemberFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SectionGroupMemberPayload>
+        }
+        findFirst: {
+          args: Prisma.SectionGroupMemberFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SectionGroupMemberPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.SectionGroupMemberFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SectionGroupMemberPayload>
+        }
+        findMany: {
+          args: Prisma.SectionGroupMemberFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SectionGroupMemberPayload>[]
+        }
+        create: {
+          args: Prisma.SectionGroupMemberCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SectionGroupMemberPayload>
+        }
+        createMany: {
+          args: Prisma.SectionGroupMemberCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.SectionGroupMemberCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SectionGroupMemberPayload>[]
+        }
+        delete: {
+          args: Prisma.SectionGroupMemberDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SectionGroupMemberPayload>
+        }
+        update: {
+          args: Prisma.SectionGroupMemberUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SectionGroupMemberPayload>
+        }
+        deleteMany: {
+          args: Prisma.SectionGroupMemberDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.SectionGroupMemberUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.SectionGroupMemberUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SectionGroupMemberPayload>[]
+        }
+        upsert: {
+          args: Prisma.SectionGroupMemberUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SectionGroupMemberPayload>
+        }
+        aggregate: {
+          args: Prisma.SectionGroupMemberAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateSectionGroupMember>
+        }
+        groupBy: {
+          args: Prisma.SectionGroupMemberGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SectionGroupMemberGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.SectionGroupMemberCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SectionGroupMemberCountAggregateOutputType> | number
         }
       }
     }
@@ -2954,6 +3104,27 @@ export const SectionScalarFieldEnum = {
 export type SectionScalarFieldEnum = (typeof SectionScalarFieldEnum)[keyof typeof SectionScalarFieldEnum]
 
 
+export const SectionGroupScalarFieldEnum = {
+  id: 'id',
+  courseId: 'courseId',
+  instructorKey: 'instructorKey',
+  sameDayRequired: 'sameDayRequired',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SectionGroupScalarFieldEnum = (typeof SectionGroupScalarFieldEnum)[keyof typeof SectionGroupScalarFieldEnum]
+
+
+export const SectionGroupMemberScalarFieldEnum = {
+  id: 'id',
+  sectionGroupId: 'sectionGroupId',
+  sectionId: 'sectionId'
+} as const
+
+export type SectionGroupMemberScalarFieldEnum = (typeof SectionGroupMemberScalarFieldEnum)[keyof typeof SectionGroupMemberScalarFieldEnum]
+
+
 export const BuildingScalarFieldEnum = {
   id: 'id',
   code: 'code',
@@ -3426,6 +3597,8 @@ export type GlobalOmitConfig = {
   subject?: Prisma.SubjectOmit
   course?: Prisma.CourseOmit
   section?: Prisma.SectionOmit
+  sectionGroup?: Prisma.SectionGroupOmit
+  sectionGroupMember?: Prisma.SectionGroupMemberOmit
   building?: Prisma.BuildingOmit
   room?: Prisma.RoomOmit
   roomFeature?: Prisma.RoomFeatureOmit
