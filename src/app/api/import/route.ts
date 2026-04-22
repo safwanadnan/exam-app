@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma, jsonResponse, parseBody, withErrorHandling } from "@/lib/api-helpers";
+import { recomputeSectionGroups } from "@/lib/section-groups";
 
 // Simplified schema for the bulk import payload
 const importSchema = z.object({
@@ -331,5 +332,15 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
         timeout: 6000000 // Allow up to 60s for massive structural imports
     });
 
-    return jsonResponse({ success: true, message: "Import completed successfully", result }, 201);
+    const sectionGroups = await recomputeSectionGroups(prisma, result.sessionId);
+
+    return jsonResponse(
+        {
+            success: true,
+            message: "Import completed successfully",
+            result,
+            sectionGroups,
+        },
+        201
+    );
 });

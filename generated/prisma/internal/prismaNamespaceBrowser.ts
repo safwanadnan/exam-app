@@ -219,6 +219,7 @@ export const SectionGroupScalarFieldEnum = {
   id: 'id',
   courseId: 'courseId',
   instructorKey: 'instructorKey',
+  sameInstructorSyncRequired: 'sameInstructorSyncRequired',
   sameDayRequired: 'sameDayRequired',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'

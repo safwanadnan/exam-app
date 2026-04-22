@@ -4,6 +4,7 @@
  */
 import { ExamSolver, loadExamModel, saveExamResults, type SolverProgress } from "@/solver";
 import { prisma } from "./prisma";
+import { recomputeSectionGroups } from "./section-groups";
 
 // Use global.EventTarget if available, or fallback
 // We'll use a basic EventTarget to emit progress events for SSE.
@@ -38,6 +39,9 @@ export async function startSolverRun(runId: string, sessionId: string, configId:
         where: { id: runId },
         data: { status: "RUNNING", startedAt: new Date() },
     });
+
+    // Keep section-group constraints aligned with latest imported data before loading the model.
+    await recomputeSectionGroups(prisma, sessionId);
 
     // Load the model
     const model = await loadExamModel(prisma, sessionId, configId);

@@ -12,12 +12,14 @@ function createPrismaClient(): PrismaClient {
     return new PrismaClient({ adapter });
 }
 
-export const prisma = globalForPrisma.prisma ?? createPrismaClient();
+// Avoid stale model metadata in dev after schema/client changes.
+// Production still uses a singleton to reduce connection churn.
+export const prisma =
+    process.env.NODE_ENV === "production"
+        ? (globalForPrisma.prisma ?? createPrismaClient())
+        : createPrismaClient();
 
-// In development, cache the instance on globalThis to survive HMR.
-// The ?? above ensures we reuse the cached instance across hot reloads,
-// preventing too-many-connections issues in dev.
-if (process.env.NODE_ENV !== "production") {
+if (process.env.NODE_ENV === "production") {
     globalForPrisma.prisma = prisma;
 }
 

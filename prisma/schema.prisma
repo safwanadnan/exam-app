@@ -154,12 +154,14 @@ model Section {
 }
 
 // Groups sections that share the same course + instructor set.
-// When sameDayRequired=true, all exams in the group get a SAME_DAY hard constraint.
+// sameInstructorSyncRequired controls same-instructor section unification (default ON).
+// sameDayRequired controls cross-instructor sync inside the same course (default OFF).
 model SectionGroup {
   id              String  @id @default(cuid())
   courseId        String
   instructorKey   String  // sorted instructor externalIds joined by "|"
-  sameDayRequired Boolean @default(true)
+  sameInstructorSyncRequired Boolean @default(true)
+  sameDayRequired Boolean @default(false)
 
   course   Course              @relation(fields: [courseId], references: [id], onDelete: Cascade)
   members  SectionGroupMember[]

@@ -28,6 +28,7 @@ export type SectionGroupMinAggregateOutputType = {
   id: string | null
   courseId: string | null
   instructorKey: string | null
+  sameInstructorSyncRequired: boolean | null
   sameDayRequired: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -37,6 +38,7 @@ export type SectionGroupMaxAggregateOutputType = {
   id: string | null
   courseId: string | null
   instructorKey: string | null
+  sameInstructorSyncRequired: boolean | null
   sameDayRequired: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -46,6 +48,7 @@ export type SectionGroupCountAggregateOutputType = {
   id: number
   courseId: number
   instructorKey: number
+  sameInstructorSyncRequired: number
   sameDayRequired: number
   createdAt: number
   updatedAt: number
@@ -57,6 +60,7 @@ export type SectionGroupMinAggregateInputType = {
   id?: true
   courseId?: true
   instructorKey?: true
+  sameInstructorSyncRequired?: true
   sameDayRequired?: true
   createdAt?: true
   updatedAt?: true
@@ -66,6 +70,7 @@ export type SectionGroupMaxAggregateInputType = {
   id?: true
   courseId?: true
   instructorKey?: true
+  sameInstructorSyncRequired?: true
   sameDayRequired?: true
   createdAt?: true
   updatedAt?: true
@@ -75,6 +80,7 @@ export type SectionGroupCountAggregateInputType = {
   id?: true
   courseId?: true
   instructorKey?: true
+  sameInstructorSyncRequired?: true
   sameDayRequired?: true
   createdAt?: true
   updatedAt?: true
@@ -157,6 +163,7 @@ export type SectionGroupGroupByOutputType = {
   id: string
   courseId: string
   instructorKey: string
+  sameInstructorSyncRequired: boolean
   sameDayRequired: boolean
   createdAt: Date
   updatedAt: Date
@@ -187,6 +194,7 @@ export type SectionGroupWhereInput = {
   id?: Prisma.StringFilter<"SectionGroup"> | string
   courseId?: Prisma.StringFilter<"SectionGroup"> | string
   instructorKey?: Prisma.StringFilter<"SectionGroup"> | string
+  sameInstructorSyncRequired?: Prisma.BoolFilter<"SectionGroup"> | boolean
   sameDayRequired?: Prisma.BoolFilter<"SectionGroup"> | boolean
   createdAt?: Prisma.DateTimeFilter<"SectionGroup"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SectionGroup"> | Date | string
@@ -198,6 +206,7 @@ export type SectionGroupOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   courseId?: Prisma.SortOrder
   instructorKey?: Prisma.SortOrder
+  sameInstructorSyncRequired?: Prisma.SortOrder
   sameDayRequired?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -213,6 +222,7 @@ export type SectionGroupWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.SectionGroupWhereInput | Prisma.SectionGroupWhereInput[]
   courseId?: Prisma.StringFilter<"SectionGroup"> | string
   instructorKey?: Prisma.StringFilter<"SectionGroup"> | string
+  sameInstructorSyncRequired?: Prisma.BoolFilter<"SectionGroup"> | boolean
   sameDayRequired?: Prisma.BoolFilter<"SectionGroup"> | boolean
   createdAt?: Prisma.DateTimeFilter<"SectionGroup"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SectionGroup"> | Date | string
@@ -224,6 +234,7 @@ export type SectionGroupOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   courseId?: Prisma.SortOrder
   instructorKey?: Prisma.SortOrder
+  sameInstructorSyncRequired?: Prisma.SortOrder
   sameDayRequired?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -239,6 +250,7 @@ export type SectionGroupScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"SectionGroup"> | string
   courseId?: Prisma.StringWithAggregatesFilter<"SectionGroup"> | string
   instructorKey?: Prisma.StringWithAggregatesFilter<"SectionGroup"> | string
+  sameInstructorSyncRequired?: Prisma.BoolWithAggregatesFilter<"SectionGroup"> | boolean
   sameDayRequired?: Prisma.BoolWithAggregatesFilter<"SectionGroup"> | boolean
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"SectionGroup"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"SectionGroup"> | Date | string
@@ -247,6 +259,7 @@ export type SectionGroupScalarWhereWithAggregatesInput = {
 export type SectionGroupCreateInput = {
   id?: string
   instructorKey: string
+  sameInstructorSyncRequired?: boolean
   sameDayRequired?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -258,6 +271,7 @@ export type SectionGroupUncheckedCreateInput = {
   id?: string
   courseId: string
   instructorKey: string
+  sameInstructorSyncRequired?: boolean
   sameDayRequired?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -267,6 +281,7 @@ export type SectionGroupUncheckedCreateInput = {
 export type SectionGroupUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   instructorKey?: Prisma.StringFieldUpdateOperationsInput | string
+  sameInstructorSyncRequired?: Prisma.BoolFieldUpdateOperationsInput | boolean
   sameDayRequired?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -278,6 +293,7 @@ export type SectionGroupUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   courseId?: Prisma.StringFieldUpdateOperationsInput | string
   instructorKey?: Prisma.StringFieldUpdateOperationsInput | string
+  sameInstructorSyncRequired?: Prisma.BoolFieldUpdateOperationsInput | boolean
   sameDayRequired?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -288,6 +304,7 @@ export type SectionGroupCreateManyInput = {
   id?: string
   courseId: string
   instructorKey: string
+  sameInstructorSyncRequired?: boolean
   sameDayRequired?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -296,6 +313,7 @@ export type SectionGroupCreateManyInput = {
 export type SectionGroupUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   instructorKey?: Prisma.StringFieldUpdateOperationsInput | string
+  sameInstructorSyncRequired?: Prisma.BoolFieldUpdateOperationsInput | boolean
   sameDayRequired?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -305,6 +323,7 @@ export type SectionGroupUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   courseId?: Prisma.StringFieldUpdateOperationsInput | string
   instructorKey?: Prisma.StringFieldUpdateOperationsInput | string
+  sameInstructorSyncRequired?: Prisma.BoolFieldUpdateOperationsInput | boolean
   sameDayRequired?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -329,6 +348,7 @@ export type SectionGroupCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   courseId?: Prisma.SortOrder
   instructorKey?: Prisma.SortOrder
+  sameInstructorSyncRequired?: Prisma.SortOrder
   sameDayRequired?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -338,6 +358,7 @@ export type SectionGroupMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   courseId?: Prisma.SortOrder
   instructorKey?: Prisma.SortOrder
+  sameInstructorSyncRequired?: Prisma.SortOrder
   sameDayRequired?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -347,6 +368,7 @@ export type SectionGroupMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   courseId?: Prisma.SortOrder
   instructorKey?: Prisma.SortOrder
+  sameInstructorSyncRequired?: Prisma.SortOrder
   sameDayRequired?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -416,6 +438,7 @@ export type SectionGroupUpdateOneRequiredWithoutMembersNestedInput = {
 export type SectionGroupCreateWithoutCourseInput = {
   id?: string
   instructorKey: string
+  sameInstructorSyncRequired?: boolean
   sameDayRequired?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -425,6 +448,7 @@ export type SectionGroupCreateWithoutCourseInput = {
 export type SectionGroupUncheckedCreateWithoutCourseInput = {
   id?: string
   instructorKey: string
+  sameInstructorSyncRequired?: boolean
   sameDayRequired?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -463,6 +487,7 @@ export type SectionGroupScalarWhereInput = {
   id?: Prisma.StringFilter<"SectionGroup"> | string
   courseId?: Prisma.StringFilter<"SectionGroup"> | string
   instructorKey?: Prisma.StringFilter<"SectionGroup"> | string
+  sameInstructorSyncRequired?: Prisma.BoolFilter<"SectionGroup"> | boolean
   sameDayRequired?: Prisma.BoolFilter<"SectionGroup"> | boolean
   createdAt?: Prisma.DateTimeFilter<"SectionGroup"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SectionGroup"> | Date | string
@@ -471,6 +496,7 @@ export type SectionGroupScalarWhereInput = {
 export type SectionGroupCreateWithoutMembersInput = {
   id?: string
   instructorKey: string
+  sameInstructorSyncRequired?: boolean
   sameDayRequired?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -481,6 +507,7 @@ export type SectionGroupUncheckedCreateWithoutMembersInput = {
   id?: string
   courseId: string
   instructorKey: string
+  sameInstructorSyncRequired?: boolean
   sameDayRequired?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -505,6 +532,7 @@ export type SectionGroupUpdateToOneWithWhereWithoutMembersInput = {
 export type SectionGroupUpdateWithoutMembersInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   instructorKey?: Prisma.StringFieldUpdateOperationsInput | string
+  sameInstructorSyncRequired?: Prisma.BoolFieldUpdateOperationsInput | boolean
   sameDayRequired?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -515,6 +543,7 @@ export type SectionGroupUncheckedUpdateWithoutMembersInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   courseId?: Prisma.StringFieldUpdateOperationsInput | string
   instructorKey?: Prisma.StringFieldUpdateOperationsInput | string
+  sameInstructorSyncRequired?: Prisma.BoolFieldUpdateOperationsInput | boolean
   sameDayRequired?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -523,6 +552,7 @@ export type SectionGroupUncheckedUpdateWithoutMembersInput = {
 export type SectionGroupCreateManyCourseInput = {
   id?: string
   instructorKey: string
+  sameInstructorSyncRequired?: boolean
   sameDayRequired?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -531,6 +561,7 @@ export type SectionGroupCreateManyCourseInput = {
 export type SectionGroupUpdateWithoutCourseInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   instructorKey?: Prisma.StringFieldUpdateOperationsInput | string
+  sameInstructorSyncRequired?: Prisma.BoolFieldUpdateOperationsInput | boolean
   sameDayRequired?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -540,6 +571,7 @@ export type SectionGroupUpdateWithoutCourseInput = {
 export type SectionGroupUncheckedUpdateWithoutCourseInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   instructorKey?: Prisma.StringFieldUpdateOperationsInput | string
+  sameInstructorSyncRequired?: Prisma.BoolFieldUpdateOperationsInput | boolean
   sameDayRequired?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -549,6 +581,7 @@ export type SectionGroupUncheckedUpdateWithoutCourseInput = {
 export type SectionGroupUncheckedUpdateManyWithoutCourseInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   instructorKey?: Prisma.StringFieldUpdateOperationsInput | string
+  sameInstructorSyncRequired?: Prisma.BoolFieldUpdateOperationsInput | boolean
   sameDayRequired?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -589,6 +622,7 @@ export type SectionGroupSelect<ExtArgs extends runtime.Types.Extensions.Internal
   id?: boolean
   courseId?: boolean
   instructorKey?: boolean
+  sameInstructorSyncRequired?: boolean
   sameDayRequired?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -601,6 +635,7 @@ export type SectionGroupSelectCreateManyAndReturn<ExtArgs extends runtime.Types.
   id?: boolean
   courseId?: boolean
   instructorKey?: boolean
+  sameInstructorSyncRequired?: boolean
   sameDayRequired?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -611,6 +646,7 @@ export type SectionGroupSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.
   id?: boolean
   courseId?: boolean
   instructorKey?: boolean
+  sameInstructorSyncRequired?: boolean
   sameDayRequired?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -621,12 +657,13 @@ export type SectionGroupSelectScalar = {
   id?: boolean
   courseId?: boolean
   instructorKey?: boolean
+  sameInstructorSyncRequired?: boolean
   sameDayRequired?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type SectionGroupOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "courseId" | "instructorKey" | "sameDayRequired" | "createdAt" | "updatedAt", ExtArgs["result"]["sectionGroup"]>
+export type SectionGroupOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "courseId" | "instructorKey" | "sameInstructorSyncRequired" | "sameDayRequired" | "createdAt" | "updatedAt", ExtArgs["result"]["sectionGroup"]>
 export type SectionGroupInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   course?: boolean | Prisma.CourseDefaultArgs<ExtArgs>
   members?: boolean | Prisma.SectionGroup$membersArgs<ExtArgs>
@@ -649,6 +686,7 @@ export type $SectionGroupPayload<ExtArgs extends runtime.Types.Extensions.Intern
     id: string
     courseId: string
     instructorKey: string
+    sameInstructorSyncRequired: boolean
     sameDayRequired: boolean
     createdAt: Date
     updatedAt: Date
@@ -1080,6 +1118,7 @@ export interface SectionGroupFieldRefs {
   readonly id: Prisma.FieldRef<"SectionGroup", 'String'>
   readonly courseId: Prisma.FieldRef<"SectionGroup", 'String'>
   readonly instructorKey: Prisma.FieldRef<"SectionGroup", 'String'>
+  readonly sameInstructorSyncRequired: Prisma.FieldRef<"SectionGroup", 'Boolean'>
   readonly sameDayRequired: Prisma.FieldRef<"SectionGroup", 'Boolean'>
   readonly createdAt: Prisma.FieldRef<"SectionGroup", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"SectionGroup", 'DateTime'>

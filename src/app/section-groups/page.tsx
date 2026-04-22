@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import {
-    Layers, Users, BookOpen, ToggleLeft, ToggleRight, RefreshCw,
+    Layers, Users, ToggleLeft, ToggleRight, RefreshCw,
     ChevronDown, ChevronRight, ShieldAlert, ShieldCheck, Wand2, Loader2, GraduationCap, Hash
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { HelpTip, Tip } from "@/components/tip";
 import { toast } from "sonner";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -26,6 +27,7 @@ interface SectionGroup {
     id: string;
     instructorKey: string;
     instructorNames: string[];
+    sameInstructorSyncRequired: boolean;
     sameDayRequired: boolean;
     course: {
         courseNumber: string;
@@ -105,27 +107,53 @@ export default function SectionGroupsPage() {
         }
     };
 
-    // ── Toggle same-day ───────────────────────────────────────────────────────
-    const handleToggle = async (groupId: string, newValue: boolean) => {
+    const patchGroup = async (
+        groupId: string,
+        payload: { sameDayRequired?: boolean; sameInstructorSyncRequired?: boolean },
+        successMessage: string
+    ) => {
         setToggling(prev => new Set(prev).add(groupId));
         try {
             const res = await fetch(`/api/section-groups/${groupId}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ sameDayRequired: newValue }),
+                body: JSON.stringify(payload),
             });
+            const data = await res.json();
             if (!res.ok) throw new Error("Toggle failed");
-            setGroups(prev => prev.map(g => g.id === groupId ? { ...g, sameDayRequired: newValue } : g));
-            toast.success(
-                newValue
-                    ? "Same-day required — hard constraint added"
-                    : "Constraint removed — sections can be on different days"
-            );
+            setGroups(prev => prev.map(g => g.id === groupId ? {
+                ...g,
+                sameDayRequired: data.sameDayRequired,
+                sameInstructorSyncRequired: data.sameInstructorSyncRequired,
+            } : g));
+            toast.success(successMessage);
         } catch (e: any) {
             toast.error(e.message || "Failed to update group");
         } finally {
             setToggling(prev => { const s = new Set(prev); s.delete(groupId); return s; });
         }
+    };
+
+    // ── Toggle cross-instructor sync ────────────────────────────────────────
+    const handleCourseSyncToggle = async (groupId: string, newValue: boolean) => {
+        await patchGroup(
+            groupId,
+            { sameDayRequired: newValue },
+            newValue
+                ? "Cross-instructor sync enabled"
+                : "Cross-instructor sync disabled"
+        );
+    };
+
+    // ── Toggle same-instructor sync ─────────────────────────────────────────
+    const handleInstructorSyncToggle = async (groupId: string, newValue: boolean) => {
+        await patchGroup(
+            groupId,
+            { sameInstructorSyncRequired: newValue },
+            newValue
+                ? "Same-instructor sync enabled"
+                : "Same-instructor sync disabled"
+        );
     };
 
     // ── Hierarchical grouping by course title ─────────────────────────────────
@@ -175,14 +203,13 @@ export default function SectionGroupsPage() {
                         Section Groups
                     </h2>
                     <p className="text-muted-foreground mt-1 text-sm">
-                        Course → Teacher Section (toggle) → Class Codes.
-                        Same course + same teacher = one section. Toggle ON = SAME_DAY hard constraint.
+                        Manage section-level exam coupling rules by course and instructor.
                     </p>
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
                     <Select value={selectedSessionId} onValueChange={setSelectedSessionId}>
-                        <SelectTrigger className="w-[200px]">
+                        <SelectTrigger className="w-50">
                             <SelectValue placeholder="Select session" />
                         </SelectTrigger>
                         <SelectContent>
@@ -220,7 +247,7 @@ export default function SectionGroupsPage() {
                         <CardContent className="pt-4 pb-4">
                             <div className="text-2xl font-bold text-emerald-600">{sameDayCount}</div>
                             <div className="text-sm text-muted-foreground flex items-center gap-1">
-                                <ToggleRight className="h-3 w-3" /> Same-day constrained
+                                <ToggleRight className="h-3 w-3" /> Cross-instructor synced
                             </div>
                         </CardContent>
                     </Card>
@@ -228,7 +255,7 @@ export default function SectionGroupsPage() {
                         <CardContent className="pt-4 pb-4">
                             <div className="text-2xl font-bold text-amber-600">{flexCount}</div>
                             <div className="text-sm text-muted-foreground flex items-center gap-1">
-                                <ToggleLeft className="h-3 w-3" /> Flexible scheduling
+                                <ToggleLeft className="h-3 w-3" /> Cross-instructor independent
                             </div>
                         </CardContent>
                     </Card>
@@ -250,7 +277,7 @@ export default function SectionGroupsPage() {
                             <span>🔗 <strong>{recomputeResult.diagnostic?.examsWithOwners ?? 0}</strong> linked to a course</span>
                             <span>👤 <strong>{recomputeResult.diagnostic?.examsWithInstructors ?? 0}</strong> with instructors</span>
                             <span>📦 <strong>{recomputeResult.groupsCreated ?? 0}</strong> section groups created</span>
-                            <span>⛓️ <strong>{recomputeResult.constraintsCreated ?? 0}</strong> SAME_DAY constraints</span>
+                            <span>⛓️ <strong>{recomputeResult.constraintsCreated ?? 0}</strong> SAME_PERIOD constraints</span>
                         </div>
                         {recomputeResult.diagnostic?.examsWithOwners === 0 && (
                             <p className="text-xs text-amber-700 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 rounded px-3 py-2">
@@ -265,14 +292,14 @@ export default function SectionGroupsPage() {
                                             <th className="text-left px-3 py-1.5">Course Title</th>
                                             <th className="text-left px-3 py-1.5">Instructor</th>
                                             <th className="text-right px-3 py-1.5">Exams</th>
-                                            <th className="text-right px-3 py-1.5">SAME_DAY?</th>
+                                                <th className="text-right px-3 py-1.5">SAME_PERIOD?</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y">
                                         {recomputeResult.diagnostic.breakdown.map((row: any, i: number) => (
                                             <tr key={i} className={row.examCount >= 2 ? "bg-emerald-50/30 dark:bg-emerald-950/10" : ""}>
-                                                <td className="px-3 py-1 font-medium max-w-[200px] truncate">{row.courseTitle}</td>
-                                                <td className="px-3 py-1 text-muted-foreground max-w-[200px] truncate">
+                                                <td className="px-3 py-1 font-medium max-w-50 truncate">{row.courseTitle}</td>
+                                                <td className="px-3 py-1 text-muted-foreground max-w-50 truncate">
                                                     {row.instructorKey === "__no_instructor__" ? <em>None</em> : row.instructorKey}
                                                 </td>
                                                 <td className="px-3 py-1 text-right">{row.examCount}</td>
@@ -295,10 +322,12 @@ export default function SectionGroupsPage() {
             {/* ── Main hierarchical list ── */}
             <Card>
                 <CardHeader className="border-b bg-muted/20 py-4">
-                    <CardTitle className="text-lg">Courses & Sections</CardTitle>
+                    <CardTitle className="text-lg flex items-center gap-1">
+                        Courses & Sections
+                        <HelpTip text="Synced means SAME_PERIOD is required. Separate means no SAME_PERIOD constraint is added, so they may still land together if the solver chooses." />
+                    </CardTitle>
                     <CardDescription>
-                        Click a course to see teachers. Classes of the same teacher always share the same exam period. 
-                        Enable "Sync" to force multiple teachers to have their exams at the same time.
+                        Same instructor in the same course is synced by default. Different instructors in the same course are independent by default and can be synced.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
@@ -332,17 +361,17 @@ export default function SectionGroupsPage() {
                                             className="flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:bg-muted/40 transition-colors select-none"
                                             onClick={() => toggleCourse(courseKey)}
                                         >
-                                            <span className="text-muted-foreground flex-shrink-0">
+                                            <span className="text-muted-foreground shrink-0">
                                                 {isCourseExpanded
                                                     ? <ChevronDown className="h-4 w-4" />
                                                     : <ChevronRight className="h-4 w-4" />
                                                 }
                                             </span>
-                                            <GraduationCap className="h-4 w-4 text-primary flex-shrink-0" />
+                                            <GraduationCap className="h-4 w-4 text-primary shrink-0" />
                                             <span className="font-semibold text-sm flex-1 truncate">
                                                 {node.courseTitle}
                                             </span>
-                                            <div className="flex items-center gap-2 flex-shrink-0">
+                                            <div className="flex items-center gap-2 shrink-0">
                                                 {/* sections = number of distinct teachers */}
                                                 <Badge variant="outline" className="text-[10px] gap-1 py-0">
                                                     <Layers className="h-2.5 w-2.5" />
@@ -378,7 +407,7 @@ export default function SectionGroupsPage() {
                                                             <div className="flex items-center gap-3 pl-10 pr-4 py-3 hover:bg-muted/30 transition-colors">
                                                                 {/* Expand classes */}
                                                                 <span
-                                                                    className="text-muted-foreground cursor-pointer flex-shrink-0"
+                                                                    className="text-muted-foreground cursor-pointer shrink-0"
                                                                     onClick={() => toggleSection(group.id)}
                                                                 >
                                                                     {isSectionExpanded
@@ -395,32 +424,56 @@ export default function SectionGroupsPage() {
                                                                     <span className="text-sm font-medium truncate text-foreground/90">
                                                                         {instructorDisplay}
                                                                     </span>
-                                                                    <span className="text-xs text-muted-foreground flex-shrink-0 flex items-center gap-1">
+                                                                    <span className="text-xs text-muted-foreground shrink-0 flex items-center gap-1">
                                                                         <Hash className="h-3 w-3" />{classCount} {classCount === 1 ? "class" : "classes"}
                                                                     </span>
-                                                                    <span className="text-xs text-muted-foreground flex-shrink-0 flex items-center gap-1">
+                                                                    <span className="text-xs text-muted-foreground shrink-0 flex items-center gap-1">
                                                                         <Users className="h-3 w-3" />{groupStudents}
                                                                     </span>
                                                                 </div>
 
-                                                                {/* Same-day toggle */}
-                                                                <div className="flex items-center gap-2 flex-shrink-0">
+                                                                {/* Group behavior toggles */}
+                                                                <div className="flex items-center gap-4 shrink-0">
+                                                                    <Tip content="When enabled, all classes in this same-instructor section must be in the same exam period.">
+                                                                        <div className="flex items-center gap-2">
+                                                                            {group.sameInstructorSyncRequired && (
+                                                                                <ShieldCheck className="h-3.5 w-3.5 text-indigo-600" />
+                                                                            )}
+                                                                            <Label
+                                                                                htmlFor={`instructor-toggle-${group.id}`}
+                                                                                className={`text-xs cursor-pointer select-none ${group.sameInstructorSyncRequired ? "text-indigo-600 font-medium" : "text-muted-foreground"}`}
+                                                                            >
+                                                                                {group.sameInstructorSyncRequired ? "Same Instructor: Synced" : "Same Instructor: Separate"}
+                                                                            </Label>
+                                                                            <Switch
+                                                                                id={`instructor-toggle-${group.id}`}
+                                                                                checked={group.sameInstructorSyncRequired}
+                                                                                disabled={isToggling}
+                                                                                onCheckedChange={val => handleInstructorSyncToggle(group.id, val)}
+                                                                                className={`cursor-pointer ${group.sameInstructorSyncRequired ? "data-[state=checked]:bg-indigo-600" : ""}`}
+                                                                            />
+                                                                        </div>
+                                                                    </Tip>
                                                                     {group.sameDayRequired && (
                                                                         <ShieldAlert className="h-3.5 w-3.5 text-emerald-600" />
                                                                     )}
-                                                                    <Label
-                                                                        htmlFor={`toggle-${group.id}`}
-                                                                        className={`text-xs cursor-pointer select-none ${group.sameDayRequired ? "text-indigo-600 font-medium" : "text-muted-foreground"}`}
-                                                                    >
-                                                                        {group.sameDayRequired ? "Sync Course" : "Independent"}
-                                                                    </Label>
-                                                                    <Switch
-                                                                        id={`toggle-${group.id}`}
-                                                                        checked={group.sameDayRequired}
-                                                                        disabled={isToggling}
-                                                                        onCheckedChange={val => handleToggle(group.id, val)}
-                                                                        className={`cursor-pointer ${group.sameDayRequired ? "data-[state=checked]:bg-indigo-600" : ""}`}
-                                                                    />
+                                                                    <Tip content="When enabled, this section is forced to the same exam period as other cross-instructor synced sections of this course.">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <Label
+                                                                                htmlFor={`course-toggle-${group.id}`}
+                                                                                className={`text-xs cursor-pointer select-none ${group.sameDayRequired ? "text-indigo-600 font-medium" : "text-muted-foreground"}`}
+                                                                            >
+                                                                                {group.sameDayRequired ? "Cross Instructor: Synced" : "Cross Instructor: Independent"}
+                                                                            </Label>
+                                                                            <Switch
+                                                                                id={`course-toggle-${group.id}`}
+                                                                                checked={group.sameDayRequired}
+                                                                                disabled={isToggling}
+                                                                                onCheckedChange={val => handleCourseSyncToggle(group.id, val)}
+                                                                                className={`cursor-pointer ${group.sameDayRequired ? "data-[state=checked]:bg-indigo-600" : ""}`}
+                                                                            />
+                                                                        </div>
+                                                                    </Tip>
                                                                 </div>
                                                             </div>
 
@@ -441,16 +494,28 @@ export default function SectionGroupsPage() {
                                                                             </div>
                                                                         ))}
                                                                     </div>
-                                                                    {group.members.length > 1 && (
+                                                                    {group.members.length > 1 && group.sameInstructorSyncRequired && (
                                                                         <div className="mt-2 flex items-center gap-1.5 text-[10px] text-indigo-700 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800 rounded px-2 py-1 w-fit">
                                                                             <ShieldCheck className="h-3 w-3" />
-                                                                            Mandatory: These {group.members.length} classes always share the same period.
+                                                                            Mandatory: These {group.members.length} classes must share the same exam period.
+                                                                        </div>
+                                                                    )}
+                                                                    {group.members.length > 1 && !group.sameInstructorSyncRequired && (
+                                                                        <div className="mt-2 flex items-center gap-1.5 text-[10px] text-amber-700 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded px-2 py-1 w-fit">
+                                                                            <ToggleLeft className="h-3 w-3" />
+                                                                            Optional: Same-instructor classes may be together or separate.
                                                                         </div>
                                                                     )}
                                                                     {group.sameDayRequired && (
                                                                         <div className="mt-1 flex items-center gap-1.5 text-[10px] text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded px-2 py-1 w-fit">
                                                                             <Layers className="h-3 w-3" />
-                                                                            Synced: Exam will happen at the same time as other "Synced" teachers of this course.
+                                                                            Mandatory: Must match the exam period of other cross-instructor synced sections.
+                                                                        </div>
+                                                                    )}
+                                                                    {!group.sameDayRequired && (
+                                                                        <div className="mt-1 flex items-center gap-1.5 text-[10px] text-slate-700 bg-slate-50 dark:bg-slate-950/30 border border-slate-200 dark:border-slate-800 rounded px-2 py-1 w-fit">
+                                                                            <ToggleLeft className="h-3 w-3" />
+                                                                            Optional: May still land in the same period as others, but it is not required.
                                                                         </div>
                                                                     )}
                                                                 </div>
