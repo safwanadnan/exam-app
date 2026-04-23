@@ -11,6 +11,7 @@ import { startSolverRun, activeSolvers } from "@/lib/solver-manager";
 const createRunSchema = z.object({
     sessionId: z.string().min(1),
     configId: z.string().min(1),
+    warmStartRunId: z.string().min(1).optional(),
 });
 
 export const GET = withErrorHandling(async (req: NextRequest) => {
@@ -51,20 +52,34 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     const parsed = await parseBody(req, createRunSchema);
     if (parsed.error) return parsed.error;
 
-    const { sessionId, configId } = parsed.data;
+    const { sessionId, configId, warmStartRunId } = parsed.data;
+
+    // Validate warm start run if provided
+    if (warmStartRunId) {
+        const prevRun = await prisma.solverRun.findUnique({
+            where: { id: warmStartRunId },
+        });
+        if (!prevRun || prevRun.sessionId !== sessionId) {
+            return jsonResponse(
+                { error: "Invalid warm start run", details: "Run not found or belongs to different session" },
+                400
+            );
+        }
+    }
 
     // 1. Create run record
     const run = await prisma.solverRun.create({
         data: {
             sessionId,
             configId,
+            warmStartRunId,
             status: "PENDING",
         },
     });
 
     // 2. Start solver in background
     try {
-        await startSolverRun(run.id, sessionId, configId);
+        await startSolverRun(run.id, sessionId, configId, warmStartRunId);
     } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : "Unknown error";
         await prisma.solverRun.update({

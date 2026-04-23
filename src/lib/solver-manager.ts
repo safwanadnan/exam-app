@@ -2,7 +2,8 @@
  * SolverManager - Maintains active solver instances across API requests.
  * Since Next.js reloads modules in dev, we use `globalThis` to preserve state.
  */
-import { ExamSolver, loadExamModel, saveExamResults, type SolverProgress } from "@/solver";
+import { ExamSolver, loadExamModel, saveExamResults, type SolverProgress, ExamModel } from "@/solver";
+import { ExamPlacement, ExamPeriodPlacement, ExamRoomPlacement } from "@/solver/model/ExamPlacement";
 import { prisma } from "./prisma";
 import { recomputeSectionGroups } from "./section-groups";
 
@@ -27,9 +28,92 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 /**
+ * Load warm start assignments from a previous solver run and apply them to the model.
+ * Handles cases where:
+ * - Periods/rooms may have been deleted or modified
+ * - Constraints have changed
+ * - Only valid assignments are applied (others are skipped)
+ */
+async function applyWarmStartAssignments(model: ExamModel, warmStartRunId: string): Promise<number> {
+    try {
+        // Load assignments from the previous run
+        const prevAssignments = await prisma.examAssignment.findMany({
+            where: { runId: warmStartRunId },
+            include: {
+                exam: true,
+                period: true,
+                rooms: { include: { room: true } },
+            },
+        });
+
+        let appliedCount = 0;
+        let skippedCount = 0;
+
+        for (const assignment of prevAssignments) {
+            // Verify exam still exists in current model
+            const exam = model.getExam(assignment.examId);
+            if (!exam) {
+                skippedCount++;
+                continue;
+            }
+
+            // Verify period still exists in current model
+            const period = model.getPeriod(assignment.periodId);
+            if (!period) {
+                skippedCount++;
+                continue;
+            }
+
+            // Verify all rooms still exist and are available
+            const roomIds = assignment.rooms.map(r => r.roomId);
+            const validRooms: any[] = [];
+            for (const roomId of roomIds) {
+                const room = model.getRoom(roomId);
+                if (room && room.isAvailable(period)) {
+                    validRooms.push(room);
+                }
+            }
+
+            // If no valid rooms found but exam needs rooms, skip
+            if (exam.maxRooms > 0 && validRooms.length === 0) {
+                skippedCount++;
+                continue;
+            }
+
+            // Create placement with valid rooms or empty if no rooms needed
+            const roomPlacements = validRooms.map(room => new ExamRoomPlacement(room, 0));
+            const periodPlacement = new ExamPeriodPlacement(period, 0);
+            const placement = new ExamPlacement(periodPlacement, roomPlacements);
+
+            // Apply assignment to model
+            try {
+                model.assignExam(exam, placement);
+                appliedCount++;
+            } catch (e) {
+                console.warn(`[WarmStart] Failed to assign exam ${exam.id}:`, e);
+                skippedCount++;
+            }
+        }
+
+        console.log(
+            `[WarmStart] Applied ${appliedCount} assignments from previous run, skipped ${skippedCount}`
+        );
+        return appliedCount;
+    } catch (e) {
+        console.error("[WarmStart] Error loading warm start assignments:", e);
+        return 0;
+    }
+}
+
+/**
  * Starts a solver run asynchronously.
  */
-export async function startSolverRun(runId: string, sessionId: string, configId: string) {
+export async function startSolverRun(
+    runId: string,
+    sessionId: string,
+    configId: string,
+    warmStartRunId?: string
+) {
     if (activeSolvers.has(runId)) {
         throw new Error("Solver run already in progress");
     }
@@ -45,6 +129,12 @@ export async function startSolverRun(runId: string, sessionId: string, configId:
 
     // Load the model
     const model = await loadExamModel(prisma, sessionId, configId);
+
+    // If warm start is requested, load and apply previous assignments
+    if (warmStartRunId) {
+        await applyWarmStartAssignments(model, warmStartRunId);
+    }
+
     const solver = new ExamSolver(model);
     const emitter = new SolverEventEmitter();
 

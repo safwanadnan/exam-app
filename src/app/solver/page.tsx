@@ -207,6 +207,7 @@ function ActiveSolverPanel({ runId }: { runId: string }) {
 }
 
 export default function SolverDashboard() {
+    const NO_WARM_START = "__NO_WARM_START__";
     const { currentSessionId } = useAcademicSession();
     const [runs, setRuns] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -215,6 +216,8 @@ export default function SolverDashboard() {
     const [configs, setConfigs] = useState<any[]>([]);
     const [selectedSession, setSelectedSession] = useState("");
     const [selectedConfig, setSelectedConfig] = useState("");
+    const [selectedWarmStartRunId, setSelectedWarmStartRunId] = useState<string | undefined>(undefined);
+    const [completedRuns, setCompletedRuns] = useState<any[]>([]);
     const [starting, setStarting] = useState(false);
     const [detailsRun, setDetailsRun] = useState<any>(null);
     const [detailsDiag, setDetailsDiag] = useState<any>(null);
@@ -244,6 +247,15 @@ export default function SolverDashboard() {
             else if (sData.sessions?.length) setSelectedSession(sData.sessions[0].id);
             
             if (cData.configs?.length) setSelectedConfig(cData.configs[0].id);
+            
+            // Load completed runs for warm start selection
+            const runUrl = currentSessionId ? `/api/solver/runs?sessionId=${currentSessionId}` : '/api/solver/runs';
+            const runRes = await fetch(runUrl);
+            const runData = await runRes.json();
+            const completed = (runData.runs || []).filter((r: any) => r.status === "COMPLETED" || r.status.includes("COMPLETED"));
+            setCompletedRuns(completed);
+            setSelectedWarmStartRunId(undefined);
+            
             setStartOpen(true);
         } catch { toast.error("Failed to load sessions/configs"); }
     };
@@ -252,12 +264,17 @@ export default function SolverDashboard() {
         if (!selectedSession || !selectedConfig) { toast.error("Select session and config"); return; }
         setStarting(true);
         try {
+            const body: any = { sessionId: selectedSession, configId: selectedConfig };
+            if (selectedWarmStartRunId) {
+                body.warmStartRunId = selectedWarmStartRunId;
+            }
             const res = await fetch("/api/solver/runs", {
                 method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ sessionId: selectedSession, configId: selectedConfig }),
+                body: JSON.stringify(body),
             });
             if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Failed to start"); }
-            toast.success("Solver started!"); setStartOpen(false); fetchRuns();
+            const successMsg = selectedWarmStartRunId ? "Solver started with warm start!" : "Solver started!";
+            toast.success(successMsg); setStartOpen(false); fetchRuns();
         } catch (err: any) { toast.error(err.message); }
         finally { setStarting(false); }
     };
@@ -280,6 +297,13 @@ export default function SolverDashboard() {
     };
 
     const activeRun = runs.find(r => r.status === "RUNNING" || r.status === "PENDING" || r.status === "PHASE_1" || r.status === "PHASE_2" || r.status === "PHASE_3" || r.status === "FINALIZATION");
+
+    const formatWarmStartSummary = (run: any) => {
+        const assigned = `${run.assignedExams ?? 0}/${run.totalExams ?? 0} assigned`;
+        const conflicts = `${run.directConflicts ?? 0} hard conflicts`;
+        const penalty = `penalty ${Math.round(run.totalPenalty ?? 0).toLocaleString()}`;
+        return `${assigned} | ${conflicts} | ${penalty}`;
+    };
 
     return (
         <div className="flex-1 space-y-6">
@@ -364,7 +388,7 @@ export default function SolverDashboard() {
 
             {/* Run Details Dialog */}
             <Dialog open={!!detailsRun} onOpenChange={(o) => { if (!o) { setDetailsRun(null); setDetailsDiag(null); } }}>
-                <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
+                <DialogContent className="sm:max-w-175 max-h-[85vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>Run Details</DialogTitle>
                         <DialogDescription>Performance metrics, diagnostics, and breakdown for this solver run.</DialogDescription>
@@ -506,7 +530,7 @@ export default function SolverDashboard() {
                                             </button>
 
                                             {showUnassigned && (
-                                                <div className="border rounded-md overflow-hidden max-h-[300px] overflow-y-auto">
+                                                <div className="border rounded-md overflow-hidden max-h-75 overflow-y-auto">
                                                     <table className="w-full text-xs">
                                                         <thead className="bg-muted sticky top-0">
                                                             <tr>
@@ -520,7 +544,7 @@ export default function SolverDashboard() {
                                                                 .filter((d: any) => !d.assigned)
                                                                 .map((d: any) => (
                                                                     <tr key={d.examId} className="hover:bg-muted/30">
-                                                                        <td className="p-2 font-medium max-w-[160px] truncate" title={d.examName}>{d.examName}</td>
+                                                                        <td className="p-2 font-medium max-w-40 truncate" title={d.examName}>{d.examName}</td>
                                                                         <td className="p-2 text-right font-mono">{d.examSize}</td>
                                                                         <td className="p-2">
                                                                             <div className="flex flex-wrap gap-1">
@@ -584,7 +608,7 @@ export default function SolverDashboard() {
 
             {/* Start Run Dialog */}
             <Dialog open={startOpen} onOpenChange={setStartOpen}>
-                <DialogContent className="sm:max-w-[450px]">
+                <DialogContent className="w-[96vw] max-w-4xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>Start Optimization Run</DialogTitle>
                         <DialogDescription>Select a session and solver configuration to begin.</DialogDescription>
@@ -607,6 +631,27 @@ export default function SolverDashboard() {
                                     {configs.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                                 </SelectContent>
                             </Select>
+                        </div>
+                        <div className="grid gap-2">
+                            <Label>Warm Start (Optional)</Label>
+                            <Select
+                                value={selectedWarmStartRunId ?? NO_WARM_START}
+                                onValueChange={(v) => setSelectedWarmStartRunId(v === NO_WARM_START ? undefined : v)}
+                            >
+                                <SelectTrigger><SelectValue placeholder="None - start fresh" /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value={NO_WARM_START}>No warm start (start from scratch)</SelectItem>
+                                    {completedRuns.map((r: any) => (
+                                        <SelectItem key={r.id} value={r.id}>
+                                            {new Date(r.createdAt).toLocaleString()} | {formatWarmStartSummary(r)}
+                                            {r.config?.name ? ` | config ${r.config.name}` : ""}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <p className="text-xs text-muted-foreground">
+                                Pick a completed run to seed the solver, or choose "No warm start" to start fresh.
+                            </p>
                         </div>
                     </div>
                     <DialogFooter>

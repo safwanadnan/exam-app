@@ -581,6 +581,7 @@ model SolverRun {
   id          String   @id @default(cuid())
   sessionId   String
   configId    String
+  warmStartRunId String? // Optional: previous run to warm-start from
   status      String   @default("PENDING") // PENDING, RUNNING, COMPLETED, FAILED, STOPPED
   startedAt   DateTime?
   completedAt DateTime?

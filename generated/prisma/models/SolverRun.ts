@@ -52,6 +52,7 @@ export type SolverRunMinAggregateOutputType = {
   id: string | null
   sessionId: string | null
   configId: string | null
+  warmStartRunId: string | null
   status: string | null
   startedAt: Date | null
   completedAt: Date | null
@@ -73,6 +74,7 @@ export type SolverRunMaxAggregateOutputType = {
   id: string | null
   sessionId: string | null
   configId: string | null
+  warmStartRunId: string | null
   status: string | null
   startedAt: Date | null
   completedAt: Date | null
@@ -94,6 +96,7 @@ export type SolverRunCountAggregateOutputType = {
   id: number
   sessionId: number
   configId: number
+  warmStartRunId: number
   status: number
   startedAt: number
   completedAt: number
@@ -139,6 +142,7 @@ export type SolverRunMinAggregateInputType = {
   id?: true
   sessionId?: true
   configId?: true
+  warmStartRunId?: true
   status?: true
   startedAt?: true
   completedAt?: true
@@ -160,6 +164,7 @@ export type SolverRunMaxAggregateInputType = {
   id?: true
   sessionId?: true
   configId?: true
+  warmStartRunId?: true
   status?: true
   startedAt?: true
   completedAt?: true
@@ -181,6 +186,7 @@ export type SolverRunCountAggregateInputType = {
   id?: true
   sessionId?: true
   configId?: true
+  warmStartRunId?: true
   status?: true
   startedAt?: true
   completedAt?: true
@@ -289,6 +295,7 @@ export type SolverRunGroupByOutputType = {
   id: string
   sessionId: string
   configId: string
+  warmStartRunId: string | null
   status: string
   startedAt: Date | null
   completedAt: Date | null
@@ -333,6 +340,7 @@ export type SolverRunWhereInput = {
   id?: Prisma.StringFilter<"SolverRun"> | string
   sessionId?: Prisma.StringFilter<"SolverRun"> | string
   configId?: Prisma.StringFilter<"SolverRun"> | string
+  warmStartRunId?: Prisma.StringNullableFilter<"SolverRun"> | string | null
   status?: Prisma.StringFilter<"SolverRun"> | string
   startedAt?: Prisma.DateTimeNullableFilter<"SolverRun"> | Date | string | null
   completedAt?: Prisma.DateTimeNullableFilter<"SolverRun"> | Date | string | null
@@ -357,6 +365,7 @@ export type SolverRunOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   sessionId?: Prisma.SortOrder
   configId?: Prisma.SortOrder
+  warmStartRunId?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   startedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   completedAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -384,6 +393,7 @@ export type SolverRunWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.SolverRunWhereInput | Prisma.SolverRunWhereInput[]
   sessionId?: Prisma.StringFilter<"SolverRun"> | string
   configId?: Prisma.StringFilter<"SolverRun"> | string
+  warmStartRunId?: Prisma.StringNullableFilter<"SolverRun"> | string | null
   status?: Prisma.StringFilter<"SolverRun"> | string
   startedAt?: Prisma.DateTimeNullableFilter<"SolverRun"> | Date | string | null
   completedAt?: Prisma.DateTimeNullableFilter<"SolverRun"> | Date | string | null
@@ -408,6 +418,7 @@ export type SolverRunOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   sessionId?: Prisma.SortOrder
   configId?: Prisma.SortOrder
+  warmStartRunId?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   startedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   completedAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -437,6 +448,7 @@ export type SolverRunScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"SolverRun"> | string
   sessionId?: Prisma.StringWithAggregatesFilter<"SolverRun"> | string
   configId?: Prisma.StringWithAggregatesFilter<"SolverRun"> | string
+  warmStartRunId?: Prisma.StringNullableWithAggregatesFilter<"SolverRun"> | string | null
   status?: Prisma.StringWithAggregatesFilter<"SolverRun"> | string
   startedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"SolverRun"> | Date | string | null
   completedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"SolverRun"> | Date | string | null
@@ -456,6 +468,7 @@ export type SolverRunScalarWhereWithAggregatesInput = {
 
 export type SolverRunCreateInput = {
   id?: string
+  warmStartRunId?: string | null
   status?: string
   startedAt?: Date | string | null
   completedAt?: Date | string | null
@@ -480,6 +493,7 @@ export type SolverRunUncheckedCreateInput = {
   id?: string
   sessionId: string
   configId: string
+  warmStartRunId?: string | null
   status?: string
   startedAt?: Date | string | null
   completedAt?: Date | string | null
@@ -500,6 +514,7 @@ export type SolverRunUncheckedCreateInput = {
 
 export type SolverRunUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  warmStartRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -524,6 +539,7 @@ export type SolverRunUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   sessionId?: Prisma.StringFieldUpdateOperationsInput | string
   configId?: Prisma.StringFieldUpdateOperationsInput | string
+  warmStartRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -546,6 +562,7 @@ export type SolverRunCreateManyInput = {
   id?: string
   sessionId: string
   configId: string
+  warmStartRunId?: string | null
   status?: string
   startedAt?: Date | string | null
   completedAt?: Date | string | null
@@ -565,6 +582,7 @@ export type SolverRunCreateManyInput = {
 
 export type SolverRunUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  warmStartRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -586,6 +604,7 @@ export type SolverRunUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   sessionId?: Prisma.StringFieldUpdateOperationsInput | string
   configId?: Prisma.StringFieldUpdateOperationsInput | string
+  warmStartRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -622,6 +641,7 @@ export type SolverRunCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   sessionId?: Prisma.SortOrder
   configId?: Prisma.SortOrder
+  warmStartRunId?: Prisma.SortOrder
   status?: Prisma.SortOrder
   startedAt?: Prisma.SortOrder
   completedAt?: Prisma.SortOrder
@@ -654,6 +674,7 @@ export type SolverRunMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   sessionId?: Prisma.SortOrder
   configId?: Prisma.SortOrder
+  warmStartRunId?: Prisma.SortOrder
   status?: Prisma.SortOrder
   startedAt?: Prisma.SortOrder
   completedAt?: Prisma.SortOrder
@@ -675,6 +696,7 @@ export type SolverRunMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   sessionId?: Prisma.SortOrder
   configId?: Prisma.SortOrder
+  warmStartRunId?: Prisma.SortOrder
   status?: Prisma.SortOrder
   startedAt?: Prisma.SortOrder
   completedAt?: Prisma.SortOrder
@@ -805,6 +827,7 @@ export type SolverRunUncheckedUpdateManyWithoutConfigNestedInput = {
 
 export type SolverRunCreateWithoutSessionInput = {
   id?: string
+  warmStartRunId?: string | null
   status?: string
   startedAt?: Date | string | null
   completedAt?: Date | string | null
@@ -827,6 +850,7 @@ export type SolverRunCreateWithoutSessionInput = {
 export type SolverRunUncheckedCreateWithoutSessionInput = {
   id?: string
   configId: string
+  warmStartRunId?: string | null
   status?: string
   startedAt?: Date | string | null
   completedAt?: Date | string | null
@@ -877,6 +901,7 @@ export type SolverRunScalarWhereInput = {
   id?: Prisma.StringFilter<"SolverRun"> | string
   sessionId?: Prisma.StringFilter<"SolverRun"> | string
   configId?: Prisma.StringFilter<"SolverRun"> | string
+  warmStartRunId?: Prisma.StringNullableFilter<"SolverRun"> | string | null
   status?: Prisma.StringFilter<"SolverRun"> | string
   startedAt?: Prisma.DateTimeNullableFilter<"SolverRun"> | Date | string | null
   completedAt?: Prisma.DateTimeNullableFilter<"SolverRun"> | Date | string | null
@@ -896,6 +921,7 @@ export type SolverRunScalarWhereInput = {
 
 export type SolverRunCreateWithoutAssignmentsInput = {
   id?: string
+  warmStartRunId?: string | null
   status?: string
   startedAt?: Date | string | null
   completedAt?: Date | string | null
@@ -919,6 +945,7 @@ export type SolverRunUncheckedCreateWithoutAssignmentsInput = {
   id?: string
   sessionId: string
   configId: string
+  warmStartRunId?: string | null
   status?: string
   startedAt?: Date | string | null
   completedAt?: Date | string | null
@@ -954,6 +981,7 @@ export type SolverRunUpdateToOneWithWhereWithoutAssignmentsInput = {
 
 export type SolverRunUpdateWithoutAssignmentsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  warmStartRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -977,6 +1005,7 @@ export type SolverRunUncheckedUpdateWithoutAssignmentsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   sessionId?: Prisma.StringFieldUpdateOperationsInput | string
   configId?: Prisma.StringFieldUpdateOperationsInput | string
+  warmStartRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -996,6 +1025,7 @@ export type SolverRunUncheckedUpdateWithoutAssignmentsInput = {
 
 export type SolverRunCreateWithoutConfigInput = {
   id?: string
+  warmStartRunId?: string | null
   status?: string
   startedAt?: Date | string | null
   completedAt?: Date | string | null
@@ -1018,6 +1048,7 @@ export type SolverRunCreateWithoutConfigInput = {
 export type SolverRunUncheckedCreateWithoutConfigInput = {
   id?: string
   sessionId: string
+  warmStartRunId?: string | null
   status?: string
   startedAt?: Date | string | null
   completedAt?: Date | string | null
@@ -1064,6 +1095,7 @@ export type SolverRunUpdateManyWithWhereWithoutConfigInput = {
 export type SolverRunCreateManySessionInput = {
   id?: string
   configId: string
+  warmStartRunId?: string | null
   status?: string
   startedAt?: Date | string | null
   completedAt?: Date | string | null
@@ -1083,6 +1115,7 @@ export type SolverRunCreateManySessionInput = {
 
 export type SolverRunUpdateWithoutSessionInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  warmStartRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1105,6 +1138,7 @@ export type SolverRunUpdateWithoutSessionInput = {
 export type SolverRunUncheckedUpdateWithoutSessionInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   configId?: Prisma.StringFieldUpdateOperationsInput | string
+  warmStartRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1126,6 +1160,7 @@ export type SolverRunUncheckedUpdateWithoutSessionInput = {
 export type SolverRunUncheckedUpdateManyWithoutSessionInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   configId?: Prisma.StringFieldUpdateOperationsInput | string
+  warmStartRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1146,6 +1181,7 @@ export type SolverRunUncheckedUpdateManyWithoutSessionInput = {
 export type SolverRunCreateManyConfigInput = {
   id?: string
   sessionId: string
+  warmStartRunId?: string | null
   status?: string
   startedAt?: Date | string | null
   completedAt?: Date | string | null
@@ -1165,6 +1201,7 @@ export type SolverRunCreateManyConfigInput = {
 
 export type SolverRunUpdateWithoutConfigInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  warmStartRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1187,6 +1224,7 @@ export type SolverRunUpdateWithoutConfigInput = {
 export type SolverRunUncheckedUpdateWithoutConfigInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   sessionId?: Prisma.StringFieldUpdateOperationsInput | string
+  warmStartRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1208,6 +1246,7 @@ export type SolverRunUncheckedUpdateWithoutConfigInput = {
 export type SolverRunUncheckedUpdateManyWithoutConfigInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   sessionId?: Prisma.StringFieldUpdateOperationsInput | string
+  warmStartRunId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1260,6 +1299,7 @@ export type SolverRunSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   id?: boolean
   sessionId?: boolean
   configId?: boolean
+  warmStartRunId?: boolean
   status?: boolean
   startedAt?: boolean
   completedAt?: boolean
@@ -1285,6 +1325,7 @@ export type SolverRunSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ext
   id?: boolean
   sessionId?: boolean
   configId?: boolean
+  warmStartRunId?: boolean
   status?: boolean
   startedAt?: boolean
   completedAt?: boolean
@@ -1308,6 +1349,7 @@ export type SolverRunSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ext
   id?: boolean
   sessionId?: boolean
   configId?: boolean
+  warmStartRunId?: boolean
   status?: boolean
   startedAt?: boolean
   completedAt?: boolean
@@ -1331,6 +1373,7 @@ export type SolverRunSelectScalar = {
   id?: boolean
   sessionId?: boolean
   configId?: boolean
+  warmStartRunId?: boolean
   status?: boolean
   startedAt?: boolean
   completedAt?: boolean
@@ -1348,7 +1391,7 @@ export type SolverRunSelectScalar = {
   updatedAt?: boolean
 }
 
-export type SolverRunOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "sessionId" | "configId" | "status" | "startedAt" | "completedAt" | "totalExams" | "assignedExams" | "directConflicts" | "backToBackConflicts" | "moreThan2ADay" | "totalPenalty" | "bestObjective" | "iterations" | "phase" | "log" | "createdAt" | "updatedAt", ExtArgs["result"]["solverRun"]>
+export type SolverRunOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "sessionId" | "configId" | "warmStartRunId" | "status" | "startedAt" | "completedAt" | "totalExams" | "assignedExams" | "directConflicts" | "backToBackConflicts" | "moreThan2ADay" | "totalPenalty" | "bestObjective" | "iterations" | "phase" | "log" | "createdAt" | "updatedAt", ExtArgs["result"]["solverRun"]>
 export type SolverRunInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   session?: boolean | Prisma.AcademicSessionDefaultArgs<ExtArgs>
   config?: boolean | Prisma.SolverConfigDefaultArgs<ExtArgs>
@@ -1375,6 +1418,7 @@ export type $SolverRunPayload<ExtArgs extends runtime.Types.Extensions.InternalA
     id: string
     sessionId: string
     configId: string
+    warmStartRunId: string | null
     status: string
     startedAt: Date | null
     completedAt: Date | null
@@ -1819,6 +1863,7 @@ export interface SolverRunFieldRefs {
   readonly id: Prisma.FieldRef<"SolverRun", 'String'>
   readonly sessionId: Prisma.FieldRef<"SolverRun", 'String'>
   readonly configId: Prisma.FieldRef<"SolverRun", 'String'>
+  readonly warmStartRunId: Prisma.FieldRef<"SolverRun", 'String'>
   readonly status: Prisma.FieldRef<"SolverRun", 'String'>
   readonly startedAt: Prisma.FieldRef<"SolverRun", 'DateTime'>
   readonly completedAt: Prisma.FieldRef<"SolverRun", 'DateTime'>

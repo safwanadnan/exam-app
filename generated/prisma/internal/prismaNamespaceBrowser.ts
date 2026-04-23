@@ -529,6 +529,7 @@ export const SolverRunScalarFieldEnum = {
   id: 'id',
   sessionId: 'sessionId',
   configId: 'configId',
+  warmStartRunId: 'warmStartRunId',
   status: 'status',
   startedAt: 'startedAt',
   completedAt: 'completedAt',
