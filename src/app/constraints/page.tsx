@@ -367,6 +367,7 @@ export default function ConstraintsPage() {
   const [constraints, setConstraints] = useState<Constraint[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
   const [editConstraint, setEditConstraint] = useState<Constraint | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Constraint | null>(null);
@@ -378,17 +379,28 @@ export default function ConstraintsPage() {
   const fetchData = async (currentPage = page) => {
     setLoading(true);
     try {
-      const url = currentSessionId
-        ? `/api/constraints?page=${currentPage}&limit=50&sessionId=${currentSessionId}`
-        : `/api/constraints?page=${currentPage}&limit=50`;
-      const data = await (await fetch(url)).json();
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: "50",
+        search: debouncedSearch
+      });
+      if (currentSessionId) params.set("sessionId", currentSessionId);
+      
+      const res = await fetch(`/api/constraints?${params.toString()}`);
+      const data = await res.json();
       setConstraints(data.constraints || []);
       setTotalPages(Math.ceil((data.total || 0) / 50) || 1);
     } catch { toast.error("Failed to load data"); }
     finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchData(page); }, [page, currentSessionId]);
+  useEffect(() => {
+    setPage(1);
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  useEffect(() => { fetchData(page); }, [page, currentSessionId, debouncedSearch]);
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
@@ -437,11 +449,7 @@ export default function ConstraintsPage() {
     });
   };
 
-  const filtered = constraints.filter(c =>
-    search === "" ||
-    c.type.toLowerCase().includes(search.toLowerCase()) ||
-    (c.examA.name || "").toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = constraints; // Handled by server
 
   return (
     <div className="flex-1 space-y-6">

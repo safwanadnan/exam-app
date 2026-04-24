@@ -108,6 +108,7 @@ export default function PeriodsPage() {
     const [periods, setPeriods] = useState<Period[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
     const [editPeriod, setEditPeriod] = useState<Period | null>(null);
     const [editOpen, setEditOpen] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<Period | null>(null);
@@ -117,10 +118,14 @@ export default function PeriodsPage() {
     const fetchPeriods = async (currentPage = page) => {
         setLoading(true);
         try {
-            const url = currentSessionId 
-                ? `/api/periods?page=${currentPage}&limit=50&sessionId=${currentSessionId}` 
-                : `/api/periods?page=${currentPage}&limit=50`;
-            const res = await fetch(url);
+            const params = new URLSearchParams({
+                page: currentPage.toString(),
+                limit: "50",
+                search: debouncedSearch
+            });
+            if (currentSessionId) params.set("sessionId", currentSessionId);
+            
+            const res = await fetch(`/api/periods?${params.toString()}`);
             const data = await res.json();
             setPeriods(data.periods || []);
             setTotalPages(Math.ceil((data.total || 0) / 50) || 1);
@@ -128,7 +133,13 @@ export default function PeriodsPage() {
         finally { setLoading(false); }
     };
 
-    useEffect(() => { fetchPeriods(page); }, [page, currentSessionId]);
+    useEffect(() => {
+        setPage(1);
+        const t = setTimeout(() => setDebouncedSearch(search), 300);
+        return () => clearTimeout(t);
+    }, [search]);
+
+    useEffect(() => { fetchPeriods(page); }, [page, currentSessionId, debouncedSearch]);
 
     const handleDelete = async () => {
         if (!deleteTarget) return;
@@ -139,7 +150,7 @@ export default function PeriodsPage() {
         } catch (err: any) { toast.error(err.message); }
     };
 
-    const filtered = periods.filter(p => search === "" || p.startTime.includes(search) || p.examType.name.toLowerCase().includes(search.toLowerCase()));
+    const filtered = periods; // Handled by server
 
     return (
         <div className="flex-1 space-y-6">

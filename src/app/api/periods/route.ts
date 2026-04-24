@@ -1,11 +1,11 @@
-﻿export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic';
 /**
  * GET /api/periods â€” List periods (filter by sessionId, examTypeId)
  * POST /api/periods â€” Create a period
  */
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { prisma, jsonResponse, parseBody, getPagination, withErrorHandling } from "@/lib/api-helpers";
+import { prisma, jsonResponse, parseBody, getPagination, getSearch, withErrorHandling } from "@/lib/api-helpers";
 
 const createPeriodSchema = z.object({
     examTypeId: z.string().min(1),
@@ -20,13 +20,22 @@ const createPeriodSchema = z.object({
 
 export const GET = withErrorHandling(async (req: NextRequest) => {
     const { skip, limit, page } = getPagination(req);
+    const search = getSearch(req);
     const url = new URL(req.url);
     const sessionId = url.searchParams.get("sessionId");
     const examTypeId = url.searchParams.get("examTypeId");
 
-    const where: Record<string, unknown> = {};
+    const where: any = {};
     if (examTypeId) where.examTypeId = examTypeId;
     else if (sessionId) where.examType = { sessionId };
+
+    if (search) {
+        where.OR = [
+            { startTime: { contains: search } },
+            { examType: { name: { contains: search } } },
+            { examType: { code: { contains: search } } },
+        ];
+    }
 
     const [periods, total] = await Promise.all([
         prisma.examPeriod.findMany({

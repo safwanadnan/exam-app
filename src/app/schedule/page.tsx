@@ -15,24 +15,52 @@ import { toast } from "sonner";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useAcademicSession } from "@/components/academic-session-provider";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 interface Assignment {
     id: string;
-    exam: { name: string; length: number; _count: { studentEnrollments: number } };
+    exam: { 
+        id: string;
+        name: string; 
+        length: number; 
+        _count: { studentEnrollments: number };
+        owners: { section: { sectionNumber: string, course: { id: string, title: string, courseNumber: string } } }[];
+        instructorAssignments: { instructor: { name: string } }[];
+    };
     period: { id: string; date: string; startTime: string; endTime: string; length: number };
     periodId: string;
     rooms: { roomId: string; room: { name: string; building: { code: string } } }[];
 }
 
+interface GroupedAssignment {
+    key: string; // courseId or examId
+    mainId: string;
+    courseNumber: string;
+    courseTitle: string;
+    exams: Assignment[];
+    totalStudents: number;
+    totalClashes: number;
+    hasViolations: boolean;
+}
+
 interface DetailedAssignment {
     id: string;
-    examName: string;
-    examLength: number;
-    totalStudents: number;
-    courses: string[];
-    instructors: string[];
-    period: { date: string; startTime: string; endTime: string };
-    rooms: { name: string; capacity: number }[];
+    courseTitle: string;
+    courseNumber?: string;
+    exams: {
+        id: string;
+        name: string;
+        length: number;
+        students: number;
+        sections: string[];
+        instructors: string[];
+        clashes: number;
+        clashDetails: Clash[];
+        violations: string[];
+    }[];
+    period: { date: string; startTime: string; endTime: string; length: number };
+    rooms: { name: string; buildingCode: string; capacity: number }[];
 }
 
 interface ClashStudent { id: string; name: string; externalId: string; }
@@ -96,19 +124,46 @@ export default function SchedulePage() {
     // Modal state
     const [detailLoading, setDetailLoading] = useState(false);
     const [detailedAssignment, setDetailedAssignment] = useState<DetailedAssignment | null>(null);
+    const [selectedExamId, setSelectedExamId] = useState<string | null>(null);
     const [clashes, setClashes] = useState<Clash[]>([]);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [allRooms, setAllRooms] = useState<any[]>([]);
 
-    const openAssignmentDetails = async (assignmentId: string) => {
+    // Edit state
+    const [isEditing, setIsEditing] = useState(false);
+    const [editPeriodId, setEditPeriodId] = useState("");
+    const [editRoomIds, setEditRoomIds] = useState<string[]>([]);
+    const [updating, setUpdating] = useState(false);
+    const [roomConflicts, setRoomConflicts] = useState<{ roomName: string; usedByExam: string }[]>([]);
+
+    useEffect(() => {
+        fetch("/api/rooms?limit=500").then(r => r.json()).then(data => {
+            setAllRooms(data.rooms || []);
+        });
+    }, []);
+
+    // freshAssignments is passed when calling from doSave to avoid stale closure
+    const openAssignmentDetails = async (assignmentId: string, freshAssignments?: typeof assignments) => {
+        const pool = freshAssignments ?? assignments;
+        const assignment = pool.find(a => a.id === assignmentId);
         setIsDialogOpen(true);
         setDetailLoading(true);
+        setIsEditing(false);
         setExpandedClash(null);
+        setRoomConflicts([]);
+
+        if (assignment) {
+            setEditPeriodId(assignment.periodId);
+            setEditRoomIds(assignment.rooms.map(r => r.roomId));
+        }
         try {
             const res = await fetch(`/api/schedule/details?assignmentId=${assignmentId}`);
             const data = await res.json();
             if (res.ok) {
                 setDetailedAssignment(data.details);
                 setClashes(data.clashes || []);
+                // Default to the first exam or the one that matches assignmentId
+                setSelectedExamId(data.details.exams[0]?.id || null);
             } else {
                 toast.error(data.error || "Failed to load assignment details");
             }
@@ -186,6 +241,56 @@ export default function SchedulePage() {
             setLoading(false);
         }).catch(() => { setLoading(false); toast.error("Failed to load schedule"); });
     }, [selectedRunId]);
+ 
+    const doSave = async (force = false) => {
+        if (!detailedAssignment) return;
+        setUpdating(true);
+        setRoomConflicts([]);
+        try {
+            const res = await fetch(`/api/assignments/${detailedAssignment.id}${force ? "?force=true" : ""}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    periodId: editPeriodId,
+                    roomIds: editRoomIds
+                })
+            });
+            const data = await res.json();
+
+            // Room conflict — show warning panel, let user decide to force-save
+            if (res.status === 409 && data.roomConflicts) {
+                setRoomConflicts(data.roomConflicts);
+                setUpdating(false);
+                return;
+            }
+
+            if (!res.ok) throw new Error(data.error || "Update failed");
+            
+            toast.success(force ? "Saved with room conflict (double-booked)" : "Assignment updated successfully");
+            setIsEditing(false);
+            setRoomConflicts([]);
+            
+            // Refresh all data — fetch in parallel
+            const [expData, clashData] = await Promise.all([
+                fetch(`/api/export?runId=${selectedRunId}`).then(r => r.json()),
+                fetch(`/api/schedule/clash-summary?runId=${selectedRunId}`).then(r => r.json()),
+            ]);
+            const freshAssignments = expData.assignments || [];
+            setAssignments(freshAssignments);
+            setClashMap(clashData.clashMap || {});
+            setPeriodClashMap(clashData.periodClashMap || {});
+
+            // Pass freshAssignments directly — React state hasn't flushed yet
+            openAssignmentDetails(detailedAssignment.id, freshAssignments);
+        } catch (e: any) {
+            toast.error(e.message);
+        } finally {
+            setUpdating(false);
+        }
+    };
+
+    const handleUpdateAssignment = () => doSave(false);
+    const handleForceUpdateAssignment = () => doSave(true);
 
     const buildingColorIdx = useCallback(() => {
         const map = new Map<string, number>();
@@ -207,20 +312,58 @@ export default function SchedulePage() {
         return PALETTE[idx];
     };
 
-    // Filtered assignments
-    const filteredAssignments = useCallback((periodId?: string) => {
+    // Grouped and Filtered assignments
+    const getGroupedAssignments = useCallback((periodId?: string) => {
         let list = periodId ? assignments.filter(a => a.periodId === periodId) : assignments;
+        
+        // Initial filtering (search/clash mode)
         if (searchQuery) {
             const q = searchQuery.toLowerCase();
-            list = list.filter(a => (a.exam.name || "").toLowerCase().includes(q));
+            list = list.filter(a => (a.exam.name || "").toLowerCase().includes(q) || 
+                a.exam.owners.some(o => o.section.course.courseNumber.toLowerCase().includes(q) || o.section.course.title.toLowerCase().includes(q)));
         }
         if (filterMode === "clashing") {
             list = list.filter(a => (clashMap[a.id] ?? 0) > 0);
         } else if (filterMode === "clean") {
             list = list.filter(a => (clashMap[a.id] ?? 0) === 0);
         }
-        return list;
-    }, [assignments, searchQuery, filterMode, clashMap]);
+
+        // Grouping by Course Title
+        const groups: Record<string, GroupedAssignment> = {};
+        for (const a of list) {
+            const course = a.exam.owners[0]?.section.course;
+            
+            // Group by Title to catch different course codes that are semantically the same course
+            const key = course ? course.title.trim().toLowerCase() : a.id;
+            
+            if (!groups[key]) {
+                groups[key] = {
+                    key,
+                    mainId: a.id,
+                    courseNumber: course?.courseNumber || "N/A",
+                    courseTitle: course?.title || a.exam.name || "Unnamed Exam",
+                    exams: [],
+                    totalStudents: 0,
+                    totalClashes: 0,
+                    hasViolations: false
+                };
+            }
+            
+            groups[key].exams.push(a);
+            
+            // If we have multiple course numbers in one group, append them? 
+            // Or just keep the first one if they are 95% the same.
+            // For now, let's just use the title as the anchor.
+            
+            groups[key].totalStudents += a.exam._count.studentEnrollments;
+            groups[key].totalClashes += (clashMap[a.id] ?? 0);
+            if (violationMap[a.exam.id]?.length > 0) groups[key].hasViolations = true;
+        }
+
+        return Object.values(groups);
+    }, [assignments, searchQuery, filterMode, clashMap, violationMap]);
+
+    const groupedAssignmentsForPeriod = (periodId: string) => getGroupedAssignments(periodId);
 
     // Stats
     const totalClashes = Object.values(clashMap).reduce((sum, v) => sum + v, 0);
@@ -387,7 +530,7 @@ export default function SchedulePage() {
                     {/* Periods grid */}
                     <div className="grid gap-5">
                         {periods.map(period => {
-                            const pa = filteredAssignments(period.id);
+                            const pa = getGroupedAssignments(period.id);
                             if (pa.length === 0) return null;
                             const periodClashes = periodClashMap[period.id] ?? 0;
                             return (
@@ -411,17 +554,20 @@ export default function SchedulePage() {
                                     </CardHeader>
                                     <CardContent className="p-4">
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                                            {pa.map(a => {
-                                                const style = getCardStyle(a);
-                                                const clashes = clashMap[a.id] ?? 0;
-                                                const violations = violationMap[a.exam.id] || [];
-                                                const hasIssues = clashes > 0 || violations.length > 0;
-                                                const isHighlighted = highlightedId === a.id;
+                                            {groupedAssignmentsForPeriod(period.id).map(g => {
+                                                const first = g.exams[0];
+                                                const style = getCardStyle(first);
+                                                const isHighlighted = g.exams.some(e => highlightedId === e.id);
+                                                const hasIssues = g.totalClashes > 0 || g.hasViolations;
+
+                                                // Aggregated rooms for the whole course group
+                                                const rooms = Array.from(new Set(g.exams.flatMap(a => a.rooms.map(r => `${r.room.building.code} ${r.room.name}`))));
+
                                                 return (
                                                     <div
-                                                        key={a.id}
-                                                        ref={el => { cardRefs.current[a.id] = el; }}
-                                                        onClick={() => openAssignmentDetails(a.id)}
+                                                        key={g.key}
+                                                        ref={el => { g.exams.forEach(e => { cardRefs.current[e.id] = el; }); }}
+                                                        onClick={() => openAssignmentDetails(g.mainId)}
                                                         className={`
                                                             relative border rounded-xl p-3.5 cursor-pointer transition-all duration-200 
                                                             bg-gradient-to-br ${style.bg} 
@@ -434,19 +580,19 @@ export default function SchedulePage() {
                                                     >
                                                         {/* Clash / Clean badge */}
                                                         <div className="absolute top-2.5 right-2.5 flex gap-1">
-                                                            {violations.length > 0 && (
-                                                                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 shadow" title={violations.join(", ")}>
+                                                            {g.hasViolations && (
+                                                                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 shadow">
                                                                     <AlertTriangle className="h-2.5 w-2.5" />
                                                                     Rules
                                                                 </span>
                                                             )}
-                                                            {clashes > 0 ? (
+                                                            {g.totalClashes > 0 ? (
                                                                 <span className="inline-flex items-center gap-1 rounded-full bg-destructive/90 text-white text-[10px] font-bold px-2 py-0.5 shadow">
                                                                     <Users className="h-2.5 w-2.5" />
-                                                                    {clashes}
+                                                                    {g.totalClashes}
                                                                 </span>
                                                             ) : (
-                                                                violations.length === 0 && (
+                                                                !g.hasViolations && (
                                                                     <span className="inline-flex items-center rounded-full bg-emerald-500/80 text-white text-[10px] px-1.5 py-0.5">
                                                                         <CheckCircle2 className="h-3 w-3" />
                                                                     </span>
@@ -454,27 +600,30 @@ export default function SchedulePage() {
                                                             )}
                                                         </div>
 
-                                                        {/* Exam name */}
+                                                        {/* Course Title */}
                                                         <div className={`font-semibold text-sm pr-10 leading-tight ${style.text}`}>
-                                                            {a.exam.name || "Unnamed"}
+                                                            {g.courseNumber && g.courseNumber !== "N/A" ? `${g.courseNumber}: ` : ""}
+                                                            {g.courseTitle}
                                                         </div>
 
                                                         {/* Meta */}
                                                         <div className="flex items-center gap-3 mt-2 text-xs opacity-70">
                                                             <span className="flex items-center gap-1">
-                                                                <Clock className="h-3 w-3" />{a.exam.length}m
+                                                                <Users className="h-3 w-3" />{g.totalStudents} students
                                                             </span>
-                                                            <span className="flex items-center gap-1">
-                                                                <Users className="h-3 w-3" />{a.exam._count.studentEnrollments}
-                                                            </span>
+                                                            {g.exams.length > 1 && (
+                                                                <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-foreground/5 text-[10px] font-medium">
+                                                                    {g.exams.length} Sections
+                                                                </span>
+                                                            )}
                                                         </div>
 
                                                         {/* Rooms */}
-                                                        {a.rooms.length > 0 && (
+                                                        {rooms.length > 0 && (
                                                             <div className="flex flex-wrap gap-1 mt-2.5 pt-2.5 border-t border-current/10">
-                                                                {a.rooms.map(r => (
-                                                                    <span key={r.roomId} className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium ${style.badge}`}>
-                                                                        {r.room.building.code} {r.room.name}
+                                                                {rooms.map(r => (
+                                                                    <span key={r} className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium ${style.badge}`}>
+                                                                        {r}
                                                                     </span>
                                                                 ))}
                                                             </div>
@@ -487,7 +636,7 @@ export default function SchedulePage() {
                                 </Card>
                             );
                         })}
-                        {filteredAssignments().length === 0 && assignments.length > 0 && (
+                        {getGroupedAssignments().length === 0 && assignments.length > 0 && (
                             <div className="text-center p-12 text-muted-foreground">
                                 <Filter className="h-8 w-8 mx-auto mb-3 opacity-40" />
                                 <p className="font-medium">No exams match your filter</p>
@@ -501,8 +650,21 @@ export default function SchedulePage() {
             {/* Detail Dialog */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogContent className="sm:max-w-[540px] max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle className="text-lg">Exam Details</DialogTitle>
+                    <DialogHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <DialogTitle className="text-lg">
+                            {isEditing ? `Edit: ${detailedAssignment?.examName}` : "Exam Details"}
+                        </DialogTitle>
+                        {!detailLoading && detailedAssignment && (
+                            <Button 
+                                variant={isEditing ? "ghost" : "outline"} 
+                                size="sm" 
+                                onClick={() => setIsEditing(!isEditing)}
+                                className={isEditing ? "text-muted-foreground mr-6" : "text-primary mr-6"}
+                            >
+                                {isEditing ? <X className="h-4 w-4 mr-1" /> : <Clock className="h-4 w-4 mr-1" />}
+                                {isEditing ? "Cancel" : "Manual Edit"}
+                            </Button>
+                        )}
                     </DialogHeader>
 
                     {detailLoading ? (
@@ -511,175 +673,302 @@ export default function SchedulePage() {
                         </div>
                     ) : detailedAssignment ? (
                         <div className="space-y-5">
-                            {/* Title & time */}
-                            <div className="space-y-1">
-                                <h3 className="text-xl font-bold">{detailedAssignment.examName || "Unnamed Exam"}</h3>
-                                <div className="text-sm text-muted-foreground flex items-center gap-2">
-                                    <CalendarDays className="h-4 w-4" />
-                                    {format(new Date(detailedAssignment.period.date), "EEEE, MMM d, yyyy")}
-                                    <span className="opacity-40">|</span>
-                                    <Clock className="h-4 w-4" />
-                                    {detailedAssignment.period.startTime} – {detailedAssignment.period.endTime}
-                                    <Badge variant="outline" className="ml-1">{detailedAssignment.examLength}m</Badge>
-                                </div>
-                            </div>
-
-                            {/* Overview chips */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-muted/50 rounded-lg p-3 border space-y-0.5">
-                                    <div className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">Students</div>
-                                    <div className="text-2xl font-bold">{detailedAssignment.totalStudents}</div>
-                                </div>
-                                <div className="bg-muted/50 rounded-lg p-3 border space-y-0.5">
-                                    <div className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">Total Capacity</div>
-                                    <div className="text-2xl font-bold">{detailedAssignment.rooms.reduce((s, r) => s + r.capacity, 0)}</div>
-                                </div>
-                            </div>
-
-                            {/* Utilization bar */}
-                            {(() => {
-                                const cap = detailedAssignment.rooms.reduce((s, r) => s + r.capacity, 0);
-                                const pct = cap > 0 ? Math.min(100, Math.round((detailedAssignment.totalStudents / cap) * 100)) : 0;
-                                const overCapacity = detailedAssignment.totalStudents > cap;
-                                return (
-                                    <div className="space-y-1">
-                                        <div className="flex justify-between text-xs text-muted-foreground">
-                                            <span>Room Utilization</span>
-                                            <span className={overCapacity ? "text-destructive font-semibold" : ""}>{pct}%{overCapacity ? " — OVER CAPACITY" : ""}</span>
-                                        </div>
-                                        <div className="w-full bg-muted rounded-full h-2.5">
-                                            <div
-                                                className={`h-2.5 rounded-full transition-all ${pct > 90 ? "bg-destructive" : pct > 70 ? "bg-amber-500" : "bg-emerald-500"}`}
-                                                style={{ width: `${pct}%` }}
-                                            />
-                                        </div>
+                            {isEditing ? (
+                                <div className="space-y-4 animate-in fade-in duration-200">
+                                    <div className="space-y-2">
+                                        <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Change Period</Label>
+                                        <Select value={editPeriodId} onValueChange={setEditPeriodId}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select Period" />
+                                            </SelectTrigger>
+                                            <SelectContent className="max-h-[300px]">
+                                                {periods.map(p => (
+                                                    <SelectItem key={p.id} value={p.id}>
+                                                        {format(new Date(p.date), "MMM d")} | {p.startTime} - {p.endTime}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                     </div>
-                                );
-                            })()}
 
-                            {/* Courses & Instructors */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <div className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">Courses</div>
-                                    {detailedAssignment.courses.length > 0 ? (
-                                        <ul className="text-sm space-y-1">
-                                            {detailedAssignment.courses.map(c => <li key={c} className="flex items-start gap-1.5"><span className="mt-1 h-1.5 w-1.5 rounded-full bg-primary flex-shrink-0" />{c}</li>)}
-                                        </ul>
-                                    ) : <p className="text-sm text-muted-foreground italic">None assigned</p>}
-                                </div>
-                                <div className="space-y-1.5">
-                                    <div className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">Instructors</div>
-                                    {detailedAssignment.instructors.length > 0 ? (
-                                        <ul className="text-sm space-y-1">
-                                            {detailedAssignment.instructors.map(i => <li key={i} className="flex items-start gap-1.5"><span className="mt-1 h-1.5 w-1.5 rounded-full bg-primary flex-shrink-0" />{i}</li>)}
-                                        </ul>
-                                    ) : <p className="text-sm text-muted-foreground italic">None assigned</p>}
-                                </div>
-                            </div>
-
-                            {/* Rooms */}
-                            <div className="space-y-1.5">
-                                <div className="text-xs font-semibold uppercase text-muted-foreground tracking-wider flex items-center justify-between">
-                                    <span>Rooms</span>
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                    {detailedAssignment.rooms.map(r => {
-                                        const over = detailedAssignment.totalStudents > r.capacity && detailedAssignment.rooms.length === 1;
-                                        return (
-                                            <div key={r.name} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium ${over ? "bg-destructive/10 border-destructive/30 text-destructive" : "bg-muted border"}`}>
-                                                <Building2 className="h-3.5 w-3.5" />
-                                                {r.name}
-                                                <span className="text-muted-foreground text-xs font-normal">cap {r.capacity}</span>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-
-                             {/* Distribution Violations */}
-                             {(() => {
-                                 // We need to find the examId for this detailed assignment
-                                 // Since we don't have it in detailedAssignment directly, we look it up by name in the assignments list
-                                 const assignment = assignments.find(a => a.exam.name === detailedAssignment.examName);
-                                 const violations = assignment ? violationMap[assignment.exam.id] || [] : [];
-                                 
-                                 if (violations.length === 0) return null;
-                                 
-                                 return (
-                                     <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 p-4 space-y-2">
-                                         <div className="flex items-center gap-2 text-sm font-bold text-amber-600 dark:text-amber-400">
-                                             <AlertTriangle className="h-4 w-4" />
-                                             Distribution Rule Violations
-                                         </div>
-                                         <ul className="text-xs space-y-1 text-amber-700 dark:text-amber-500/80">
-                                             {violations.map((v, i) => (
-                                                 <li key={i} className="flex items-center gap-2">
-                                                     <div className="h-1 w-1 rounded-full bg-amber-500" />
-                                                     {v}
-                                                 </li>
-                                             ))}
-                                         </ul>
-                                     </div>
-                                 );
-                             })()}
-
-                             {/* Clashes */}
-                            {clashes.length > 0 ? (
-                                <div className="rounded-xl bg-destructive/10 border border-destructive/30 p-4 space-y-3">
-                                    <div className="flex items-center gap-2 text-sm font-bold text-destructive">
-                                        <AlertTriangle className="h-4 w-4" />
-                                        {clashes.length} Student Clash{clashes.length !== 1 ? "es" : ""} Detected
-                                    </div>
-                                    <p className="text-xs text-destructive/70">
-                                        These exams run at the same time and share enrolled students. Click to see affected students.
-                                    </p>
-                                    <ul className="space-y-2">
-                                        {clashes.map((c, i) => {
-                                            const severity = c.clashCount >= 5 ? "🔴 High" : c.clashCount >= 2 ? "🟡 Moderate" : "🟠 Low";
-                                            const isExpanded = expandedClash === i;
-                                            return (
-                                                <li key={i} className="rounded-lg bg-destructive/10 overflow-hidden">
-                                                    <button
-                                                        className="w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-destructive/15 transition-colors"
-                                                        onClick={() => setExpandedClash(isExpanded ? null : i)}
+                                    <div className="space-y-2">
+                                        <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Rooms (Multiple Select)</Label>
+                                        <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto p-2 border rounded-md bg-muted/20">
+                                            {allRooms.map(r => {
+                                                const isSelected = editRoomIds.includes(r.id);
+                                                return (
+                                                    <div 
+                                                        key={r.id} 
+                                                        onClick={() => {
+                                                            if (isSelected) setEditRoomIds(editRoomIds.filter(id => id !== r.id));
+                                                            else setEditRoomIds([...editRoomIds, r.id]);
+                                                        }}
+                                                        className={cn(
+                                                            "flex items-center gap-2 px-2 py-1.5 rounded text-xs cursor-pointer border transition-colors",
+                                                            isSelected 
+                                                                ? "bg-primary text-primary-foreground border-primary" 
+                                                                : "bg-background hover:bg-muted border-muted outline-none focus:ring-1 focus:ring-primary"
+                                                        )}
                                                     >
-                                                        <div className="flex flex-col items-start">
-                                                            <span className="font-medium text-destructive">{c.concurrentExamName}</span>
-                                                            <span className="text-xs text-destructive/60">{severity}</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <Badge variant="destructive" className="text-[11px]">
-                                                                {c.clashCount} student{c.clashCount !== 1 ? "s" : ""}
+                                                        <Building2 className="h-3 w-3" />
+                                                        <span className="truncate">{r.building.code} {r.name}</span>
+                                                        <span className="ml-auto opacity-70">({r.capacity})</span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                        <p className="text-[10px] text-muted-foreground italic">Total Capacity: {allRooms.filter(r => editRoomIds.includes(r.id)).reduce((s,r) => s+r.capacity, 0)} (Need: {detailedAssignment.totalStudents})</p>
+                                    </div>
+
+                                    {/* Room Conflict Warning */}
+                                    {roomConflicts.length > 0 && (
+                                        <div className="rounded-xl bg-orange-500/10 border border-orange-500/40 p-3.5 space-y-2">
+                                            <div className="flex items-center gap-2 text-sm font-bold text-orange-600 dark:text-orange-400">
+                                                <AlertTriangle className="h-4 w-4" />
+                                                Room Already In Use
+                                            </div>
+                                            <p className="text-xs text-orange-600/80 dark:text-orange-400/80">
+                                                The following rooms are already assigned to another exam at this time slot:
+                                            </p>
+                                            <ul className="space-y-1">
+                                                {roomConflicts.map((c, i) => (
+                                                    <li key={i} className="flex items-center justify-between text-xs bg-orange-500/10 px-2.5 py-1.5 rounded-md border border-orange-500/20">
+                                                        <span className="font-semibold text-orange-700 dark:text-orange-300">{c.roomName}</span>
+                                                        <span className="text-orange-600/70 dark:text-orange-400/70 italic">used by: {c.usedByExam}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                            <Button 
+                                                className="w-full bg-orange-600 hover:bg-orange-700 text-white mt-1"
+                                                onClick={handleForceUpdateAssignment}
+                                                disabled={updating}
+                                            >
+                                                {updating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <AlertTriangle className="h-4 w-4 mr-2" />}
+                                                Force Save Anyway (Double-Book)
+                                            </Button>
+                                        </div>
+                                    )}
+
+                                    <Button className="w-full bg-indigo-600 hover:bg-indigo-700" onClick={handleUpdateAssignment} disabled={updating}>
+                                        {updating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
+                                        Save Changes
+                                    </Button>
+                                </div>
+                            ) : (
+                                <>
+                                    {/* Title & time */}
+                                    <div className="space-y-1">
+                                        <h3 className="text-xl font-bold">
+                                            {detailedAssignment.courseNumber && detailedAssignment.courseNumber !== "N/A" ? `${detailedAssignment.courseNumber}: ` : ""}
+                                            {detailedAssignment.courseTitle}
+                                        </h3>
+                                        <div className="text-sm text-muted-foreground flex items-center gap-2">
+                                            <CalendarDays className="h-4 w-4" />
+                                            {format(new Date(detailedAssignment.period.date), "EEEE, MMM d, yyyy")}
+                                            <span className="opacity-40">|</span>
+                                            <Clock className="h-4 w-4" />
+                                            {detailedAssignment.period.startTime} – {detailedAssignment.period.endTime}
+                                            <Badge variant="outline" className="ml-1">{detailedAssignment.period.length}m</Badge>
+                                        </div>
+                                    </div>
+
+                                    {/* Component Selector Dropdown */}
+                                    <div className="space-y-2">
+                                        <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Select Component (Code | Teacher)</Label>
+                                        <Select value={selectedExamId || ""} onValueChange={setSelectedExamId}>
+                                            <SelectTrigger className="w-full bg-muted/30 border-muted">
+                                                <SelectValue placeholder="Select a section" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {detailedAssignment.exams.map(ex => (
+                                                    <SelectItem key={ex.id} value={ex.id}>
+                                                        {ex.sections.join(", ")} | {ex.instructors.join(", ") || "No Instructor"}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    {/* Selected Component Details */}
+                                    {(() => {
+                                        const ex = detailedAssignment.exams.find(e => e.id === selectedExamId);
+                                        if (!ex) return null;
+                                        
+                                        return (
+                                            <div className="animate-in fade-in slide-in-from-top-1 duration-300 space-y-4">
+                                                <div className="bg-muted/40 border rounded-xl p-4 space-y-3">
+                                                    <div className="flex justify-between items-start">
+                                                        <div className="font-semibold text-base text-primary">{ex.name}</div>
+                                                        <div className="flex gap-1">
+                                                            {ex.clashes > 0 && (
+                                                                <Badge variant="destructive" className="h-5 text-[10px]">
+                                                                    {ex.clashes} Conflicts
+                                                                </Badge>
+                                                            )}
+                                                            <Badge variant="secondary" className="h-5 text-[10px]">
+                                                                {ex.students} Students
                                                             </Badge>
-                                                            {isExpanded ? <ChevronUp className="h-3 w-3 text-destructive" /> : <ChevronDown className="h-3 w-3 text-destructive" />}
                                                         </div>
-                                                    </button>
-                                                    {isExpanded && (
-                                                        <div className="px-3 pb-3 border-t border-destructive/20">
-                                                            <p className="text-xs font-semibold text-destructive/70 uppercase tracking-wider mt-2 mb-1.5">Affected Students</p>
-                                                            <ul className="space-y-1">
-                                                                {c.clashingStudents.map(s => (
-                                                                    <li key={s.id} className="flex items-center justify-between text-xs rounded-md bg-destructive/10 px-2.5 py-1.5">
-                                                                        <span className="font-medium text-destructive">{s.name}</span>
-                                                                        <span className="text-destructive/50 font-mono">{s.externalId}</span>
+                                                    </div>
+                                                    
+                                                    <div className="grid grid-cols-1 gap-2 border-t border-muted/50 pt-3">
+                                                        <div className="flex flex-wrap gap-2 text-xs font-medium">
+                                                            {ex.sections.map(s => (
+                                                                <span key={s} className="bg-primary/5 px-2 py-0.5 rounded border border-primary/10 text-primary">Code: {s}</span>
+                                                            ))}
+                                                        </div>
+                                                        <div className="flex items-center gap-2 text-xs text-muted-foreground italic">
+                                                            <Users className="h-3 w-3" />
+                                                            Teachers: {ex.instructors.join(", ") || "No instructor assigned"}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Violations for this specific section */}
+                                                    {ex.violations && ex.violations.length > 0 && (
+                                                        <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 p-3 space-y-2">
+                                                            <div className="flex items-center gap-2 text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-tighter">
+                                                                <AlertTriangle className="h-3.5 w-3.5" />
+                                                                Rule Violations
+                                                            </div>
+                                                            <ul className="text-[11px] space-y-1 text-amber-700 dark:text-amber-500/80">
+                                                                {ex.violations.map((v, i) => (
+                                                                    <li key={i} className="flex items-start gap-1.5 leading-tight">
+                                                                        <div className="h-1 w-1 rounded-full bg-amber-500 mt-1 flex-shrink-0" />
+                                                                        {v}
                                                                     </li>
                                                                 ))}
                                                             </ul>
                                                         </div>
                                                     )}
-                                                </li>
-                                            );
-                                        })}
-                                    </ul>
-                                </div>
-                            ) : (
-                                <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-3.5 flex items-center gap-3">
-                                    <CheckCircle2 className="h-5 w-5 text-emerald-500 flex-shrink-0" />
-                                    <div>
-                                        <div className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">No Student Clashes</div>
-                                        <div className="text-xs text-emerald-600/70 dark:text-emerald-500/70">All enrolled students are free during this period.</div>
+
+                                                    {/* Clashes for this specific exam section */}
+                                                    {ex.clashDetails && ex.clashDetails.length > 0 && (
+                                                        <div className="space-y-2 pt-3 border-t border-destructive/10">
+                                                            <div className="text-[10px] font-bold text-destructive/60 uppercase tracking-wider">Affected Students</div>
+                                                            {ex.clashDetails.map((clash, idx) => {
+                                                                const isExpanded = expandedClash === idx;
+                                                                return (
+                                                                    <div key={idx} className="bg-destructive/5 rounded-lg border border-destructive/20 overflow-hidden">
+                                                                        <button 
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                setExpandedClash(isExpanded ? null : idx);
+                                                                            }}
+                                                                            className="w-full flex items-center justify-between p-2.5 transition-colors hover:bg-destructive/10"
+                                                                        >
+                                                                            <div className="flex items-center gap-2 text-[11px]">
+                                                                                <div className="bg-destructive text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+                                                                                    {clash.clashCount}
+                                                                                </div>
+                                                                                <span className="font-semibold text-destructive truncate">{clash.concurrentExamName}</span>
+                                                                            </div>
+                                                                            {isExpanded ? <ChevronUp className="h-3 w-3 text-destructive/50" /> : <ChevronDown className="h-3 w-3 text-destructive/50" />}
+                                                                        </button>
+                                                                        
+                                                                        {isExpanded && (
+                                                                            <div className="p-2.5 pt-0 border-t border-destructive/10 animate-in slide-in-from-top-1 duration-200">
+                                                                                <div className="grid grid-cols-1 gap-1.5">
+                                                                                    {clash.clashingStudents.map(s => (
+                                                                                        <div key={s.id} className="text-[10px] flex items-center gap-1.5 text-destructive/80">
+                                                                                            <span className="h-1 w-1 rounded-full bg-destructive/40" />
+                                                                                            {s.name} ({s.externalId})
+                                                                                        </div>
+                                                                                    ))}
+                                                                                </div>
+                                                                                <Button 
+                                                                                    variant="ghost" 
+                                                                                    size="sm" 
+                                                                                    className="h-7 text-[10px] mt-2 hover:bg-destructive/10 text-destructive/60 hover:text-destructive w-full"
+                                                                                    onClick={() => jumpToExam(clash.concurrentAssignmentId)}
+                                                                                >
+                                                                                    Jump to Clashing Exam
+                                                                                </Button>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
+
+                                    {/* Totals & Utilization */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="bg-muted/50 rounded-lg p-3 border space-y-0.5">
+                                            <div className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">Total Students</div>
+                                            <div className="text-2xl font-bold">
+                                                {detailedAssignment.exams.reduce((s, e) => s + e.students, 0)}
+                                            </div>
+                                        </div>
+                                        <div className="bg-muted/50 rounded-lg p-3 border space-y-0.5">
+                                            <div className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">Total Capacity</div>
+                                            <div className="text-2xl font-bold">
+                                                {detailedAssignment.rooms.reduce((s, r) => s + r.capacity, 0)}
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
+
+                                    {/* Utilization bar */}
+                                    {(() => {
+                                        const totalStudents = detailedAssignment.exams.reduce((s, e) => s + e.students, 0);
+                                        const cap = detailedAssignment.rooms.reduce((s, r) => s + r.capacity, 0);
+                                        const pct = cap > 0 ? Math.min(100, Math.round((totalStudents / cap) * 100)) : 0;
+                                        const overCapacity = totalStudents > cap;
+                                        return (
+                                            <div className="space-y-1">
+                                                <div className="flex justify-between text-xs text-muted-foreground">
+                                                    <span>Overall Room Utilization</span>
+                                                    <span className={overCapacity ? "text-destructive font-semibold" : ""}>{pct}%{overCapacity ? " — OVER CAPACITY" : ""}</span>
+                                                </div>
+                                                <div className="w-full bg-muted rounded-full h-2.5">
+                                                    <div
+                                                        className={`h-2.5 rounded-full transition-all ${pct > 90 ? "bg-destructive" : pct > 70 ? "bg-amber-500" : "bg-emerald-500"}`}
+                                                        style={{ width: `${pct}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
+
+                                    {/* Rooms */}
+                                    <div className="space-y-1.5">
+                                        <div className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">Rooms in Use</div>
+                                        <div className="flex flex-wrap gap-2">
+                                            {detailedAssignment.rooms.map(r => (
+                                                <div key={r.name} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-muted text-sm font-medium">
+                                                    <Building2 className="h-3.5 w-3.5" />
+                                                    {r.name}
+                                                    <span className="text-muted-foreground text-xs font-normal">cap {r.capacity}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Conflicts warning */}
+                                    {detailedAssignment.exams.some(e => e.clashes > 0) ? (
+                                        <div className="rounded-xl bg-destructive/10 border border-destructive/30 p-4 space-y-2">
+                                            <div className="flex items-center gap-2 text-sm font-bold text-destructive">
+                                                <AlertTriangle className="h-4 w-4" />
+                                                Student Conflict Warning
+                                            </div>
+                                            <p className="text-xs text-destructive/70">
+                                                One or more sections in this group have students scheduled for multiple exams at this same time slot. 
+                                                Check the analytics page for individual student names and details.
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-3.5 flex items-center gap-3">
+                                            <CheckCircle2 className="h-5 w-5 text-emerald-500 flex-shrink-0" />
+                                            <div>
+                                                <div className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">No Student Clashes</div>
+                                                <div className="text-xs text-emerald-600/70 dark:text-emerald-500/70">All enrolled students are free during this period.</div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
                             )}
                         </div>
                     ) : (

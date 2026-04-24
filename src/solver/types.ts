@@ -72,9 +72,9 @@ export const DEFAULT_CONFIG: SolverConfiguration = {
 
     periodPenaltyWeight: 1.0,
     periodIndexWeight: 0.0000001,
-    periodSizeWeight: 0.0,
+    periodSizeWeight: 10.0,
     periodSizeNorm: 0.0,
-    roomSizePenaltyWeight: 0.001,
+    roomSizePenaltyWeight: 0.1,
     roomSplitPenaltyWeight: 10.0,
     roomSplitDistanceWeight: 0.01,
     roomPenaltyWeight: 1.0,

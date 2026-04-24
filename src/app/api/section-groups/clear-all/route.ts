@@ -26,12 +26,18 @@ export async function POST(request: Request) {
         });
 
         // 2. Clear all SAME_PERIOD constraints for this session's courses
-        // A cleaner way is to use the rebuild logic per course cluster, but for a global clear,
-        // we can just delete all SAME_PERIOD constraints where the courses belong to this session.
-        await prisma.examConstraint.deleteMany({
+        await prisma.distributionConstraint.deleteMany({
             where: {
                 type: "SAME_PERIOD",
-                courseA: { sessionId }
+                examA: {
+                    owners: {
+                        some: {
+                            section: {
+                                course: { sessionId }
+                            }
+                        }
+                    }
+                }
             }
         });
 

@@ -166,6 +166,7 @@ export default function RoomsPage() {
     const [buildings, setBuildings] = useState<BuildingData[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [buildingDialogOpen, setBuildingDialogOpen] = useState(false);
@@ -189,7 +190,12 @@ export default function RoomsPage() {
     const fetchData = async (currentPage = page) => {
         setLoading(true);
         try {
-            const res = await fetch(`/api/buildings?page=${currentPage}&limit=50`);
+            const params = new URLSearchParams({
+                page: currentPage.toString(),
+                limit: "50",
+                search: debouncedSearch
+            });
+            const res = await fetch(`/api/buildings?${params.toString()}`);
             const data = await res.json();
             setBuildings(data.buildings || []);
             setTotalPages(Math.ceil((data.total || 0) / 50) || 1);
@@ -197,7 +203,13 @@ export default function RoomsPage() {
         finally { setLoading(false); }
     };
 
-    useEffect(() => { fetchData(page); }, [page]);
+    useEffect(() => {
+        setPage(1);
+        const t = setTimeout(() => setDebouncedSearch(search), 300);
+        return () => clearTimeout(t);
+    }, [search]);
+
+    useEffect(() => { fetchData(page); }, [page, debouncedSearch]);
 
     const handleDelete = async () => {
         if (!deleteTarget) return;
@@ -261,10 +273,7 @@ export default function RoomsPage() {
         setSavingFeatures(false);
     };
 
-    const filtered = buildings.filter(b =>
-        search === "" || b.name.toLowerCase().includes(search.toLowerCase()) || b.code.toLowerCase().includes(search.toLowerCase()) ||
-        b.rooms.some(r => r.name.toLowerCase().includes(search.toLowerCase()))
-    );
+    const filtered = buildings; // Handled by server
 
     const totalRooms = buildings.reduce((acc, b) => acc + b._count.rooms, 0);
 

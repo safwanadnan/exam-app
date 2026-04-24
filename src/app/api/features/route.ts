@@ -1,12 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma, jsonResponse, getPagination, withErrorHandling, parseBody } from "@/lib/api-helpers";
+import { prisma, jsonResponse, getPagination, getSearch, withErrorHandling, parseBody } from "@/lib/api-helpers";
 import { z } from "zod";
 
 export const GET = withErrorHandling(async (req: NextRequest) => {
     const { skip, limit, page } = getPagination(req);
+    const search = getSearch(req);
     const url = new URL(req.url);
     const sessionId = url.searchParams.get("sessionId");
-    const where = sessionId ? { sessionId } : {};
+    
+    const where: any = sessionId ? { sessionId } : {};
+    if (search) {
+        where.OR = [
+            { name: { contains: search } },
+            { code: { contains: search } },
+        ];
+    }
 
     const [features, total] = await Promise.all([
         prisma.roomFeature.findMany({

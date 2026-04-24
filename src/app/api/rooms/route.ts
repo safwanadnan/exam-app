@@ -1,11 +1,11 @@
-﻿export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic';
 /**
  * GET /api/rooms â€” List rooms (optionally filter by buildingId)
  * POST /api/rooms â€” Create a room
  */
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { prisma, jsonResponse, parseBody, getPagination, withErrorHandling } from "@/lib/api-helpers";
+import { prisma, jsonResponse, parseBody, getPagination, getSearch, withErrorHandling } from "@/lib/api-helpers";
 
 const createRoomSchema = z.object({
     name: z.string().min(1),
@@ -18,10 +18,20 @@ const createRoomSchema = z.object({
 
 export const GET = withErrorHandling(async (req: NextRequest) => {
     const { skip, limit, page } = getPagination(req);
+    const search = getSearch(req);
     const url = new URL(req.url);
     const buildingId = url.searchParams.get("buildingId");
 
-    const where = buildingId ? { buildingId } : {};
+    const where: any = buildingId ? { buildingId } : {};
+    
+    if (search) {
+        where.OR = [
+            { name: { contains: search } },
+            { building: { name: { contains: search } } },
+            { building: { code: { contains: search } } },
+        ];
+    }
+
     const [rooms, total] = await Promise.all([
         prisma.room.findMany({
             where,

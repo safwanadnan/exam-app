@@ -15,11 +15,24 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
         where: { runId },
         include: {
             exam: {
-                select: {
-                    name: true,
-                    length: true,
+                include: {
                     examType: { select: { name: true } },
                     _count: { select: { studentEnrollments: true } },
+                    owners: {
+                        include: {
+                            section: {
+                                select: {
+                                    sectionNumber: true,
+                                    course: { select: { id: true, title: true, courseNumber: true } }
+                                }
+                            }
+                        }
+                    },
+                    instructorAssignments: {
+                        include: {
+                            instructor: { select: { id: true, name: true, externalId: true } }
+                        }
+                    }
                 },
             },
             period: { select: { id: true, date: true, startTime: true, endTime: true, length: true } },

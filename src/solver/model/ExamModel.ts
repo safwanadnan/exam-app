@@ -268,6 +268,23 @@ export class ExamModel {
         return roomMap ? new Set(roomMap.keys()) : new Set();
     }
 
+    /**
+     * Get all exams assigned to a period.
+     */
+    getExamsInPeriod(periodId: string): Exam[] {
+        const roomMap = this._roomsOfPeriod.get(periodId);
+        if (!roomMap) return [];
+        return Array.from(new Set(roomMap.values()));
+    }
+
+    /**
+     * Get total size (students) of all exams in a period.
+     */
+    getPeriodSize(periodId: string): number {
+        const exams = this.getExamsInPeriod(periodId);
+        return exams.reduce((sum, e) => sum + e.size, 0);
+    }
+
     // ===================== SOLUTION STATISTICS =====================
 
     get assignedExams(): Exam[] {
@@ -353,8 +370,16 @@ export class ExamModel {
         // Period penalties
         for (const exam of this._exams) {
             if (!exam.isAssigned) continue;
+            const period = exam.assignment!.period;
             total += exam.assignment!.periodPlacement.penalty * cfg.periodPenaltyWeight;
-            total += exam.assignment!.period.index * cfg.periodIndexWeight;
+            total += period.index * cfg.periodIndexWeight;
+            
+            // Period density penalty: penalize using the same period for many exams
+            // This encourages spreading exams across all available slots
+            if (cfg.periodSizeWeight > 0) {
+                const examsInPeriod = this.getExamsInPeriod(period.id).length;
+                total += examsInPeriod * cfg.periodSizeWeight;
+            }
         }
 
         // Room penalties
@@ -367,9 +392,19 @@ export class ExamModel {
                 total += rp.penalty * cfg.roomPenaltyWeight;
             }
 
-            // Room size penalty (excess)
-            const excess = placement.getTotalCapacity(exam.altSeating) - exam.size;
-            if (excess > 0) total += excess * cfg.roomSizePenaltyWeight;
+            // Room size penalty (utilization)
+            const cap = placement.getTotalCapacity(exam.altSeating);
+            const excess = cap - exam.size;
+            if (excess > 0) {
+                total += excess * cfg.roomSizePenaltyWeight;
+                
+                // Severely penalize very low utilization (e.g., 1 student in a large room)
+                // If utilization < 10% and room is large, add a significant constant penalty
+                const utilization = exam.size / cap;
+                if (utilization < 0.1 && cap > 10) {
+                    total += 500; // Large penalty for gross under-utilization
+                }
+            }
 
             // Room split penalty
             if (placement.roomPlacements.length > 1) {

@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
  */
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { prisma, jsonResponse, parseBody, getPagination, withErrorHandling } from "@/lib/api-helpers";
+import { prisma, jsonResponse, parseBody, getPagination, getSearch, withErrorHandling } from "@/lib/api-helpers";
 
 const createConstraintSchema = z.object({
     type: z.string().min(1),
@@ -18,9 +18,40 @@ const createConstraintSchema = z.object({
 
 export const GET = withErrorHandling(async (req: NextRequest) => {
     const { skip, limit, page } = getPagination(req);
+    const search = getSearch(req);
+    const url = new URL(req.url);
+    const sessionId = url.searchParams.get("sessionId");
+
+    const where: any = sessionId ? { 
+        OR: [
+            { examA: { examType: { sessionId } } },
+            { examB: { examType: { sessionId } } }
+        ]
+    } : {};
+
+    if (search) {
+        const searchCond = {
+            OR: [
+                { type: { contains: search } },
+                { examA: { name: { contains: search } } },
+                { examB: { name: { contains: search } } },
+            ]
+        };
+        if (where.OR) {
+            // Combine with sessionId filter
+            where.AND = [
+                { OR: where.OR },
+                searchCond
+            ];
+            delete where.OR;
+        } else {
+            where.OR = searchCond.OR;
+        }
+    }
 
     const [constraints, total] = await Promise.all([
         prisma.distributionConstraint.findMany({
+            where,
             skip,
             take: limit,
             include: {
@@ -28,7 +59,7 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
                 examB: { select: { name: true } },
             },
         }),
-        prisma.distributionConstraint.count(),
+        prisma.distributionConstraint.count({ where }),
     ]);
 
     return jsonResponse({ constraints, total, page, limit });

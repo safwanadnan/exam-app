@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, GraduationCap, Search, MoreHorizontal, Loader2, Tags, Users, Clock, BookOpen } from "lucide-react";
+import { Plus, GraduationCap, Search, MoreHorizontal, Loader2, Tags, Users, Clock, BookOpen, Trash2, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -160,11 +160,14 @@ export default function ExamsPage() {
     const [exams, setExams] = useState<Exam[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
     const [editExam, setEditExam] = useState<Exam | null>(null);
     const [editOpen, setEditOpen] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<Exam | null>(null);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
 
     // Features
     const [showFeatures, setShowFeatures] = useState<Exam | null>(null);
@@ -179,18 +182,29 @@ export default function ExamsPage() {
     const fetchExams = async (currentPage = page) => {
         setLoading(true);
         try {
-            const url = currentSessionId 
-                ? `/api/exams?page=${currentPage}&limit=50&sessionId=${currentSessionId}` 
-                : `/api/exams?page=${currentPage}&limit=50`;
-            const res = await fetch(url);
+            const params = new URLSearchParams({
+                page: currentPage.toString(),
+                limit: "50",
+                search: debouncedSearch
+            });
+            if (currentSessionId) params.set("sessionId", currentSessionId);
+            
+            const res = await fetch(`/api/exams?${params.toString()}`);
             const data = await res.json();
             setExams(data.exams || []);
             setTotalPages(Math.ceil((data.total || 0) / 50) || 1);
+            setSelectedIds(new Set()); // Reset selection on fetch
         } catch { toast.error("Failed to load exams"); }
         finally { setLoading(false); }
     };
 
-    useEffect(() => { fetchExams(page); }, [page, currentSessionId]);
+    useEffect(() => {
+        setPage(1);
+        const t = setTimeout(() => setDebouncedSearch(search), 300);
+        return () => clearTimeout(t);
+    }, [search]);
+
+    useEffect(() => { fetchExams(page); }, [page, currentSessionId, debouncedSearch]);
 
     const handleDelete = async () => {
         if (!deleteTarget) return;
@@ -200,6 +214,37 @@ export default function ExamsPage() {
             toast.success("Exam deleted");
             setDeleteTarget(null); fetchExams();
         } catch (err: any) { toast.error(err.message); }
+    };
+
+    const handleBulkDelete = async () => {
+        try {
+            const ids = Array.from(selectedIds);
+            const res = await fetch("/api/exams", {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ ids })
+            });
+            if (!res.ok) throw new Error("Failed to delete selected exams");
+            toast.success(`Deleted ${ids.length} exams`);
+            setSelectedIds(new Set());
+            setBulkDeleteDialogOpen(false);
+            fetchExams();
+        } catch (err: any) { toast.error(err.message); }
+    };
+
+    const toggleSelect = (id: string) => {
+        const next = new Set(selectedIds);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        setSelectedIds(next);
+    };
+
+    const toggleSelectAll = () => {
+        if (selectedIds.size === exams.length && exams.length > 0) {
+            setSelectedIds(new Set());
+        } else {
+            setSelectedIds(new Set(exams.map(e => e.id)));
+        }
     };
 
     const openFeatures = async (e: Exam) => {
@@ -240,12 +285,23 @@ export default function ExamsPage() {
         setSavingFeatures(false);
     };
 
-    const filtered = exams.filter(e => search === "" || (e.name || "").toLowerCase().includes(search.toLowerCase()));
+    const filtered = exams; // Handled by server
 
     return (
         <div className="flex-1 space-y-6">
             <div className="flex items-center justify-between">
                 <h2 className="text-3xl font-bold tracking-tight">Exams & Courses</h2>
+                {selectedIds.size > 0 && (
+                    <div className="flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                        <span className="text-sm font-medium text-muted-foreground bg-muted px-3 py-1.5 rounded-full border shadow-sm flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-primary" />
+                            {selectedIds.size} selected
+                        </span>
+                        <Button variant="destructive" size="sm" className="shadow-sm hover:shadow-md transition-all active:scale-95" onClick={() => setBulkDeleteDialogOpen(true)}>
+                            <Trash2 className="mr-2 h-4 w-4" /> Delete Selected
+                        </Button>
+                    </div>
+                )}
             </div>
 
             <div className="flex items-center space-x-2 pb-2">
@@ -275,6 +331,14 @@ export default function ExamsPage() {
                             <Table>
                                 <TableHeader className="bg-muted/5">
                                     <TableRow>
+                                        <TableHead className="w-[40px]">
+                                            <input 
+                                                type="checkbox" 
+                                                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary accent-primary cursor-pointer"
+                                                checked={selectedIds.size === filtered.length && filtered.length > 0}
+                                                onChange={toggleSelectAll}
+                                            />
+                                        </TableHead>
                                         <TableHead>Exam Name</TableHead>
                                         <TableHead>Type</TableHead>
                                         <TableHead className="text-right">Length</TableHead>
@@ -286,7 +350,19 @@ export default function ExamsPage() {
                                 </TableHeader>
                                 <TableBody>
                                     {filtered.map(exam => (
-                                        <TableRow key={exam.id} className="cursor-pointer hover:bg-muted/40" onClick={() => { setDetailExam(exam); setDetailOpen(true); }}>
+                                        <TableRow 
+                                            key={exam.id} 
+                                            className={`cursor-pointer transition-colors ${selectedIds.has(exam.id) ? "bg-primary/5 hover:bg-primary/10" : "hover:bg-muted/40"}`}
+                                            onClick={() => { setDetailExam(exam); setDetailOpen(true); }}
+                                        >
+                                            <TableCell onClick={e => e.stopPropagation()}>
+                                                <input 
+                                                    type="checkbox" 
+                                                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary accent-primary cursor-pointer"
+                                                    checked={selectedIds.has(exam.id)}
+                                                    onChange={() => toggleSelect(exam.id)}
+                                                />
+                                            </TableCell>
                                             <TableCell className="font-medium">{exam.name || "Unnamed Exam"}</TableCell>
                                             <TableCell><Badge variant="outline" className="text-[11px]">{exam.examType?.name || "—"}</Badge></TableCell>
                                             <TableCell className="text-right font-medium">{exam.length}m</TableCell>
@@ -323,6 +399,7 @@ export default function ExamsPage() {
 
             <ExamDialog exam={editExam} open={editOpen} onOpenChange={setEditOpen} onSaved={() => fetchExams(page)} />
             <DeleteDialog open={!!deleteTarget} onOpenChange={o => { if (!o) setDeleteTarget(null); }} onConfirm={handleDelete} title={deleteTarget?.name || "this exam"} />
+            <DeleteDialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen} onConfirm={handleBulkDelete} title={`${selectedIds.size} selected exams`} />
 
             {/* ── Exam Detail Panel ── */}
             <Dialog open={detailOpen} onOpenChange={setDetailOpen}>

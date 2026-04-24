@@ -14,7 +14,9 @@ const configSchema = z.object({
     backToBackDistance: z.number().default(67),
     isDayBreakBackToBack: z.boolean().default(false),
     periodPenaltyWeight: z.number().default(1),
-    roomSizePenaltyWeight: z.number().default(0.001),
+    periodIndexWeight: z.number().default(0.0000001),
+    periodSizeWeight: z.number().default(10.0),
+    roomSizePenaltyWeight: z.number().default(0.1),
     roomSplitPenaltyWeight: z.number().default(10),
     roomPenaltyWeight: z.number().default(1),
     distributionWeight: z.number().default(1),
@@ -32,7 +34,13 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     const parsed = await parseBody(req, configSchema);
     if (parsed.error) return parsed.error;
 
-    const config = await prisma.solverConfig.create({ data: parsed.data as any });
+    const { sessionId, ...rest } = parsed.data;
+    const config = await prisma.solverConfig.create({
+        data: {
+            ...rest,
+            session: { connect: { id: sessionId } }
+        }
+    });
     return jsonResponse(config, 201);
 });
 
@@ -41,10 +49,17 @@ export const PUT = withErrorHandling(async (req: NextRequest) => {
     const id = url.searchParams.get("id");
     if (!id) return jsonResponse({ error: "id required" }, 400);
 
-    const body = await req.json();
-    const { id: _, createdAt, updatedAt, session, solverRuns, ...data } = body;
+    const parsed = await parseBody(req, configSchema.partial());
+    if (parsed.error) return parsed.error;
 
-    const config = await prisma.solverConfig.update({ where: { id }, data });
+    // Filter out sessionId if it's there, as Prisma often prevents direct FK update 
+    // when a relation field is defined, and changing session for a config is rarely desired.
+    const { sessionId, ...data } = parsed.data;
+
+    const config = await prisma.solverConfig.update({
+        where: { id },
+        data
+    });
     return jsonResponse(config);
 });
 

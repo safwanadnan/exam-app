@@ -1,11 +1,11 @@
-﻿export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic';
 /**
  * GET /api/sessions â€” List all academic sessions
  * POST /api/sessions â€” Create a new academic session
  */
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { prisma, jsonResponse, errorResponse, parseBody, getPagination, withErrorHandling } from "@/lib/api-helpers";
+import { prisma, jsonResponse, errorResponse, parseBody, getPagination, getSearch, withErrorHandling } from "@/lib/api-helpers";
 
 const createSessionSchema = z.object({
     name: z.string().min(1),
@@ -18,8 +18,21 @@ const createSessionSchema = z.object({
 
 export const GET = withErrorHandling(async (req: NextRequest) => {
     const { skip, limit, page } = getPagination(req);
+    const search = getSearch(req);
+
+    const where: any = {};
+    if (search) {
+        where.OR = [
+            { name: { contains: search } },
+            { term: { contains: search } },
+            // Year is numeric, so we only try if search is numeric
+            ...(isNaN(parseInt(search)) ? [] : [{ year: parseInt(search) }]),
+        ];
+    }
+
     const [sessions, total] = await Promise.all([
         prisma.academicSession.findMany({
+            where,
             skip,
             take: limit,
             orderBy: { year: "desc" },
@@ -27,7 +40,7 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
                 _count: { select: { examTypes: true, solverRuns: true } },
             },
         }),
-        prisma.academicSession.count(),
+        prisma.academicSession.count({ where }),
     ]);
     return jsonResponse({ sessions, total, page, limit });
 });

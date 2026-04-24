@@ -71,4 +71,26 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     });
     return jsonResponse(exam, 201);
 });
+export const DELETE = withErrorHandling(async (req: NextRequest) => {
+    const url = new URL(req.url);
+    const idsString = url.searchParams.get("ids");
+    
+    let ids: string[] = [];
+    if (idsString) {
+        ids = idsString.split(",");
+    } else {
+        const body = await parseBody(req, z.object({ ids: z.array(z.string()) }));
+        if (body.error) return body.error;
+        ids = body.data.ids;
+    }
 
+    if (ids.length === 0) {
+        return jsonResponse({ error: "No IDs provided" }, 400);
+    }
+
+    const { count } = await prisma.exam.deleteMany({
+        where: { id: { in: ids } },
+    });
+
+    return jsonResponse({ message: `Successfully deleted ${count} exams`, count });
+});

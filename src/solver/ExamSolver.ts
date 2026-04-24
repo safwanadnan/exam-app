@@ -446,15 +446,30 @@ export class ExamSolver {
         cost += placement.periodPlacement.penalty * cfg.periodPenaltyWeight;
         cost += period.index * cfg.periodIndexWeight;
 
+        // Period density penalty: penalize using the same period for many exams
+        if (cfg.periodSizeWeight > 0) {
+            const examsInPeriod = this.model.getExamsInPeriod(period.id).length;
+            cost += (examsInPeriod + 1) * cfg.periodSizeWeight;
+        }
+
         // Room penalties
         for (const rp of placement.roomPlacements) {
             cost += rp.penalty * cfg.roomPenaltyWeight;
             cost += rp.room.getPeriodPenalty(period) * cfg.roomPenaltyWeight;
         }
 
-        // Room size penalty
-        const excess = placement.getTotalCapacity(exam.altSeating) - exam.size;
-        if (excess > 0) cost += excess * cfg.roomSizePenaltyWeight;
+        // Room size penalty (utilization)
+        const cap = placement.getTotalCapacity(exam.altSeating);
+        const excess = cap - exam.size;
+        if (excess > 0) {
+            cost += excess * cfg.roomSizePenaltyWeight;
+            
+            // Severely penalize very low utilization
+            const utilization = exam.size / cap;
+            if (utilization < 0.1 && cap > 10) {
+                cost += 500;
+            }
+        }
 
         // Room split penalty
         if (placement.roomPlacements.length > 1) {

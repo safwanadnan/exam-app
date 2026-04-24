@@ -67,6 +67,7 @@ export default function FeaturesPage() {
     const [selectedSessionId, setSelectedSessionId] = useState("");
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
     const [addOpen, setAddOpen] = useState(false);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
@@ -84,7 +85,13 @@ export default function FeaturesPage() {
         if (!selectedSessionId) return;
         setLoading(true);
         try {
-            const res = await fetch(`/api/features?sessionId=${selectedSessionId}&page=${currentPage}&limit=50`);
+            const params = new URLSearchParams({
+                sessionId: selectedSessionId,
+                page: currentPage.toString(),
+                limit: "50",
+                search: debouncedSearch
+            });
+            const res = await fetch(`/api/features?${params.toString()}`);
             const data = await res.json();
             setFeatures(data.features || []);
             setTotalPages(Math.ceil((data.total || 0) / 50) || 1);
@@ -92,9 +99,15 @@ export default function FeaturesPage() {
         finally { setLoading(false); }
     };
 
-    useEffect(() => { fetchFeatures(page); }, [selectedSessionId, page]);
+    useEffect(() => {
+        setPage(1);
+        const t = setTimeout(() => setDebouncedSearch(search), 300);
+        return () => clearTimeout(t);
+    }, [search]);
 
-    const filtered = features.filter(f => search === "" || f.name.toLowerCase().includes(search.toLowerCase()) || f.code.toLowerCase().includes(search.toLowerCase()));
+    useEffect(() => { fetchFeatures(page); }, [selectedSessionId, page, debouncedSearch]);
+
+    const filtered = features; // Handled by server
 
     return (
         <div className="flex-1 space-y-6">

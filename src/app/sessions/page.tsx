@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
-import { Plus, MoreHorizontal, Calendar, Loader2 } from "lucide-react";
+import { Plus, MoreHorizontal, Calendar, Loader2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -203,13 +203,20 @@ export default function SessionsPage() {
     const [formOpen, setFormOpen] = useState(false);
     const [editSession, setEditSession] = useState<Session | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<Session | null>(null);
+    const [search, setSearch] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
 
     const fetchSessions = async (currentPage = page) => {
         setLoading(true);
         try {
-            const res = await fetch(`/api/sessions?page=${currentPage}&limit=50`);
+            const params = new URLSearchParams({
+                page: currentPage.toString(),
+                limit: "50",
+                search: debouncedSearch
+            });
+            const res = await fetch(`/api/sessions?${params.toString()}`);
             const data = await res.json();
             setSessions(data.sessions || []);
             setTotalPages(Math.ceil((data.total || 0) / 50) || 1);
@@ -220,7 +227,13 @@ export default function SessionsPage() {
         }
     };
 
-    useEffect(() => { fetchSessions(page); }, [page]);
+    useEffect(() => {
+        setPage(1);
+        const t = setTimeout(() => setDebouncedSearch(search), 300);
+        return () => clearTimeout(t);
+    }, [search]);
+
+    useEffect(() => { fetchSessions(page); }, [page, debouncedSearch]);
 
     const handleDelete = async () => {
         if (!deleteTarget) return;
@@ -244,6 +257,19 @@ export default function SessionsPage() {
                         <Plus className="mr-2 h-4 w-4" /> Add Session
                     </Button>
                 </Tip>
+            </div>
+
+            <div className="flex items-center space-x-2 pb-2">
+                <div className="relative max-w-sm w-full">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                        type="search" 
+                        placeholder="Search sessions..." 
+                        className="pl-8 bg-background" 
+                        value={search} 
+                        onChange={e => setSearch(e.target.value)} 
+                    />
+                </div>
             </div>
 
             <Card>

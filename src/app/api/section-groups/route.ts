@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { NextRequest, NextResponse } from "next/server";
+import { prisma, jsonResponse, getPagination, getSearch, withErrorHandling } from "@/lib/api-helpers";
 
 /**
  * GET /api/section-groups?sessionId=...
@@ -7,13 +7,27 @@ import { prisma } from "@/lib/prisma";
  * instructorKey is stored as sorted original instructor names joined by "|".
  * We return them directly as instructorNames[].
  */
-export async function GET(request: Request) {
-    const { searchParams } = new URL(request.url);
-    const sessionId = searchParams.get("sessionId");
+export const GET = withErrorHandling(async (req: NextRequest) => {
+    const { skip, limit, page } = getPagination(req);
+    const search = getSearch(req);
+    const url = new URL(req.url);
+    const sessionId = url.searchParams.get("sessionId");
 
-    try {
-        const groups = await prisma.sectionGroup.findMany({
-            where: sessionId ? { course: { sessionId } } : undefined,
+    const where: any = sessionId ? { course: { sessionId } } : {};
+    
+    if (search) {
+        where.OR = [
+            { course: { title: { contains: search } } },
+            { course: { courseNumber: { contains: search } } },
+            { instructorKey: { contains: search } },
+        ];
+    }
+
+    const [groups, total] = await Promise.all([
+        prisma.sectionGroup.findMany({
+            where,
+            skip,
+            take: limit,
             include: {
                 course: {
                     select: {
@@ -38,29 +52,27 @@ export async function GET(request: Request) {
                 { course: { title: "asc" } },
                 { instructorKey: "asc" }
             ]
-        });
+        }),
+        prisma.sectionGroup.count({ where }),
+    ]);
 
-        // instructorKey is the normalized (lowercased) names joined by "|"
-        // Title-case each part for proper display
-        const titleCase = (str: string) =>
-            str
-                .split(/\s+/)
-                .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-                .join(" ");
+    // instructorKey is the normalized (lowercased) names joined by "|"
+    // Title-case each part for proper display
+    const titleCase = (str: string) =>
+        str
+            .split(/\s+/)
+            .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+            .join(" ");
 
-        const enrichedGroups = groups.map(g => ({
-            ...g,
-            instructorNames: g.instructorKey === "__no_instructor__"
-                ? ["No instructor assigned"]
-                : g.instructorKey.split("|").map(name => titleCase(name)),
-        }));
+    const enrichedGroups = groups.map(g => ({
+        ...g,
+        instructorNames: g.instructorKey === "__no_instructor__"
+            ? ["No instructor assigned"]
+            : g.instructorKey.split("|").map(name => titleCase(name)),
+    }));
 
-        return NextResponse.json({ groups: enrichedGroups });
-    } catch (error) {
-        console.error("Failed to fetch section groups:", error);
-        return NextResponse.json({ error: "Failed to fetch section groups" }, { status: 500 });
-    }
-}
+    return jsonResponse({ groups: enrichedGroups, total, page, limit });
+});
 
 /**
  * PATCH /api/section-groups

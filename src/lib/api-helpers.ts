@@ -59,6 +59,14 @@ export function getPagination(req: NextRequest) {
 }
 
 /**
+ * Extract search query from URL search params
+ */
+export function getSearch(req: NextRequest) {
+    const url = new URL(req.url);
+    return url.searchParams.get("search")?.trim() || "";
+}
+
+/**
  * Wrap an async handler with error catching
  */
 export function withErrorHandling(

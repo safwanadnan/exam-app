@@ -222,7 +222,7 @@ export async function recomputeSectionGroups(
                     courseId: seed.courseId,
                     instructorKey: seed.instructorKey,
                     sameInstructorSyncRequired: true,
-                    sameDayRequired: false,
+                    sameDayRequired: true,
                 },
             });
             groupsCreated++;

@@ -3,17 +3,19 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import {
     Layers, Users, ToggleLeft, ToggleRight, RefreshCw,
-    ChevronDown, ChevronRight, ShieldAlert, ShieldCheck, Wand2, Loader2, GraduationCap, Hash
+    ChevronDown, ChevronRight, ShieldAlert, ShieldCheck, Wand2, Loader2, GraduationCap, Hash, Search
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { HelpTip, Tip } from "@/components/tip";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { DataPagination } from "@/components/data-pagination";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface SectionMember {
@@ -60,6 +62,10 @@ export default function SectionGroupsPage() {
     // expanded state for course rows and section rows
     const [expandedCourses, setExpandedCourses] = useState<Set<string>>(new Set());
     const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+    const [search, setSearch] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
 
     // ── Sessions ──────────────────────────────────────────────────────────────
     useEffect(() => {
@@ -72,21 +78,34 @@ export default function SectionGroupsPage() {
     }, []);
 
     // ── Fetch groups ──────────────────────────────────────────────────────────
-    const fetchGroups = useCallback(async () => {
+    const fetchGroups = useCallback(async (currentPage = page) => {
         if (!selectedSessionId) return;
         setLoading(true);
         try {
-            const res = await fetch(`/api/section-groups?sessionId=${selectedSessionId}`);
+            const params = new URLSearchParams({
+                sessionId: selectedSessionId,
+                page: currentPage.toString(),
+                limit: "50",
+                search: debouncedSearch
+            });
+            const res = await fetch(`/api/section-groups?${params.toString()}`);
             const data = await res.json();
             setGroups(data.groups || []);
+            setTotalPages(Math.ceil((data.total || 0) / 50) || 1);
         } catch {
             toast.error("Failed to load section groups");
         } finally {
             setLoading(false);
         }
-    }, [selectedSessionId]);
+    }, [selectedSessionId, debouncedSearch]);
 
-    useEffect(() => { fetchGroups(); }, [fetchGroups]);
+    useEffect(() => {
+        setPage(1);
+        const t = setTimeout(() => setDebouncedSearch(search), 300);
+        return () => clearTimeout(t);
+    }, [search]);
+
+    useEffect(() => { fetchGroups(page); }, [page, fetchGroups]);
 
     // ── Recompute ─────────────────────────────────────────────────────────────
     const handleRecompute = async () => {
@@ -282,6 +301,19 @@ export default function SectionGroupsPage() {
                 </div>
             </div>
 
+            <div className="flex items-center space-x-2 pb-2">
+                <div className="relative max-w-sm w-full">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                        type="search" 
+                        placeholder="Search groups by course or instructor..." 
+                        className="pl-8 bg-background" 
+                        value={search} 
+                        onChange={e => setSearch(e.target.value)} 
+                    />
+                </div>
+            </div>
+
             {/* ── Stats row ── */}
             {courseNodes.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -317,7 +349,7 @@ export default function SectionGroupsPage() {
                         Course Groups
                     </CardTitle>
                     <CardDescription className="text-sm">
-                        Same-instructor sections are always grouped by default. Use the toggle on each course to group different instructors.
+                        Sections of the same course are grouped together by default. Use the toggle on each course to separate different instructors into independent exam periods.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
@@ -485,6 +517,9 @@ export default function SectionGroupsPage() {
                     )}
                 </CardContent>
             </Card>
+            <div className="mt-6">
+                <DataPagination page={page} totalPages={totalPages} onPageChange={setPage} />
+            </div>
         </div>
     );
 }
