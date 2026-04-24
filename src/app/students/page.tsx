@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Users, Search, MoreHorizontal, Loader2, CalendarOff, BookOpen, Clock, ChevronRight } from "lucide-react";
+import Link from "next/link";
+import { Plus, Users, Search, MoreHorizontal, Loader2, CalendarOff, BookOpen, Clock, ChevronRight, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -223,12 +224,22 @@ export default function StudentsPage() {
                                             </TableCell>
                                             <TableCell>
                                                 <div className="flex justify-end gap-1" onClick={e => e.stopPropagation()}>
+                                                    <Tip content="View Admit Card"><Button variant="ghost" size="sm" asChild>
+                                                        <Link href={`/students/admit-cards?id=${s.id}`}>
+                                                            <FileSpreadsheet className="h-4 w-4" />
+                                                        </Link>
+                                                    </Button></Tip>
                                                     <Tip content="Manage unavailability gaps"><Button variant="ghost" size="sm" onClick={() => openUnavail(s)}>
                                                         <CalendarOff className="h-4 w-4" />
                                                     </Button></Tip>
                                                     <DropdownMenu>
                                                         <DropdownMenuTrigger asChild><Button size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                                                         <DropdownMenuContent align="end">
+                                                            <DropdownMenuItem asChild>
+                                                                <Link href={`/students/admit-cards?id=${s.id}`}>
+                                                                    View Admit Card
+                                                                </Link>
+                                                            </DropdownMenuItem>
                                                             <DropdownMenuItem className="text-destructive" onClick={() => setDeleteTarget(s)}>Delete</DropdownMenuItem>
                                                         </DropdownMenuContent>
                                                     </DropdownMenu>

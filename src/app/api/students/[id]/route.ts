@@ -10,12 +10,16 @@ const updateStudentSchema = z.object({
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export const GET = withErrorHandling(async (_req: NextRequest, ctx: RouteContext) => {
+export const GET = withErrorHandling(async (req: NextRequest, ctx: RouteContext) => {
     const { id } = await ctx.params;
+    const url = new URL(req.url);
+    const sessionId = url.searchParams.get("sessionId");
+
     const student = await prisma.student.findUnique({
         where: { id },
         include: {
             enrollments: {
+                where: sessionId ? { exam: { examType: { sessionId } } } : undefined,
                 include: {
                     exam: {
                         select: {
@@ -25,14 +29,28 @@ export const GET = withErrorHandling(async (_req: NextRequest, ctx: RouteContext
                                 take: 1,
                                 orderBy: { createdAt: "desc" },
                                 include: {
-                                    period: { select: { date: true, startTime: true, endTime: true } }
+                                    period: { select: { date: true, startTime: true, endTime: true } },
+                                    rooms: {
+                                        include: {
+                                            room: {
+                                                select: {
+                                                    name: true,
+                                                    building: { select: { name: true } }
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                 }
             },
-            _count: { select: { enrollments: true } },
+            _count: { 
+                select: { 
+                    enrollments: sessionId ? { where: { exam: { examType: { sessionId } } } } : true 
+                } 
+            },
         },
     });
     if (!student) return errorResponse("Student not found", 404);

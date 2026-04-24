@@ -33,6 +33,7 @@ const navigation = [
     { name: "Room Features", href: "/features", icon: Tags, tip: "Define equipment and properties available in rooms" },
     { name: "Exams & Courses", href: "/exams", icon: GraduationCap, tip: "View and manage exams, their duration, and room requirements" },
     { name: "Students", href: "/students", icon: Users, tip: "Student directory and enrollment tracking" },
+    { name: "Admit Cards", href: "/students/admit-cards", icon: FileSpreadsheet, tip: "Generate and print student admit cards and timetables" },
     { name: "Instructors", href: "/instructors", icon: UserCog, tip: "Manage instructors and their exam assignments for conflict avoidance" },
     { name: "Exam Periods", href: "/periods", icon: Clock, tip: "Define available time slots when exams can be scheduled" },
     { name: "Constraints", href: "/constraints", icon: Settings2, tip: "Set distribution rules between exam pairs (same room, different day, etc.)" },
