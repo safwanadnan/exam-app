@@ -29,7 +29,16 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
                 exam: {
                     select: {
                         id: true, name: true, length: true,
-                        studentEnrollments: { select: { studentId: true } },
+                        studentEnrollments: { select: { student: { select: { id: true, name: true, externalId: true } } } },
+                        owners: {
+                            select: {
+                                section: {
+                                    select: {
+                                        course: { select: { title: true, courseNumber: true } }
+                                    }
+                                }
+                            }
+                        }
                     },
                 },
                 period: { select: { id: true, date: true, startTime: true, endTime: true, length: true } },
@@ -38,14 +47,22 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
         });
 
         // Detect student conflicts: students with 2+ exams in same period
-        const periodStudentMap = new Map<string, { examId: string; examName: string; studentIds: string[] }[]>();
+        // Store the full student objects for reference
+        const periodStudentMap = new Map<string, { examId: string; examName: string; courseName: string; students: {id: string, name: string, externalId: string}[] }[]>();
         for (const a of assignments) {
             const pid = a.period.id;
             if (!periodStudentMap.has(pid)) periodStudentMap.set(pid, []);
+            
+            let courseName = a.exam.name || "Unnamed";
+            if (a.exam.owners && a.exam.owners.length > 0 && a.exam.owners[0].section?.course) {
+                 courseName = `${a.exam.owners[0].section.course.courseNumber} - ${a.exam.owners[0].section.course.title}`;
+            }
+
             periodStudentMap.get(pid)!.push({
                 examId: a.exam.id,
                 examName: a.exam.name || "Unnamed",
-                studentIds: a.exam.studentEnrollments.map(e => e.studentId),
+                courseName: courseName,
+                students: a.exam.studentEnrollments.map(e => e.student),
             });
         }
 
@@ -53,16 +70,21 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
         for (const [periodId, periodExams] of periodStudentMap) {
             for (let i = 0; i < periodExams.length; i++) {
                 for (let j = i + 1; j < periodExams.length; j++) {
-                    const shared = periodExams[i].studentIds.filter(s => periodExams[j].studentIds.includes(s));
-                    if (shared.length > 0) {
+                    const examAStudents = periodExams[i].students;
+                    const examBStudents = periodExams[j].students;
+                    
+                    const sharedStudents = examAStudents.filter(sA => examBStudents.some(sB => sB.id === sA.id));
+                    
+                    if (sharedStudents.length > 0) {
                         const period = assignments.find(a => a.period.id === periodId)!.period;
                         conflicts.push({
                             periodId,
                             periodDate: period.date,
                             periodTime: `${period.startTime}-${period.endTime}`,
-                            examA: { id: periodExams[i].examId, name: periodExams[i].examName },
-                            examB: { id: periodExams[j].examId, name: periodExams[j].examName },
-                            sharedStudents: shared.length,
+                            examA: { id: periodExams[i].examId, name: periodExams[i].examName, courseName: periodExams[i].courseName },
+                            examB: { id: periodExams[j].examId, name: periodExams[j].examName, courseName: periodExams[j].courseName },
+                            sharedStudents: sharedStudents.length,
+                            students: sharedStudents,
                         });
                     }
                 }
