@@ -40,6 +40,7 @@ export interface ExamDiagnostic {
     assigned: boolean;
     failureReasons: FailureReason[];
     details: string[];
+    distributionViolations: string[]; // New: track violated distribution constraints
     periodsTried: number;
     periodsInDomain: number;
     periodRejections: {
@@ -804,10 +805,28 @@ export class ExamSolver {
     private buildDiagnostics(): SolverDiagnostics {
         const examDiagnostics = this.model.exams.map((exam) => {
             const existing = this.examDiagnostics.get(exam.id);
+            
+            // Check for distribution violations if assigned
+            const distributionViolations: string[] = [];
+            if (exam.isAssigned && exam.assignment) {
+                for (const dc of exam.distributionConstraints) {
+                    const otherExamId = dc.examAId === exam.id ? dc.examBId : dc.examAId;
+                    const otherExam = this.model.getExam(otherExamId);
+                    if (otherExam?.isAssigned && otherExam.assignment) {
+                        if (!dc.isSatisfied(exam.assignment, otherExam.assignment)) {
+                            distributionViolations.push(
+                                `${dc.type.replace(/_/g, " ")} with ${otherExam.name}`
+                            );
+                        }
+                    }
+                }
+            }
+
             if (existing) {
                 return {
                     ...existing,
                     assigned: exam.isAssigned,
+                    distributionViolations,
                 };
             }
 
@@ -818,6 +837,7 @@ export class ExamSolver {
                 assigned: exam.isAssigned,
                 failureReasons: [],
                 details: exam.isAssigned ? [] : ["Exam is unassigned in final solution"],
+                distributionViolations,
                 periodsTried: 0,
                 periodsInDomain: exam.periodPlacements.length,
                 periodRejections: {

@@ -82,6 +82,7 @@ export default function SchedulePage() {
     const [periods, setPeriods] = useState<Period[]>([]);
     const [clashMap, setClashMap] = useState<Record<string, number>>({});
     const [periodClashMap, setPeriodClashMap] = useState<Record<string, number>>({});
+    const [violationMap, setViolationMap] = useState<Record<string, string[]>>({});
 
     // Filter state
     const [searchQuery, setSearchQuery] = useState("");
@@ -165,11 +166,23 @@ export default function SchedulePage() {
             fetch(`/api/export?runId=${selectedRunId}`).then(r => r.json()),
             fetch("/api/periods?limit=200").then(r => r.json()),
             fetch(`/api/schedule/clash-summary?runId=${selectedRunId}`).then(r => r.json()),
-        ]).then(([expData, perData, clashData]) => {
+            fetch(`/api/solver/runs/${selectedRunId}`).then(r => r.json()),
+        ]).then(([expData, perData, clashData, runData]) => {
             setAssignments(expData.assignments || []);
             setPeriods(perData.periods || []);
             setClashMap(clashData.clashMap || {});
             setPeriodClashMap(clashData.periodClashMap || {});
+            
+            // Map distribution violations
+            const vMap: Record<string, string[]> = {};
+            const diagnostics = runData.diagnostics?.examDiagnostics || [];
+            diagnostics.forEach((d: any) => {
+                if (d.distributionViolations?.length > 0) {
+                    vMap[d.examId] = d.distributionViolations;
+                }
+            });
+            setViolationMap(vMap);
+            
             setLoading(false);
         }).catch(() => { setLoading(false); toast.error("Failed to load schedule"); });
     }, [selectedRunId]);
@@ -401,6 +414,8 @@ export default function SchedulePage() {
                                             {pa.map(a => {
                                                 const style = getCardStyle(a);
                                                 const clashes = clashMap[a.id] ?? 0;
+                                                const violations = violationMap[a.exam.id] || [];
+                                                const hasIssues = clashes > 0 || violations.length > 0;
                                                 const isHighlighted = highlightedId === a.id;
                                                 return (
                                                     <div
@@ -411,23 +426,31 @@ export default function SchedulePage() {
                                                             relative border rounded-xl p-3.5 cursor-pointer transition-all duration-200 
                                                             bg-gradient-to-br ${style.bg} 
                                                             hover:shadow-lg hover:-translate-y-0.5 hover:ring-2 hover:ring-primary/40
-                                                            ${clashes > 0
+                                                            ${hasIssues
                                                                 ? "border-destructive/50 ring-1 ring-destructive/30"
                                                                 : `${style.border}`}
                                                             ${isHighlighted ? "ring-4 ring-primary scale-105 shadow-xl" : ""}
                                                         `}
                                                     >
                                                         {/* Clash / Clean badge */}
-                                                        <div className="absolute top-2.5 right-2.5">
+                                                        <div className="absolute top-2.5 right-2.5 flex gap-1">
+                                                            {violations.length > 0 && (
+                                                                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 shadow" title={violations.join(", ")}>
+                                                                    <AlertTriangle className="h-2.5 w-2.5" />
+                                                                    Rules
+                                                                </span>
+                                                            )}
                                                             {clashes > 0 ? (
                                                                 <span className="inline-flex items-center gap-1 rounded-full bg-destructive/90 text-white text-[10px] font-bold px-2 py-0.5 shadow">
-                                                                    <AlertTriangle className="h-2.5 w-2.5" />
+                                                                    <Users className="h-2.5 w-2.5" />
                                                                     {clashes}
                                                                 </span>
                                                             ) : (
-                                                                <span className="inline-flex items-center rounded-full bg-emerald-500/80 text-white text-[10px] px-1.5 py-0.5">
-                                                                    <CheckCircle2 className="h-3 w-3" />
-                                                                </span>
+                                                                violations.length === 0 && (
+                                                                    <span className="inline-flex items-center rounded-full bg-emerald-500/80 text-white text-[10px] px-1.5 py-0.5">
+                                                                        <CheckCircle2 className="h-3 w-3" />
+                                                                    </span>
+                                                                )
                                                             )}
                                                         </div>
 
@@ -573,7 +596,34 @@ export default function SchedulePage() {
                                 </div>
                             </div>
 
-                            {/* Clashes */}
+                             {/* Distribution Violations */}
+                             {(() => {
+                                 // We need to find the examId for this detailed assignment
+                                 // Since we don't have it in detailedAssignment directly, we look it up by name in the assignments list
+                                 const assignment = assignments.find(a => a.exam.name === detailedAssignment.examName);
+                                 const violations = assignment ? violationMap[assignment.exam.id] || [] : [];
+                                 
+                                 if (violations.length === 0) return null;
+                                 
+                                 return (
+                                     <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 p-4 space-y-2">
+                                         <div className="flex items-center gap-2 text-sm font-bold text-amber-600 dark:text-amber-400">
+                                             <AlertTriangle className="h-4 w-4" />
+                                             Distribution Rule Violations
+                                         </div>
+                                         <ul className="text-xs space-y-1 text-amber-700 dark:text-amber-500/80">
+                                             {violations.map((v, i) => (
+                                                 <li key={i} className="flex items-center gap-2">
+                                                     <div className="h-1 w-1 rounded-full bg-amber-500" />
+                                                     {v}
+                                                 </li>
+                                             ))}
+                                         </ul>
+                                     </div>
+                                 );
+                             })()}
+
+                             {/* Clashes */}
                             {clashes.length > 0 ? (
                                 <div className="rounded-xl bg-destructive/10 border border-destructive/30 p-4 space-y-3">
                                     <div className="flex items-center gap-2 text-sm font-bold text-destructive">
