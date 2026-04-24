@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, ChevronDown, Plus, Settings2, Search, MoreHorizontal, Loader2, X } from "lucide-react";
+import { Check, ChevronDown, Plus, Settings2, Search, MoreHorizontal, Loader2, X, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -372,6 +372,8 @@ export default function ConstraintsPage() {
   const [deleteTarget, setDeleteTarget] = useState<Constraint | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const fetchData = async (currentPage = page) => {
     setLoading(true);
@@ -394,7 +396,45 @@ export default function ConstraintsPage() {
       const res = await fetch(`/api/constraints/${deleteTarget.id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed");
       toast.success("Constraint deleted"); setDeleteTarget(null); fetchData();
+      setSelectedIds(prev => { const next = new Set(prev); next.delete(deleteTarget.id); return next; });
     } catch (err: any) { toast.error(err.message); }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0 || !confirm(`Are you sure you want to delete ${selectedIds.size} constraints?`)) return;
+    setBulkDeleting(true);
+    try {
+      const res = await fetch("/api/constraints", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: Array.from(selectedIds) }),
+      });
+      if (!res.ok) throw new Error("Bulk delete failed");
+      toast.success(`${selectedIds.size} constraints deleted`);
+      setSelectedIds(new Set());
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filtered.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filtered.map(c => c.id)));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   };
 
   const filtered = constraints.filter(c =>
@@ -407,7 +447,15 @@ export default function ConstraintsPage() {
     <div className="flex-1 space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Distribution Constraints</h2>
-        <Button onClick={() => { setEditConstraint(null); setFormOpen(true); }}><Plus className="mr-2 h-4 w-4" /> Add Constraint</Button>
+        <div className="flex items-center gap-2">
+          {selectedIds.size > 0 && (
+            <Button variant="destructive" onClick={handleBulkDelete} disabled={bulkDeleting}>
+              {bulkDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+              Delete Selected ({selectedIds.size})
+            </Button>
+          )}
+          <Button onClick={() => { setEditConstraint(null); setFormOpen(true); }}><Plus className="mr-2 h-4 w-4" /> Add Constraint</Button>
+        </div>
       </div>
       <div className="flex items-center space-x-2 pb-2">
         <div className="relative max-w-sm w-full">
@@ -434,6 +482,14 @@ export default function ConstraintsPage() {
               <Table>
                 <TableHeader className="bg-muted/5">
                   <TableRow>
+                    <TableHead className="w-[40px] px-4">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                        checked={filtered.length > 0 && selectedIds.size === filtered.length}
+                        onChange={toggleSelectAll}
+                      />
+                    </TableHead>
                     <TableHead className="w-[180px]">Type</TableHead>
                     <TableHead>Exam A</TableHead>
                     <TableHead>Exam B</TableHead>
@@ -444,7 +500,15 @@ export default function ConstraintsPage() {
                 </TableHeader>
                 <TableBody>
                   {filtered.map(c => (
-                    <TableRow key={c.id}>
+                    <TableRow key={c.id} className={selectedIds.has(c.id) ? "bg-muted/50" : ""}>
+                      <TableCell className="px-4">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                          checked={selectedIds.has(c.id)}
+                          onChange={() => toggleSelect(c.id)}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium font-mono text-xs">{c.type}</TableCell>
                       <TableCell>{c.examA.name || "Unnamed"}</TableCell>
                       <TableCell>{c.examB.name || "Unnamed"}</TableCell>

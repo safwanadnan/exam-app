@@ -61,3 +61,45 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: "Failed to fetch section groups" }, { status: 500 });
     }
 }
+
+/**
+ * PATCH /api/section-groups
+ * Bulk updates multiple section groups.
+ */
+export async function PATCH(request: Request) {
+    try {
+        const { ids, sameDayRequired } = await request.json();
+        
+        if (!Array.isArray(ids) || ids.length === 0 || typeof sameDayRequired !== "boolean") {
+            return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+        }
+
+        // Fetch first group to get course context for rebuild
+        const firstGroup = await prisma.sectionGroup.findUnique({
+            where: { id: ids[0] },
+            include: { course: { select: { sessionId: true } } }
+        });
+
+        if (!firstGroup) {
+            return NextResponse.json({ error: "No valid groups found" }, { status: 404 });
+        }
+
+        const { rebuildCourseClusterConstraints } = await import("@/lib/section-groups");
+
+        let constraintsCreated = 0;
+        await prisma.$transaction(async (tx) => {
+            await tx.sectionGroup.updateMany({
+                where: { id: { in: ids } },
+                data: { sameDayRequired }
+            });
+            
+            // Rebuild for the first group's course (assuming all IDs are from the same course cluster)
+            constraintsCreated = await rebuildCourseClusterConstraints(tx, firstGroup.courseId, firstGroup.course.sessionId);
+        });
+
+        return NextResponse.json({ success: true, constraintsCreated });
+    } catch (error) {
+        console.error("Failed to bulk update section groups:", error);
+        return NextResponse.json({ error: "Bulk update failed" }, { status: 500 });
+    }
+}

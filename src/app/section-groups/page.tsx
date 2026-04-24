@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { HelpTip, Tip } from "@/components/tip";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface SectionMember {
@@ -53,6 +54,7 @@ export default function SectionGroupsPage() {
     const [groups, setGroups] = useState<SectionGroup[]>([]);
     const [loading, setLoading] = useState(false);
     const [recomputing, setRecomputing] = useState(false);
+    const [clearing, setClearing] = useState(false);
     const [recomputeResult, setRecomputeResult] = useState<any>(null);
     const [toggling, setToggling] = useState<Set<string>>(new Set());
     // expanded state for course rows and section rows
@@ -107,6 +109,25 @@ export default function SectionGroupsPage() {
         }
     };
 
+    const handleClearAll = async () => {
+        if (!selectedSessionId || !confirm("Are you sure you want to turn off ALL synchronization rules (including same-instructor groups) for this entire session? This will make every section scheduled independently.")) return;
+        setClearing(true);
+        try {
+            const res = await fetch("/api/section-groups/clear-all", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ sessionId: selectedSessionId }),
+            });
+            if (!res.ok) throw new Error("Clear all failed");
+            toast.success("All synchronization rules disabled");
+            await fetchGroups();
+        } catch (e: any) {
+            toast.error(e.message || "Failed to clear sync rules");
+        } finally {
+            setClearing(false);
+        }
+    };
+
     const patchGroup = async (
         groupId: string,
         payload: { sameDayRequired?: boolean; sameInstructorSyncRequired?: boolean },
@@ -140,20 +161,36 @@ export default function SectionGroupsPage() {
             groupId,
             { sameDayRequired: newValue },
             newValue
-                ? "Cross-instructor sync enabled"
-                : "Cross-instructor sync disabled"
+                ? "Section synced"
+                : "Section independent"
         );
     };
 
-    // ── Toggle same-instructor sync ─────────────────────────────────────────
-    const handleInstructorSyncToggle = async (groupId: string, newValue: boolean) => {
-        await patchGroup(
-            groupId,
-            { sameInstructorSyncRequired: newValue },
-            newValue
-                ? "Same-instructor sync enabled"
-                : "Same-instructor sync disabled"
-        );
+    const handleBulkToggle = async (node: CourseNode, newValue: boolean) => {
+        const ids = node.groups.map(g => g.id);
+        setToggling(prev => {
+            const next = new Set(prev);
+            ids.forEach(id => next.add(id));
+            return next;
+        });
+        try {
+            const res = await fetch("/api/section-groups", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ ids, sameDayRequired: newValue }),
+            });
+            if (!res.ok) throw new Error("Bulk update failed");
+            setGroups(prev => prev.map(g => ids.includes(g.id) ? { ...g, sameDayRequired: newValue } : g));
+            toast.success(newValue ? "All sections synced" : "All sections independent");
+        } catch (e: any) {
+            toast.error(e.message || "Failed to update sections");
+        } finally {
+            setToggling(prev => {
+                const next = new Set(prev);
+                ids.forEach(id => next.delete(id));
+                return next;
+            });
+        }
     };
 
     // ── Hierarchical grouping by course title ─────────────────────────────────
@@ -193,23 +230,23 @@ export default function SectionGroupsPage() {
     const flexCount = groups.filter(g => !g.sameDayRequired).length;
 
     return (
-        <div className="flex-1 space-y-6">
+        <div className="flex-1 space-y-6 pb-20">
 
             {/* ── Header ── */}
             <div className="flex items-center justify-between flex-wrap gap-3">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-                        <Layers className="h-7 w-7 text-primary" />
-                        Section Groups
+                    <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2 text-indigo-950 dark:text-indigo-100">
+                        <Layers className="h-7 w-7 text-indigo-600" />
+                        Section Management
                     </h2>
                     <p className="text-muted-foreground mt-1 text-sm">
-                        Manage section-level exam coupling rules by course and instructor.
+                        Group sections to ensure they share the same exam period.
                     </p>
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
                     <Select value={selectedSessionId} onValueChange={setSelectedSessionId}>
-                        <SelectTrigger className="w-50">
+                        <SelectTrigger className="w-50 h-10">
                             <SelectValue placeholder="Select session" />
                         </SelectTrigger>
                         <SelectContent>
@@ -221,14 +258,25 @@ export default function SectionGroupsPage() {
                     <Button
                         onClick={handleRecompute}
                         disabled={recomputing || !selectedSessionId}
-                        className="gap-2"
+                        className="gap-2 h-10 bg-indigo-600 hover:bg-indigo-700"
                     >
                         {recomputing
                             ? <><Loader2 className="h-4 w-4 animate-spin" /> Recomputing…</>
-                            : <><Wand2 className="h-4 w-4" /> Recompute Groups</>
+                            : <><Wand2 className="h-4 w-4" /> Reset to Defaults</>
                         }
                     </Button>
-                    <Button variant="outline" size="icon" onClick={fetchGroups} disabled={loading}>
+                    <Button
+                        variant="outline"
+                        onClick={handleClearAll}
+                        disabled={clearing || loading || !selectedSessionId}
+                        className="gap-2 h-10 text-destructive hover:bg-destructive/10 border-destructive/30"
+                    >
+                        {clearing
+                            ? <><Loader2 className="h-4 w-4 animate-spin" /> Clearing…</>
+                            : <><ToggleLeft className="h-4 w-4" /> Turn Off All Sync</>
+                        }
+                    </Button>
+                    <Button variant="outline" size="icon" onClick={fetchGroups} disabled={loading} className="h-10 w-10">
                         <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
                     </Button>
                 </div>
@@ -236,288 +284,193 @@ export default function SectionGroupsPage() {
 
             {/* ── Stats row ── */}
             {courseNodes.length > 0 && (
-                <div className="grid grid-cols-3 gap-4">
-                    <Card className="border-primary/20 bg-primary/5">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card className="border-indigo-500/20 bg-indigo-500/5 shadow-sm">
                         <CardContent className="pt-4 pb-4">
-                            <div className="text-2xl font-bold text-primary">{courseNodes.length}</div>
-                            <div className="text-sm text-muted-foreground">Unique Courses</div>
+                            <div className="text-2xl font-bold text-indigo-700">{courseNodes.length}</div>
+                            <div className="text-sm text-muted-foreground font-medium uppercase tracking-wider">Unique Courses</div>
                         </CardContent>
                     </Card>
-                    <Card className="border-emerald-500/20 bg-emerald-500/5">
+                    <Card className="border-emerald-500/20 bg-emerald-500/5 shadow-sm">
                         <CardContent className="pt-4 pb-4">
                             <div className="text-2xl font-bold text-emerald-600">{sameDayCount}</div>
-                            <div className="text-sm text-muted-foreground flex items-center gap-1">
-                                <ToggleRight className="h-3 w-3" /> Cross-instructor synced
+                            <div className="text-sm text-muted-foreground font-medium uppercase tracking-wider flex items-center gap-1">
+                                <ShieldCheck className="h-3 w-3" /> Synced Sections
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="border-amber-500/20 bg-amber-500/5">
+                    <Card className="border-amber-500/20 bg-amber-500/5 shadow-sm">
                         <CardContent className="pt-4 pb-4">
                             <div className="text-2xl font-bold text-amber-600">{flexCount}</div>
-                            <div className="text-sm text-muted-foreground flex items-center gap-1">
-                                <ToggleLeft className="h-3 w-3" /> Cross-instructor independent
+                            <div className="text-sm text-muted-foreground font-medium uppercase tracking-wider flex items-center gap-1">
+                                <ToggleLeft className="h-3 w-3" /> Independent Sections
                             </div>
                         </CardContent>
                     </Card>
                 </div>
             )}
 
-            {/* ── Diagnostic panel ── */}
-            {recomputeResult && (
-                <Card className="border-violet-500/20 bg-violet-500/5">
-                    <CardHeader className="py-3 border-b">
-                        <CardTitle className="text-sm flex items-center gap-2">
-                            <Wand2 className="h-4 w-4 text-violet-600" />
-                            Recompute Result
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-3 pb-3 space-y-3">
-                        <div className="flex flex-wrap gap-4 text-sm">
-                            <span>📋 <strong>{recomputeResult.diagnostic?.totalExams ?? 0}</strong> exams</span>
-                            <span>🔗 <strong>{recomputeResult.diagnostic?.examsWithOwners ?? 0}</strong> linked to a course</span>
-                            <span>👤 <strong>{recomputeResult.diagnostic?.examsWithInstructors ?? 0}</strong> with instructors</span>
-                            <span>📦 <strong>{recomputeResult.groupsCreated ?? 0}</strong> section groups created</span>
-                            <span>⛓️ <strong>{recomputeResult.constraintsCreated ?? 0}</strong> SAME_PERIOD constraints</span>
-                        </div>
-                        {recomputeResult.diagnostic?.examsWithOwners === 0 && (
-                            <p className="text-xs text-amber-700 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 rounded px-3 py-2">
-                                ⚠️ No exams are linked to a course. Ensure import data includes <code>courseCode</code>.
-                            </p>
-                        )}
-                        {recomputeResult.diagnostic?.breakdown?.length > 0 && (
-                            <div className="max-h-48 overflow-auto rounded border bg-background">
-                                <table className="w-full text-xs">
-                                    <thead className="bg-muted/50 sticky top-0">
-                                        <tr>
-                                            <th className="text-left px-3 py-1.5">Course Title</th>
-                                            <th className="text-left px-3 py-1.5">Instructor</th>
-                                            <th className="text-right px-3 py-1.5">Exams</th>
-                                                <th className="text-right px-3 py-1.5">SAME_PERIOD?</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y">
-                                        {recomputeResult.diagnostic.breakdown.map((row: any, i: number) => (
-                                            <tr key={i} className={row.examCount >= 2 ? "bg-emerald-50/30 dark:bg-emerald-950/10" : ""}>
-                                                <td className="px-3 py-1 font-medium max-w-50 truncate">{row.courseTitle}</td>
-                                                <td className="px-3 py-1 text-muted-foreground max-w-50 truncate">
-                                                    {row.instructorKey === "__no_instructor__" ? <em>None</em> : row.instructorKey}
-                                                </td>
-                                                <td className="px-3 py-1 text-right">{row.examCount}</td>
-                                                <td className="px-3 py-1 text-right">
-                                                    {row.examCount >= 2
-                                                        ? <span className="text-emerald-600 font-medium">✓</span>
-                                                        : <span className="text-muted-foreground">—</span>
-                                                    }
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-            )}
-
-            {/* ── Main hierarchical list ── */}
-            <Card>
-                <CardHeader className="border-b bg-muted/20 py-4">
-                    <CardTitle className="text-lg flex items-center gap-1">
-                        Courses & Sections
-                        <HelpTip text="Synced means SAME_PERIOD is required. Separate means no SAME_PERIOD constraint is added, so they may still land together if the solver chooses." />
+            {/* ── Main list ── */}
+            <Card className="shadow-lg border-muted/60">
+                <CardHeader className="border-b bg-muted/20 py-5">
+                    <CardTitle className="text-xl flex items-center gap-2">
+                        Course Groups
                     </CardTitle>
-                    <CardDescription>
-                        Same instructor in the same course is synced by default. Different instructors in the same course are independent by default and can be synced.
+                    <CardDescription className="text-sm">
+                        Same-instructor sections are always grouped by default. Use the toggle on each course to group different instructors.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
                     {loading ? (
-                        <div className="p-10 text-center">
-                            <RefreshCw className="h-8 w-8 mx-auto animate-spin text-primary mb-2" />
-                            <p className="text-muted-foreground text-sm">Loading…</p>
+                        <div className="p-20 text-center">
+                            <Loader2 className="h-10 w-10 mx-auto animate-spin text-indigo-600 mb-4" />
+                            <p className="text-muted-foreground font-medium">Loading courses and sections…</p>
                         </div>
                     ) : courseNodes.length === 0 ? (
-                        <div className="p-10 text-center text-muted-foreground">
-                            <Layers className="h-10 w-10 mx-auto opacity-30 mb-3" />
-                            <p className="font-medium">No section groups found</p>
-                            <p className="text-sm mt-1">
-                                Click <strong>Recompute Groups</strong> to generate groups from your imported data.
+                        <div className="p-20 text-center text-muted-foreground">
+                            <Layers className="h-12 w-12 mx-auto opacity-20 mb-4" />
+                            <p className="font-semibold text-lg text-foreground/70">No data found</p>
+                            <p className="text-sm mt-2 max-w-xs mx-auto">
+                                Click <strong>Reset to Defaults</strong> to analyze your imported data and create section groups.
                             </p>
                         </div>
                     ) : (
-                        <div className="divide-y">
+                        <div className="divide-y divide-muted/60">
                             {courseNodes.map(node => {
-                                        const courseKey = node.courseTitle.trim().toLowerCase();
+                                const courseKey = node.courseTitle.trim().toLowerCase();
                                 const isCourseExpanded = expandedCourses.has(courseKey);
-                                // sections = distinct teachers, classes = total class codes
-                                const totalTeachers = node.groups.length;
-                                const totalClasses = node.totalClasses;
-                                const nodeStudents = node.totalStudents;
+                                const allSynced = node.groups.every(g => g.sameDayRequired);
+                                const isSomeToggling = node.groups.some(g => toggling.has(g.id));
 
                                 return (
-                                    <div key={courseKey}>
-                                        {/* ── Level 1: Course row ── */}
+                                    <div key={courseKey} className="group/course">
+                                        {/* ── Course Row ── */}
                                         <div
-                                            className="flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:bg-muted/40 transition-colors select-none"
+                                            className="flex items-center gap-4 px-6 py-4 cursor-pointer hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 transition-all select-none"
                                             onClick={() => toggleCourse(courseKey)}
                                         >
-                                            <span className="text-muted-foreground shrink-0">
-                                                {isCourseExpanded
-                                                    ? <ChevronDown className="h-4 w-4" />
-                                                    : <ChevronRight className="h-4 w-4" />
-                                                }
-                                            </span>
-                                            <GraduationCap className="h-4 w-4 text-primary shrink-0" />
-                                            <span className="font-semibold text-sm flex-1 truncate">
-                                                {node.courseTitle}
-                                            </span>
-                                            <div className="flex items-center gap-2 shrink-0">
-                                                {/* sections = number of distinct teachers */}
-                                                <Badge variant="outline" className="text-[10px] gap-1 py-0">
-                                                    <Layers className="h-2.5 w-2.5" />
-                                                    {totalTeachers} {totalTeachers === 1 ? "section" : "sections"}
-                                                </Badge>
-                                                {/* classes = total class codes across all teacher sections */}
-                                                <Badge variant="outline" className="text-[10px] gap-1 py-0 border-violet-300 text-violet-600">
-                                                    <Hash className="h-2.5 w-2.5" />
-                                                    {totalClasses} {totalClasses === 1 ? "class" : "classes"}
-                                                </Badge>
-                                                <Badge variant="secondary" className="text-[10px] gap-1 py-0">
-                                                    <Users className="h-2.5 w-2.5" />
-                                                    {nodeStudents} students
-                                                </Badge>
+                                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                <span className="text-muted-foreground shrink-0 transition-transform group-hover/course:scale-110">
+                                                    {isCourseExpanded
+                                                        ? <ChevronDown className="h-5 w-5" />
+                                                        : <ChevronRight className="h-5 w-5" />
+                                                    }
+                                                </span>
+                                                <div className="h-10 w-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center shrink-0">
+                                                    <GraduationCap className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <div className="font-bold text-base truncate text-indigo-950 dark:text-indigo-100">
+                                                        {node.courseTitle}
+                                                    </div>
+                                                    <div className="flex items-center gap-3 mt-0.5">
+                                                        <span className="text-xs text-muted-foreground flex items-center gap-1 font-medium">
+                                                            <Layers className="h-3 w-3" />
+                                                            {node.groups.length} {node.groups.length === 1 ? "instructor set" : "instructor sets"}
+                                                        </span>
+                                                        <span className="text-xs text-muted-foreground flex items-center gap-1 font-medium">
+                                                            <Users className="h-3 w-3" />
+                                                            {node.totalStudents} students
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Course-level Toggle */}
+                                            <div 
+                                                className="flex items-center gap-3 px-4 py-2 bg-background border rounded-2xl shadow-sm hover:shadow-md transition-shadow"
+                                                onClick={e => e.stopPropagation()}
+                                            >
+                                                <Label 
+                                                    htmlFor={`bulk-toggle-${courseKey}`}
+                                                    className={cn(
+                                                        "text-xs font-bold uppercase tracking-wider cursor-pointer",
+                                                        allSynced ? "text-indigo-600" : "text-muted-foreground"
+                                                    )}
+                                                >
+                                                    {allSynced ? "Grouped" : "Separate"}
+                                                </Label>
+                                                <Switch
+                                                    id={`bulk-toggle-${courseKey}`}
+                                                    checked={allSynced}
+                                                    disabled={isSomeToggling}
+                                                    onCheckedChange={val => handleBulkToggle(node, val)}
+                                                    className="data-[state=checked]:bg-indigo-600"
+                                                />
                                             </div>
                                         </div>
 
-                                        {/* ── Level 2: Teacher/Section rows ── */}
+                                        {/* ── Section Rows ── */}
                                         {isCourseExpanded && (
-                                            <div className="border-t bg-muted/5">
-                                                {node.groups.map((group, idx) => {
-                                                    const isSectionExpanded = expandedSections.has(group.id);
+                                            <div className="bg-muted/10 border-t border-muted/40 divide-y divide-muted/40">
+                                                {node.groups.map((group) => {
                                                     const isToggling = toggling.has(group.id);
                                                     const groupStudents = group.members.reduce(
                                                         (sum, m) => sum + m.section._count.enrollments, 0
                                                     );
                                                     const instructorDisplay = group.instructorNames.join(", ");
-                                                    const classCount = group.members.length;
+                                                    const isExpanded = expandedSections.has(group.id);
 
                                                     return (
-                                                        <div key={group.id} className={idx > 0 ? "border-t border-muted/50" : ""}>
-                                                            {/* Section bar */}
-                                                            <div className="flex items-center gap-3 pl-10 pr-4 py-3 hover:bg-muted/30 transition-colors">
-                                                                {/* Expand classes */}
-                                                                <span
-                                                                    className="text-muted-foreground cursor-pointer shrink-0"
+                                                        <div key={group.id} className="pl-14 pr-6 py-3.5 flex flex-col gap-3">
+                                                            <div className="flex items-center justify-between gap-4">
+                                                                <div 
+                                                                    className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
                                                                     onClick={() => toggleSection(group.id)}
                                                                 >
-                                                                    {isSectionExpanded
-                                                                        ? <ChevronDown className="h-3.5 w-3.5" />
-                                                                        : <ChevronRight className="h-3.5 w-3.5" />
-                                                                    }
-                                                                </span>
-
-                                                                {/* Section info */}
-                                                                <div
-                                                                    className="flex-1 flex items-center gap-2 min-w-0 cursor-pointer"
-                                                                    onClick={() => toggleSection(group.id)}
-                                                                >
-                                                                    <span className="text-sm font-medium truncate text-foreground/90">
-                                                                        {instructorDisplay}
-                                                                    </span>
-                                                                    <span className="text-xs text-muted-foreground shrink-0 flex items-center gap-1">
-                                                                        <Hash className="h-3 w-3" />{classCount} {classCount === 1 ? "class" : "classes"}
-                                                                    </span>
-                                                                    <span className="text-xs text-muted-foreground shrink-0 flex items-center gap-1">
-                                                                        <Users className="h-3 w-3" />{groupStudents}
-                                                                    </span>
+                                                                    <div className={cn(
+                                                                        "h-8 w-8 rounded-full flex items-center justify-center shrink-0 border",
+                                                                        group.sameDayRequired ? "bg-indigo-100 border-indigo-200 text-indigo-700" : "bg-muted border-muted-foreground/20 text-muted-foreground"
+                                                                    )}>
+                                                                        <Users className="h-4 w-4" />
+                                                                    </div>
+                                                                    <div className="min-w-0">
+                                                                        <div className="font-semibold text-sm truncate">
+                                                                            {instructorDisplay}
+                                                                        </div>
+                                                                        <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-tight flex items-center gap-2 mt-0.5">
+                                                                            <span>{group.members.length} {group.members.length === 1 ? "Class" : "Classes"}</span>
+                                                                            <span>•</span>
+                                                                            <span>{groupStudents} Students</span>
+                                                                            {group.sameDayRequired && (
+                                                                                <Badge variant="outline" className="h-4 text-[9px] border-indigo-200 bg-indigo-50 text-indigo-700 px-1 font-bold">
+                                                                                    SYNCED
+                                                                                </Badge>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
                                                                 </div>
 
-                                                                {/* Group behavior toggles */}
-                                                                <div className="flex items-center gap-4 shrink-0">
-                                                                    <Tip content="When enabled, all classes in this same-instructor section must be in the same exam period.">
-                                                                        <div className="flex items-center gap-2">
-                                                                            {group.sameInstructorSyncRequired && (
-                                                                                <ShieldCheck className="h-3.5 w-3.5 text-indigo-600" />
-                                                                            )}
-                                                                            <Label
-                                                                                htmlFor={`instructor-toggle-${group.id}`}
-                                                                                className={`text-xs cursor-pointer select-none ${group.sameInstructorSyncRequired ? "text-indigo-600 font-medium" : "text-muted-foreground"}`}
-                                                                            >
-                                                                                {group.sameInstructorSyncRequired ? "Same Instructor: Synced" : "Same Instructor: Separate"}
-                                                                            </Label>
-                                                                            <Switch
-                                                                                id={`instructor-toggle-${group.id}`}
-                                                                                checked={group.sameInstructorSyncRequired}
-                                                                                disabled={isToggling}
-                                                                                onCheckedChange={val => handleInstructorSyncToggle(group.id, val)}
-                                                                                className={`cursor-pointer ${group.sameInstructorSyncRequired ? "data-[state=checked]:bg-indigo-600" : ""}`}
-                                                                            />
-                                                                        </div>
-                                                                    </Tip>
-                                                                    {group.sameDayRequired && (
-                                                                        <ShieldAlert className="h-3.5 w-3.5 text-emerald-600" />
+                                                                {/* Individual Toggle (Secondary) */}
+                                                                <div className="flex items-center gap-4">
+                                                                    {!group.sameInstructorSyncRequired && group.members.length > 1 && (
+                                                                        <Tip content="Same-instructor sync is OFF for this section.">
+                                                                            <Badge variant="outline" className="h-6 text-[10px] border-amber-200 bg-amber-50 text-amber-700 px-1.5 font-bold flex items-center gap-1">
+                                                                                <ToggleLeft className="h-3 w-3" /> NO INST. SYNC
+                                                                            </Badge>
+                                                                        </Tip>
                                                                     )}
-                                                                    <Tip content="When enabled, this section is forced to the same exam period as other cross-instructor synced sections of this course.">
-                                                                        <div className="flex items-center gap-2">
-                                                                            <Label
-                                                                                htmlFor={`course-toggle-${group.id}`}
-                                                                                className={`text-xs cursor-pointer select-none ${group.sameDayRequired ? "text-indigo-600 font-medium" : "text-muted-foreground"}`}
-                                                                            >
-                                                                                {group.sameDayRequired ? "Cross Instructor: Synced" : "Cross Instructor: Independent"}
-                                                                            </Label>
-                                                                            <Switch
-                                                                                id={`course-toggle-${group.id}`}
-                                                                                checked={group.sameDayRequired}
-                                                                                disabled={isToggling}
-                                                                                onCheckedChange={val => handleCourseSyncToggle(group.id, val)}
-                                                                                className={`cursor-pointer ${group.sameDayRequired ? "data-[state=checked]:bg-indigo-600" : ""}`}
-                                                                            />
-                                                                        </div>
-                                                                    </Tip>
+                                                                    <Switch
+                                                                        checked={group.sameDayRequired}
+                                                                        disabled={isToggling}
+                                                                        onCheckedChange={val => handleCourseSyncToggle(group.id, val)}
+                                                                        className="scale-90 data-[state=checked]:bg-indigo-600"
+                                                                    />
                                                                 </div>
                                                             </div>
 
-                                                            {/* ── Level 3: Individual class codes ── */}
-                                                            {isSectionExpanded && (
-                                                                <div className="pl-16 pr-4 pb-3 pt-1 bg-muted/10 border-t border-muted/30">
-                                                                    <div className="flex flex-wrap gap-2 pt-1">
-                                                                        {group.members.map(member => (
-                                                                            <div
-                                                                                key={member.id}
-                                                                                className="flex items-center gap-1.5 text-xs bg-background border px-2.5 py-1.5 rounded-md shadow-sm"
-                                                                            >
-                                                                                <Hash className="h-3 w-3 text-muted-foreground" />
-                                                                                <span className="font-medium">Class {member.section.sectionNumber}</span>
-                                                                                <span className="text-muted-foreground">
-                                                                                    · {member.section._count.enrollments} students
-                                                                                </span>
-                                                                            </div>
-                                                                        ))}
-                                                                    </div>
-                                                                    {group.members.length > 1 && group.sameInstructorSyncRequired && (
-                                                                        <div className="mt-2 flex items-center gap-1.5 text-[10px] text-indigo-700 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800 rounded px-2 py-1 w-fit">
-                                                                            <ShieldCheck className="h-3 w-3" />
-                                                                            Mandatory: These {group.members.length} classes must share the same exam period.
+                                                            {/* Class Breakdown */}
+                                                            {isExpanded && (
+                                                                <div className="flex flex-wrap gap-2 pt-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                                                                    {group.members.map(member => (
+                                                                        <div
+                                                                            key={member.id}
+                                                                            className="flex items-center gap-1.5 text-[11px] bg-background border px-2 py-1 rounded shadow-sm"
+                                                                        >
+                                                                            <span className="font-bold text-indigo-600">#{member.section.sectionNumber}</span>
+                                                                            <span className="text-muted-foreground">({member.section._count.enrollments} enroll)</span>
                                                                         </div>
-                                                                    )}
-                                                                    {group.members.length > 1 && !group.sameInstructorSyncRequired && (
-                                                                        <div className="mt-2 flex items-center gap-1.5 text-[10px] text-amber-700 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded px-2 py-1 w-fit">
-                                                                            <ToggleLeft className="h-3 w-3" />
-                                                                            Optional: Same-instructor classes may be together or separate.
-                                                                        </div>
-                                                                    )}
-                                                                    {group.sameDayRequired && (
-                                                                        <div className="mt-1 flex items-center gap-1.5 text-[10px] text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded px-2 py-1 w-fit">
-                                                                            <Layers className="h-3 w-3" />
-                                                                            Mandatory: Must match the exam period of other cross-instructor synced sections.
-                                                                        </div>
-                                                                    )}
-                                                                    {!group.sameDayRequired && (
-                                                                        <div className="mt-1 flex items-center gap-1.5 text-[10px] text-slate-700 bg-slate-50 dark:bg-slate-950/30 border border-slate-200 dark:border-slate-800 rounded px-2 py-1 w-fit">
-                                                                            <ToggleLeft className="h-3 w-3" />
-                                                                            Optional: May still land in the same period as others, but it is not required.
-                                                                        </div>
-                                                                    )}
+                                                                    ))}
                                                                 </div>
                                                             )}
                                                         </div>

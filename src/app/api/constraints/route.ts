@@ -1,7 +1,8 @@
-﻿export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic';
 /**
- * GET /api/constraints â€” List distribution constraints
- * POST /api/constraints â€” Create a distribution constraint
+ * GET /api/constraints — List distribution constraints
+ * POST /api/constraints — Create a distribution constraint
+ * DELETE /api/constraints — Bulk delete distribution constraints
  */
 import { NextRequest } from "next/server";
 import { z } from "zod";
@@ -48,3 +49,19 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     return jsonResponse(constraint, 201);
 });
 
+export const DELETE = withErrorHandling(async (req: NextRequest) => {
+    try {
+        const { ids } = await req.json();
+        if (!Array.isArray(ids) || ids.length === 0) {
+            return jsonResponse({ error: "IDs are required" }, 400);
+        }
+
+        await prisma.distributionConstraint.deleteMany({
+            where: { id: { in: ids } }
+        });
+
+        return jsonResponse({ success: true, count: ids.length });
+    } catch (e) {
+        return jsonResponse({ error: "Failed to delete constraints" }, 500);
+    }
+});
