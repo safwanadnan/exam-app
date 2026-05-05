@@ -2,9 +2,10 @@
 
 import { useEffect, useState, useCallback } from "react";
 import {
-    GraduationCap, Plus, Pencil, Trash2, Search, Loader2, UserPlus,
+    GraduationCap, Plus, Pencil, Trash2, MoreHorizontal, Loader2, UserPlus,
     Link2, Unlink, CalendarOff, ExternalLink, BookOpen, Clock, Users, X
 } from "lucide-react";
+import { SearchInput } from "@/components/search-input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -38,6 +39,7 @@ export default function InstructorsPage() {
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
+    const [exactMatch, setExactMatch] = useState(false);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
 
@@ -71,13 +73,13 @@ export default function InstructorsPage() {
         setPage(1);
         const t = setTimeout(() => setDebouncedSearch(search), 300);
         return () => clearTimeout(t);
-    }, [search]);
+    }, [search, exactMatch]);
 
     const fetchInstructors = useCallback((currentPage = page) => {
         setLoading(true);
         const url = currentSessionId 
-            ? `/api/instructors?search=${encodeURIComponent(debouncedSearch)}&page=${currentPage}&limit=50&sessionId=${currentSessionId}` 
-            : `/api/instructors?search=${encodeURIComponent(debouncedSearch)}&page=${currentPage}&limit=50`;
+            ? `/api/instructors?search=${encodeURIComponent(debouncedSearch)}&exact=${exactMatch}&page=${currentPage}&limit=50&sessionId=${currentSessionId}` 
+            : `/api/instructors?search=${encodeURIComponent(debouncedSearch)}&exact=${exactMatch}&page=${currentPage}&limit=50`;
         fetch(url)
             .then(r => r.json())
             .then(d => {
@@ -210,10 +212,14 @@ export default function InstructorsPage() {
             </div>
 
             <div className="flex items-center gap-4">
-                <div className="relative flex-1 max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Search by name or ID..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
-                </div>
+                <SearchInput
+                    value={search}
+                    onChange={setSearch}
+                    exactMatch={exactMatch}
+                    onExactMatchChange={setExactMatch}
+                    placeholder="Search by name or ID..."
+                    className="flex-1 max-w-sm"
+                />
             </div>
 
             <Card>

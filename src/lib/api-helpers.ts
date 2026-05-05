@@ -67,6 +67,46 @@ export function getSearch(req: NextRequest) {
 }
 
 /**
+ * Build a Prisma OR condition array for partial/fuzzy search across multiple fields.
+ * Splits the query into tokens so "usam" matches "Usama", "sama" matches "Usama", etc.
+ * SQLite-compatible (no mode: 'insensitive' — uses LIKE which is case-insensitive by default for ASCII).
+ *
+ * @param search  Raw search string from the user
+ * @param fields  Array of Prisma field paths, e.g. ["name"], ["building", "code"]
+ * @returns       Array of Prisma OR conditions, or undefined if search is empty
+ *
+ * Usage:
+ *   const conditions = buildSearchOR(search, [["name"], ["externalId"]]);
+ *   if (conditions) where.OR = conditions;
+ */
+export function buildSearchOR(
+    search: string,
+    fields: string[][],
+    exact = false
+): Record<string, unknown>[] | undefined {
+    const q = search.trim();
+    if (!q) return undefined;
+
+    // Exact match: treat the whole query as one token and use `equals`
+    // Partial match: split into tokens and use `contains` (SQLite LIKE)
+    const tokens = exact ? [q] : q.split(/\s+/).filter(Boolean);
+    const operator = exact ? "equals" : "contains";
+
+    const conditions: Record<string, unknown>[] = [];
+    for (const token of tokens) {
+        for (const fieldPath of fields) {
+            // Build nested object: ["building", "code"] → { building: { code: { contains: token } } }
+            let cond: Record<string, unknown> = { [operator]: token };
+            for (let i = fieldPath.length - 1; i >= 0; i--) {
+                cond = { [fieldPath[i]]: cond };
+            }
+            conditions.push(cond);
+        }
+    }
+    return conditions.length > 0 ? conditions : undefined;
+}
+
+/**
  * Wrap an async handler with error catching
  */
 export function withErrorHandling(

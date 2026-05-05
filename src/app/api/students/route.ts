@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
  */
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { prisma, jsonResponse, parseBody, getPagination, withErrorHandling } from "@/lib/api-helpers";
+import { prisma, jsonResponse, parseBody, getPagination, withErrorHandling, buildSearchOR } from "@/lib/api-helpers";
 
 const createStudentSchema = z.object({
     externalId: z.string().min(1),
@@ -16,16 +16,13 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
     const { skip, limit, page } = getPagination(req);
     const url = new URL(req.url);
     const search = url.searchParams.get("search");
+    const exact = url.searchParams.get("exact") === "true";
     const sessionId = url.searchParams.get("sessionId");
 
-    const where: any = search
-        ? {
-            OR: [
-                { name: { contains: search, mode: "insensitive" } as any },
-                { externalId: { contains: search, mode: "insensitive" } as any },
-            ]
-        }
-        : {};
+    const where: any = {};
+    if (search) {
+        where.OR = buildSearchOR(search, [["name"], ["externalId"]], exact) ?? [];
+    }
 
     if (sessionId) {
         where.enrollments = { some: { exam: { examType: { sessionId } } } };

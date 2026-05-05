@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Plus, Users, Search, MoreHorizontal, Loader2, CalendarOff, BookOpen, Clock, ChevronRight, FileSpreadsheet } from "lucide-react";
+import { Plus, Users, MoreHorizontal, Loader2, CalendarOff, BookOpen, Clock, ChevronRight, FileSpreadsheet } from "lucide-react";
+import { SearchInput } from "@/components/search-input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -83,6 +84,7 @@ export default function StudentsPage() {
     const [loading, setLoading] = useState(true);
     const [total, setTotal] = useState(0);
     const [search, setSearch] = useState("");
+    const [exactMatch, setExactMatch] = useState(false);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [addOpen, setAddOpen] = useState(false);
@@ -104,6 +106,7 @@ export default function StudentsPage() {
         try {
             const params = new URLSearchParams({ limit: "50", page: currentPage.toString() });
             if (q) params.set("search", q);
+            if (exactMatch) params.set("exact", "true");
             if (currentSessionId) params.set("sessionId", currentSessionId);
             const res = await fetch(`/api/students?${params}`);
             const data = await res.json();
@@ -120,7 +123,7 @@ export default function StudentsPage() {
         setPage(1);
         const t = setTimeout(() => fetchStudents(search, 1), 300);
         return () => clearTimeout(t);
-    }, [search]);
+    }, [search, exactMatch]);
 
     const openDetail = async (student: Student) => {
         setDetailOpen(true);
@@ -181,10 +184,14 @@ export default function StudentsPage() {
                 <Button onClick={() => setAddOpen(true)}><Plus className="mr-2 h-4 w-4" /> Add Student</Button>
             </div>
             <div className="flex items-center space-x-2 pb-2">
-                <div className="relative max-w-sm w-full">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input type="search" placeholder="Search by name or ID..." className="pl-8 bg-background" value={search} onChange={e => setSearch(e.target.value)} />
-                </div>
+                <SearchInput
+                    value={search}
+                    onChange={setSearch}
+                    exactMatch={exactMatch}
+                    onExactMatchChange={setExactMatch}
+                    placeholder="Search by name or ID..."
+                    className="max-w-sm w-full"
+                />
                 <div className="text-sm text-muted-foreground">{total} total students</div>
             </div>
             <Card>

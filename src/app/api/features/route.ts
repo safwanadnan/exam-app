@@ -1,19 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma, jsonResponse, getPagination, getSearch, withErrorHandling, parseBody } from "@/lib/api-helpers";
+import { prisma, jsonResponse, getPagination, getSearch, withErrorHandling, parseBody, buildSearchOR } from "@/lib/api-helpers";
 import { z } from "zod";
 
 export const GET = withErrorHandling(async (req: NextRequest) => {
     const { skip, limit, page } = getPagination(req);
     const search = getSearch(req);
+    const exact = new URL(req.url).searchParams.get("exact") === "true";
     const url = new URL(req.url);
     const sessionId = url.searchParams.get("sessionId");
     
     const where: any = sessionId ? { sessionId } : {};
     if (search) {
-        where.OR = [
-            { name: { contains: search } },
-            { code: { contains: search } },
-        ];
+        where.OR = buildSearchOR(search, [["name"], ["code"]], exact) ?? [];
     }
 
     const [features, total] = await Promise.all([

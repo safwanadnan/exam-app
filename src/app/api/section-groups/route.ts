@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma, jsonResponse, getPagination, getSearch, withErrorHandling } from "@/lib/api-helpers";
+import { prisma, jsonResponse, getPagination, getSearch, withErrorHandling, buildSearchOR } from "@/lib/api-helpers";
 
 /**
  * GET /api/section-groups?sessionId=...
@@ -10,17 +10,14 @@ import { prisma, jsonResponse, getPagination, getSearch, withErrorHandling } fro
 export const GET = withErrorHandling(async (req: NextRequest) => {
     const { skip, limit, page } = getPagination(req);
     const search = getSearch(req);
+    const exact = new URL(req.url).searchParams.get("exact") === "true";
     const url = new URL(req.url);
     const sessionId = url.searchParams.get("sessionId");
 
     const where: any = sessionId ? { course: { sessionId } } : {};
     
     if (search) {
-        where.OR = [
-            { course: { title: { contains: search } } },
-            { course: { courseNumber: { contains: search } } },
-            { instructorKey: { contains: search } },
-        ];
+        where.OR = buildSearchOR(search, [["course", "title"], ["course", "courseNumber"], ["instructorKey"]], exact) ?? [];
     }
 
     const [groups, total] = await Promise.all([

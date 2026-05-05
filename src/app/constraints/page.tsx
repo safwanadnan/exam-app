@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, ChevronDown, Plus, Settings2, Search, MoreHorizontal, Loader2, X, Trash2 } from "lucide-react";
+import { Check, ChevronDown, Plus, Settings2, MoreHorizontal, Loader2, X, Trash2 } from "lucide-react";
+import { SearchInput } from "@/components/search-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -368,6 +369,7 @@ export default function ConstraintsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [exactMatch, setExactMatch] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [editConstraint, setEditConstraint] = useState<Constraint | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Constraint | null>(null);
@@ -382,7 +384,8 @@ export default function ConstraintsPage() {
       const params = new URLSearchParams({
         page: currentPage.toString(),
         limit: "50",
-        search: debouncedSearch
+        search: debouncedSearch,
+        exact: exactMatch ? "true" : "false"
       });
       if (currentSessionId) params.set("sessionId", currentSessionId);
       
@@ -398,7 +401,7 @@ export default function ConstraintsPage() {
     setPage(1);
     const t = setTimeout(() => setDebouncedSearch(search), 300);
     return () => clearTimeout(t);
-  }, [search]);
+  }, [search, exactMatch]);
 
   useEffect(() => { fetchData(page); }, [page, currentSessionId, debouncedSearch]);
 
@@ -466,10 +469,14 @@ export default function ConstraintsPage() {
         </div>
       </div>
       <div className="flex items-center space-x-2 pb-2">
-        <div className="relative max-w-sm w-full">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input type="search" placeholder="Search constraints..." className="pl-8 bg-background" value={search} onChange={e => setSearch(e.target.value)} />
-        </div>
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          exactMatch={exactMatch}
+          onExactMatchChange={setExactMatch}
+          placeholder="Search constraints..."
+          className="max-w-sm w-full"
+        />
       </div>
       <Card>
         <CardHeader>

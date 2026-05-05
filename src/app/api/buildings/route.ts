@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
  */
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { prisma, jsonResponse, parseBody, getPagination, getSearch, withErrorHandling } from "@/lib/api-helpers";
+import { prisma, jsonResponse, parseBody, getPagination, getSearch, withErrorHandling, buildSearchOR } from "@/lib/api-helpers";
 
 const createBuildingSchema = z.object({
     code: z.string().min(1),
@@ -17,13 +17,11 @@ const createBuildingSchema = z.object({
 export const GET = withErrorHandling(async (req: NextRequest) => {
     const { skip, limit, page } = getPagination(req);
     const search = getSearch(req);
+    const exact = new URL(req.url).searchParams.get("exact") === "true";
 
-    const where = search ? {
-        OR: [
-            { name: { contains: search } },
-            { code: { contains: search } },
-        ]
-    } : {};
+    const where = search
+        ? { OR: buildSearchOR(search, [["name"], ["code"]], exact) ?? [] }
+        : {};
 
     const [buildings, total] = await Promise.all([
         prisma.building.findMany({
@@ -33,7 +31,6 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
             orderBy: { code: "asc" },
             include: { 
                 rooms: { 
-                    where: search ? { name: { contains: search } } : {},
                     include: { _count: { select: { unavailability: true, features: true } } } 
                 }, 
                 _count: { select: { rooms: true } } 

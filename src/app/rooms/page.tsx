@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Building2, Search, MoreHorizontal, Loader2, CalendarOff, Tags } from "lucide-react";
+import { Plus, Building2, MoreHorizontal, Loader2, CalendarOff, Tags } from "lucide-react";
+import { SearchInput } from "@/components/search-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -167,6 +168,7 @@ export default function RoomsPage() {
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
+    const [exactMatch, setExactMatch] = useState(false);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [buildingDialogOpen, setBuildingDialogOpen] = useState(false);
@@ -193,7 +195,8 @@ export default function RoomsPage() {
             const params = new URLSearchParams({
                 page: currentPage.toString(),
                 limit: "50",
-                search: debouncedSearch
+                search: debouncedSearch,
+                exact: exactMatch ? "true" : "false"
             });
             const res = await fetch(`/api/buildings?${params.toString()}`);
             const data = await res.json();
@@ -207,7 +210,7 @@ export default function RoomsPage() {
         setPage(1);
         const t = setTimeout(() => setDebouncedSearch(search), 300);
         return () => clearTimeout(t);
-    }, [search]);
+    }, [search, exactMatch]);
 
     useEffect(() => { fetchData(page); }, [page, debouncedSearch]);
 
@@ -288,10 +291,14 @@ export default function RoomsPage() {
             </div>
 
             <div className="flex items-center space-x-2 pb-2">
-                <div className="relative max-w-sm w-full">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input type="search" placeholder="Search buildings or rooms..." className="pl-8 bg-background" value={search} onChange={e => setSearch(e.target.value)} />
-                </div>
+                <SearchInput
+                    value={search}
+                    onChange={setSearch}
+                    exactMatch={exactMatch}
+                    onExactMatchChange={setExactMatch}
+                    placeholder="Search buildings or rooms..."
+                    className="max-w-sm w-full"
+                />
                 <div className="text-sm text-muted-foreground">{totalRooms} rooms in {buildings.length} buildings</div>
             </div>
 

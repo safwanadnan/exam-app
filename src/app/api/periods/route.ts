@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
  */
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { prisma, jsonResponse, parseBody, getPagination, getSearch, withErrorHandling } from "@/lib/api-helpers";
+import { prisma, jsonResponse, parseBody, getPagination, getSearch, withErrorHandling, buildSearchOR } from "@/lib/api-helpers";
 
 const createPeriodSchema = z.object({
     examTypeId: z.string().min(1),
@@ -21,6 +21,7 @@ const createPeriodSchema = z.object({
 export const GET = withErrorHandling(async (req: NextRequest) => {
     const { skip, limit, page } = getPagination(req);
     const search = getSearch(req);
+    const exact = new URL(req.url).searchParams.get("exact") === "true";
     const url = new URL(req.url);
     const sessionId = url.searchParams.get("sessionId");
     const examTypeId = url.searchParams.get("examTypeId");
@@ -30,11 +31,7 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
     else if (sessionId) where.examType = { sessionId };
 
     if (search) {
-        where.OR = [
-            { startTime: { contains: search } },
-            { examType: { name: { contains: search } } },
-            { examType: { code: { contains: search } } },
-        ];
+        where.OR = buildSearchOR(search, [["startTime"], ["examType", "name"], ["examType", "code"]], exact) ?? [];
     }
 
     const [periods, total] = await Promise.all([

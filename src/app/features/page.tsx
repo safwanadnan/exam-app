@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Search, MoreHorizontal, Loader2, Tags } from "lucide-react";
+import { Plus, MoreHorizontal, Loader2, Tags } from "lucide-react";
+import { SearchInput } from "@/components/search-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -68,6 +69,7 @@ export default function FeaturesPage() {
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
+    const [exactMatch, setExactMatch] = useState(false);
     const [addOpen, setAddOpen] = useState(false);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
@@ -89,7 +91,8 @@ export default function FeaturesPage() {
                 sessionId: selectedSessionId,
                 page: currentPage.toString(),
                 limit: "50",
-                search: debouncedSearch
+                search: debouncedSearch,
+                exact: exactMatch ? "true" : "false"
             });
             const res = await fetch(`/api/features?${params.toString()}`);
             const data = await res.json();
@@ -103,7 +106,7 @@ export default function FeaturesPage() {
         setPage(1);
         const t = setTimeout(() => setDebouncedSearch(search), 300);
         return () => clearTimeout(t);
-    }, [search]);
+    }, [search, exactMatch]);
 
     useEffect(() => { fetchFeatures(page); }, [selectedSessionId, page, debouncedSearch]);
 
@@ -125,10 +128,14 @@ export default function FeaturesPage() {
                 </div>
             </div>
             <div className="flex items-center space-x-2 pb-2">
-                <div className="relative max-w-sm w-full">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input type="search" placeholder="Search features..." className="pl-8 bg-background" value={search} onChange={e => setSearch(e.target.value)} />
-                </div>
+                <SearchInput
+                    value={search}
+                    onChange={setSearch}
+                    exactMatch={exactMatch}
+                    onExactMatchChange={setExactMatch}
+                    placeholder="Search features..."
+                    className="max-w-sm w-full"
+                />
             </div>
             <Card>
                 <CardContent className="p-0">

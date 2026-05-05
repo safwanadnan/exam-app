@@ -3,8 +3,9 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import {
     Layers, Users, ToggleLeft, ToggleRight, RefreshCw,
-    ChevronDown, ChevronRight, ShieldAlert, ShieldCheck, Wand2, Loader2, GraduationCap, Hash, Search
+    ChevronDown, ChevronRight, ShieldAlert, ShieldCheck, Wand2, Loader2, GraduationCap, Hash
 } from "lucide-react";
+import { SearchInput } from "@/components/search-input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -64,6 +65,7 @@ export default function SectionGroupsPage() {
     const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
     const [search, setSearch] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
+    const [exactMatch, setExactMatch] = useState(false);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
 
@@ -86,7 +88,8 @@ export default function SectionGroupsPage() {
                 sessionId: selectedSessionId,
                 page: currentPage.toString(),
                 limit: "50",
-                search: debouncedSearch
+                search: debouncedSearch,
+                exact: exactMatch ? "true" : "false"
             });
             const res = await fetch(`/api/section-groups?${params.toString()}`);
             const data = await res.json();
@@ -103,7 +106,7 @@ export default function SectionGroupsPage() {
         setPage(1);
         const t = setTimeout(() => setDebouncedSearch(search), 300);
         return () => clearTimeout(t);
-    }, [search]);
+    }, [search, exactMatch]);
 
     useEffect(() => { fetchGroups(page); }, [page, fetchGroups]);
 
@@ -302,16 +305,14 @@ export default function SectionGroupsPage() {
             </div>
 
             <div className="flex items-center space-x-2 pb-2">
-                <div className="relative max-w-sm w-full">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                        type="search" 
-                        placeholder="Search groups by course or instructor..." 
-                        className="pl-8 bg-background" 
-                        value={search} 
-                        onChange={e => setSearch(e.target.value)} 
-                    />
-                </div>
+                <SearchInput
+                    value={search}
+                    onChange={setSearch}
+                    exactMatch={exactMatch}
+                    onExactMatchChange={setExactMatch}
+                    placeholder="Search groups by course or instructor..."
+                    className="max-w-sm w-full"
+                />
             </div>
 
             {/* ── Stats row ── */}

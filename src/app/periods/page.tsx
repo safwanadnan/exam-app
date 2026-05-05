@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
-import { Plus, Clock, Search, MoreHorizontal, Loader2 } from "lucide-react";
+import { Plus, Clock, MoreHorizontal, Loader2 } from "lucide-react";
+import { SearchInput } from "@/components/search-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -109,6 +110,7 @@ export default function PeriodsPage() {
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
+    const [exactMatch, setExactMatch] = useState(false);
     const [editPeriod, setEditPeriod] = useState<Period | null>(null);
     const [editOpen, setEditOpen] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<Period | null>(null);
@@ -121,7 +123,8 @@ export default function PeriodsPage() {
             const params = new URLSearchParams({
                 page: currentPage.toString(),
                 limit: "50",
-                search: debouncedSearch
+                search: debouncedSearch,
+                exact: exactMatch ? "true" : "false"
             });
             if (currentSessionId) params.set("sessionId", currentSessionId);
             
@@ -137,7 +140,7 @@ export default function PeriodsPage() {
         setPage(1);
         const t = setTimeout(() => setDebouncedSearch(search), 300);
         return () => clearTimeout(t);
-    }, [search]);
+    }, [search, exactMatch]);
 
     useEffect(() => { fetchPeriods(page); }, [page, currentSessionId, debouncedSearch]);
 
@@ -158,10 +161,14 @@ export default function PeriodsPage() {
                 <h2 className="text-3xl font-bold tracking-tight">Exam Periods</h2>
             </div>
             <div className="flex items-center space-x-2 pb-2">
-                <div className="relative max-w-sm w-full">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input type="search" placeholder="Search periods..." className="pl-8 bg-background" value={search} onChange={e => setSearch(e.target.value)} />
-                </div>
+                <SearchInput
+                    value={search}
+                    onChange={setSearch}
+                    exactMatch={exactMatch}
+                    onExactMatchChange={setExactMatch}
+                    placeholder="Search periods..."
+                    className="max-w-sm w-full"
+                />
                 <div className="text-sm text-muted-foreground">{periods.length} periods</div>
             </div>
             <Card>

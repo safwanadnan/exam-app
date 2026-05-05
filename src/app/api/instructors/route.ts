@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { prisma, jsonResponse, parseBody, withErrorHandling } from "@/lib/api-helpers";
+import { prisma, jsonResponse, parseBody, withErrorHandling, buildSearchOR } from "@/lib/api-helpers";
 
 const instructorSchema = z.object({
     externalId: z.string().min(1, "External ID is required"),
@@ -11,16 +11,15 @@ const instructorSchema = z.object({
 export const GET = withErrorHandling(async (req: NextRequest) => {
     const url = new URL(req.url);
     const search = url.searchParams.get("search") || "";
+    const exact = url.searchParams.get("exact") === "true";
     const sessionId = url.searchParams.get("sessionId");
     const page = parseInt(url.searchParams.get("page") || "1");
     const limit = parseInt(url.searchParams.get("limit") || "50");
 
-    const where: any = search ? {
-        OR: [
-            { name: { contains: search, mode: "insensitive" } as any },
-            { externalId: { contains: search, mode: "insensitive" } as any },
-        ],
-    } : {};
+    const where: any = {};
+    if (search) {
+        where.OR = buildSearchOR(search, [["name"], ["externalId"]], exact) ?? [];
+    }
 
     if (sessionId) {
         where.assignments = { some: { exam: { examType: { sessionId } } } };
