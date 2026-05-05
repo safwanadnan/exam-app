@@ -243,6 +243,25 @@ function AdmitCardContent() {
                         </CardHeader>
 
                         <CardContent className="p-8 space-y-8">
+                            {/* Clash Banner */}
+                            {(() => {
+                                const keys = studentData.enrollments
+                                    .map(e => e.exam.assignments?.[0]?.period)
+                                    .filter(Boolean)
+                                    .map(p => `${p!.date}|${p!.startTime}`);
+                                const clashKeys = new Set(keys.filter((k, i) => keys.indexOf(k) !== i));
+                                return clashKeys.size > 0 ? (
+                                    <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 print:border-red-800">
+                                        <AlertCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+                                        <div>
+                                            <div className="font-bold text-red-700 text-sm print:text-black">Schedule Clash Detected</div>
+                                            <div className="text-xs text-red-600/80 mt-0.5 print:text-black">
+                                                {clashKeys.size} time slot{clashKeys.size > 1 ? "s have" : " has"} multiple exams scheduled simultaneously. Highlighted rows require immediate attention.
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : null;
+                            })()}
                             {/* Student Profile Info */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-muted/20 p-6 rounded-2xl border print:border-black print:rounded-none print:bg-transparent">
                                 <div className="space-y-4">
@@ -285,15 +304,32 @@ function AdmitCardContent() {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y print:divide-black">
-                                            {studentData.enrollments.map((e) => {
-                                                const assignment = e.exam.assignments?.[0];
-                                                const period = assignment?.period;
-                                                const rooms = assignment?.rooms || [];
-
-                                                return (
-                                                    <tr key={e.exam.id} className="hover:bg-muted/30 transition-colors">
+                                            {(() => {
+                                                const keys = studentData.enrollments
+                                                    .map(e => e.exam.assignments?.[0]?.period)
+                                                    .filter(Boolean)
+                                                    .map(p => `${p!.date}|${p!.startTime}`);
+                                                const clashKeys = new Set(keys.filter((k, i) => keys.indexOf(k) !== i));
+                                                return studentData.enrollments.map((e) => {
+                                                    const assignment = e.exam.assignments?.[0];
+                                                    const period = assignment?.period;
+                                                    const rooms = assignment?.rooms || [];
+                                                    const periodKey = period ? `${period.date}|${period.startTime}` : null;
+                                                    const isClash = !!periodKey && clashKeys.has(periodKey);
+                                                    return (
+                                                    <tr key={e.exam.id} className={cn(
+                                                        "transition-colors",
+                                                        isClash ? "bg-red-500/10 hover:bg-red-500/15 print:outline print:outline-red-800" : "hover:bg-muted/30"
+                                                    )}>
                                                         <td className="px-4 py-4">
-                                                            <div className="font-bold">{e.exam.name}</div>
+                                                            <div className="font-bold flex items-center gap-2">
+                                                                {e.exam.name}
+                                                                {isClash && (
+                                                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-600 bg-red-500/15 border border-red-500/30 px-1.5 py-0.5 rounded-full print:border-red-800">
+                                                                        <AlertCircle className="h-3 w-3" /> CLASH
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                             <div className="text-xs text-muted-foreground print:text-black flex items-center gap-2 mt-1">
                                                                 <Badge variant="outline" className="text-[10px] h-4 print:border-black">{e.exam.examType.name}</Badge>
                                                                 <span>Duration: {e.exam.length}m</span>
@@ -337,8 +373,9 @@ function AdmitCardContent() {
                                                             )}
                                                         </td>
                                                     </tr>
-                                                );
-                                            })}
+                                                    );
+                                                });
+                                            })()}
                                             {studentData.enrollments.length === 0 && (
                                                 <tr>
                                                     <td colSpan={3} className="px-4 py-10 text-center text-muted-foreground italic">
