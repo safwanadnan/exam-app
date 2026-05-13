@@ -12,6 +12,8 @@ const configSchema = z.object({
     backToBackConflictWeight: z.number().default(10),
     distBackToBackConflictWeight: z.number().default(25),
     backToBackDistance: z.number().default(67),
+    interCampusBackToBackProhibited: z.boolean().default(false),
+    interCampusDistance: z.number().default(0),
     isDayBreakBackToBack: z.boolean().default(false),
     periodPenaltyWeight: z.number().default(1),
     periodIndexWeight: z.number().default(0.0000001),

@@ -6,8 +6,9 @@ import { prisma, jsonResponse, errorResponse, parseBody, withErrorHandling } fro
 const updateBuildingSchema = z.object({
     code: z.string().min(1).optional(),
     name: z.string().min(1).optional(),
-    coordX: z.number().optional(),
-    coordY: z.number().optional(),
+    coordX: z.number().optional().nullable(),
+    coordY: z.number().optional().nullable(),
+    campusId: z.string().optional().nullable(),
 });
 
 type RouteContext = { params: Promise<{ id: string }> };

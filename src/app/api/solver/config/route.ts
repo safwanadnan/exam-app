@@ -1,4 +1,4 @@
-﻿export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic';
 /**
  * GET /api/solver/config â€” List solver configs for a session
  * POST /api/solver/config â€” Create a solver config
@@ -17,6 +17,8 @@ const createConfigSchema = z.object({
     backToBackConflictWeight: z.number().optional(),
     distBackToBackConflictWeight: z.number().optional(),
     backToBackDistance: z.number().optional(),
+    interCampusBackToBackProhibited: z.boolean().optional(),
+    interCampusDistance: z.number().optional(),
     isDayBreakBackToBack: z.boolean().optional(),
     periodPenaltyWeight: z.number().optional(),
     periodIndexWeight: z.number().optional(),

@@ -186,14 +186,27 @@ model SectionGroupMember {
 // ROOM MANAGEMENT (maps to ExamRoom in CPSolver)
 // ============================================================================
 
+model Campus {
+  id        String @id @default(cuid())
+  code      String @unique
+  name      String
+
+  buildings Building[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Building {
   id        String @id @default(cuid())
   code      String @unique
   name      String
   coordX    Float? // X coordinate for distance calculation
   coordY    Float? // Y coordinate for distance calculation
+  campusId  String?
 
-  rooms Room[]
+  campus    Campus? @relation(fields: [campusId], references: [id])
+  rooms     Room[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -526,6 +539,8 @@ model SolverConfig {
   backToBackConflictWeight   Float @default(10.0)
   distBackToBackConflictWeight Float @default(25.0)
   backToBackDistance         Float @default(67.0) // meters
+  interCampusBackToBackProhibited Boolean @default(false)
+  interCampusDistance        Float @default(0.0)
   isDayBreakBackToBack       Boolean @default(false)
   periodPenaltyWeight        Float @default(1.0)
   periodIndexWeight          Float @default(0.0000001)

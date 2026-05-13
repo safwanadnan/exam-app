@@ -10,8 +10,9 @@ import { prisma, jsonResponse, parseBody, getPagination, getSearch, withErrorHan
 const createBuildingSchema = z.object({
     code: z.string().min(1),
     name: z.string().min(1),
-    coordX: z.number().optional(),
-    coordY: z.number().optional(),
+    coordX: z.number().optional().nullable(),
+    coordY: z.number().optional().nullable(),
+    campusId: z.string().optional().nullable(),
 });
 
 export const GET = withErrorHandling(async (req: NextRequest) => {
@@ -30,6 +31,7 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
             take: limit,
             orderBy: { code: "asc" },
             include: { 
+                campus: true,
                 rooms: { 
                     include: { _count: { select: { unavailability: true, features: true } } } 
                 }, 

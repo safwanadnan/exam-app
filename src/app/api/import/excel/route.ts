@@ -32,13 +32,24 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
                     const buildingName = String(row.building_name || row["Building Name"] || buildingCode).trim();
                     const roomName = String(row.room || row.Room || row.name || row.Name || "").trim();
                     const capacity = parseInt(row.capacity || row.Capacity || row.seats || "0") || 0;
+                    const campusCode = String(row.campus_code || row.Campus || row.campus || "").trim();
 
                     if (!roomName || !buildingCode) { errors.push(`Row ${imported + 1}: missing room/building`); continue; }
 
+                    let campusId: string | undefined = undefined;
+                    if (campusCode) {
+                        const campus = await prisma.campus.upsert({
+                            where: { code: campusCode },
+                            create: { code: campusCode, name: campusCode },
+                            update: {},
+                        });
+                        campusId = campus.id;
+                    }
+
                     const building = await prisma.building.upsert({
                         where: { code: buildingCode },
-                        create: { code: buildingCode, name: buildingName },
-                        update: {},
+                        create: { code: buildingCode, name: buildingName, campusId },
+                        update: { campusId },
                     });
 
                     await prisma.room.create({
