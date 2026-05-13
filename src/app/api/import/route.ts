@@ -16,9 +16,14 @@ const importSchema = z.object({
         startDate: z.string().datetime(),
         endDate: z.string().datetime(),
     }),
+    campuses: z.array(z.object({
+        code: z.string(),
+        name: z.string(),
+    })).optional(),
     buildings: z.array(z.object({
         code: z.string(),
         name: z.string(),
+        campusCode: z.string().optional(),
         rooms: z.array(z.object({
             name: z.string(),
             capacity: z.number().int(),
@@ -75,20 +80,52 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
             }
         });
 
-        const stats = { buildings: 0, rooms: 0, examTypes: 0, periods: 0, exams: 0 };
+        const stats = { campuses: 0, buildings: 0, rooms: 0, examTypes: 0, periods: 0, exams: 0 };
 
-        // 2. Create Buildings & Rooms
+        const campusIdMap = new Map<string, string>();
+
+        // 2. Create Campuses first so buildings can reference them
+        if (data.campuses) {
+            for (const campusData of data.campuses) {
+                const campus = await tx.campus.upsert({
+                    where: { code: campusData.code },
+                    create: campusData,
+                    update: { name: campusData.name },
+                });
+                campusIdMap.set(campus.code, campus.id);
+                stats.campuses++;
+            }
+        }
+
+        // 3. Create Buildings & Rooms
         if (data.buildings) {
             for (const b of data.buildings) {
+                let campusId: string | undefined = undefined;
+                if (b.campusCode) {
+                    campusId = campusIdMap.get(b.campusCode);
+                    if (!campusId) {
+                        const campus = await tx.campus.upsert({
+                            where: { code: b.campusCode },
+                            create: { code: b.campusCode, name: b.campusCode },
+                            update: {},
+                        });
+                        campusId = campus.id;
+                        campusIdMap.set(campus.code, campus.id);
+                        stats.campuses++;
+                    }
+                }
+
                 // Upsert Building
                 const building = await tx.building.upsert({
                     where: { code: b.code },
                     create: {
                         code: b.code,
                         name: b.name,
+                        campusId,
                     },
                     update: {
                         name: b.name,
+                        campusId,
                     }
                 });
 
@@ -118,7 +155,7 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
             }
         }
 
-        // 3. Collect Unique Persons
+        // 4. Collect Unique Persons
         const uniqueStudents = new Map<string, { externalId: string; name: string }>();
         const uniqueInstructors = new Map<string, { externalId: string; name: string }>();
 
@@ -141,7 +178,7 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
             }
         }
 
-        // 4. Bulk Upsert Persons
+        // 5. Bulk Upsert Persons
         const studentValues = Array.from(uniqueStudents.values());
         for (const s of studentValues) {
             await tx.student.upsert({
@@ -183,7 +220,7 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
             }
         }
 
-        // 5. Create Exam Types, Periods & Exams
+        // 6. Create Exam Types, Periods & Exams
         if (data.examTypes) {
             let defaultDeptId = "";
             let defaultSubjId = "";
@@ -311,7 +348,7 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
                 }
             }
 
-            // 6. Bulk Insert Exams and Relations
+            // 7. Bulk Insert Exams and Relations
             if (bulkExams.length > 0) {
                 await tx.exam.createMany({ data: bulkExams });
             }

@@ -46,7 +46,7 @@ function CampusDialog({ campus, open, onOpenChange, onSaved }: {
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[400px]">
+            <DialogContent className="sm:max-w-100">
                 <form onSubmit={handleSubmit}>
                     <DialogHeader>
                         <DialogTitle>{isEditing ? "Edit Campus" : "Add Campus"}</DialogTitle>
@@ -70,7 +70,7 @@ function DeleteDialog({ open, onOpenChange, onConfirm, title }: { open: boolean;
     const [deleting, setDeleting] = useState(false);
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[400px]">
+            <DialogContent className="sm:max-w-100">
                 <DialogHeader><DialogTitle>Confirm Delete</DialogTitle><DialogDescription>Are you sure you want to delete <strong>{title}</strong>? This cannot be undone.</DialogDescription></DialogHeader>
                 <DialogFooter>
                     <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
@@ -173,7 +173,7 @@ export default function CampusesPage() {
                                         <TableHead className="pl-6 w-[30%]">Campus Name</TableHead>
                                         <TableHead>Code</TableHead>
                                         <TableHead>Buildings</TableHead>
-                                        <TableHead className="w-[80px]"></TableHead>
+                                        <TableHead className="w-20"></TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>

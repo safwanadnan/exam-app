@@ -33,7 +33,7 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
             include: { 
                 campus: true,
                 rooms: { 
-                    include: { _count: { select: { unavailability: true, features: true } } } 
+                    include: { _count: { select: { availability: true, features: true } } } 
                 }, 
                 _count: { select: { rooms: true } } 
             },

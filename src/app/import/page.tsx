@@ -29,8 +29,9 @@ export default function DataImportPage() {
                 throw new Error(data.error || "Import failed");
             }
 
+            const stats = data.result?.stats || {};
             setStatus("success");
-            setMessage(`Successfully imported session, ${data.rooms} rooms, ${data.periods} periods, and ${data.exams} exams.`);
+            setMessage(`Successfully imported ${stats.campuses || 0} campuses, ${stats.buildings || 0} buildings, ${stats.rooms || 0} rooms, ${stats.periods || 0} periods, and ${stats.exams || 0} exams.`);
             setJsonInput("");
         } catch (e: any) {
             setStatus("error");
@@ -47,6 +48,9 @@ export default function DataImportPage() {
                 startDate: "2026-09-01T00:00:00Z",
                 endDate: "2026-12-15T00:00:00Z"
             },
+            campuses: [
+                { code: "MAIN", name: "Main Campus" }
+            ],
             rooms: [
                 { name: "101", building: { code: "ESB", name: "Engineering Science" }, capacity: 150, coordX: 50.1, coordY: 10.2 }
             ],
@@ -99,10 +103,10 @@ export default function DataImportPage() {
                             </Alert>
                         )}
 
-                        <div className="flex-1 min-h-[300px] relative">
+                        <div className="flex-1 min-h-75 relative">
                             <Textarea
                                 placeholder="Paste UniTime JSON format here..."
-                                className="min-h-[300px] h-full font-mono text-xs resize-none"
+                                className="min-h-75 h-full font-mono text-xs resize-none"
                                 value={jsonInput}
                                 onChange={(e) => setJsonInput(e.target.value)}
                             />
@@ -115,7 +119,7 @@ export default function DataImportPage() {
                         <Button
                             onClick={handleImport}
                             disabled={!jsonInput || status === "loading"}
-                            className="min-w-[120px]"
+                            className="min-w-30"
                         >
                             {status === "loading" ? "Importing..." : (
                                 <><DatabaseZap className="mr-2 h-4 w-4" /> Run Import</>
@@ -130,11 +134,12 @@ export default function DataImportPage() {
                             <CardTitle>Supported Formats</CardTitle>
                         </CardHeader>
                         <CardContent className="text-sm text-muted-foreground space-y-4">
-                            <p>The system expects a specific JSON schema that combines the session architecture, room topology, and student enrollments.</p>
+                                                        <p>The system expects a specific JSON schema that combines the session architecture, campuses, building topology, and student enrollments.</p>
                             <div className="bg-muted p-3 rounded-md font-mono text-xs text-foreground overflow-auto">
                                 {`{
   "session": { "name": "...", "startDate": "..." },
-  "rooms": [{ "name": "100", "building": {...} }],
+    "campuses": [{ "code": "MAIN", "name": "Main Campus" }],
+    "buildings": [{ "code": "MAIN-BLDG", "name": "Main Campus Building", "campusCode": "MAIN", "rooms": [{ "name": "100", "capacity": 150 }] }],
   "periods": [{ "date": "...", "startTime": "09:00" }],
   "exams": [{ "name": "CS101", "students": ["st1"] }]
 }`}

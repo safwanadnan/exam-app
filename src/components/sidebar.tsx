@@ -60,7 +60,7 @@ export function Sidebar() {
 
     return (
         <div className="flex h-full w-64 flex-col border-r bg-muted/20">
-            <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+            <div className="flex h-14 items-center border-b px-4 lg:h-15 lg:px-6">
                 <Link href="/" className="flex items-center gap-2 font-semibold">
                     <CalendarCheck className="h-6 w-6 text-primary" />
                     <span className="text-lg">Exam Scheduler</span>

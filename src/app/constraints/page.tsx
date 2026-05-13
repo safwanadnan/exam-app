@@ -256,7 +256,7 @@ function ConstraintDialog({ constraint, open, onOpenChange, onSaved }: {
                           </Select>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between pl-[5.5rem]">
+                      <div className="flex items-center justify-between pl-22">
                         <div className="flex items-center space-x-2">
                           <Switch checked={row.hard} onCheckedChange={v => updateRow(row.id, { hard: v })} />
                           <span className="text-sm">Hard constraint</span>
@@ -388,7 +388,7 @@ export default function ConstraintsPage() {
         exact: exactMatch ? "true" : "false"
       });
       if (currentSessionId) params.set("sessionId", currentSessionId);
-      
+
       const res = await fetch(`/api/constraints?${params.toString()}`);
       const data = await res.json();
       setConstraints(data.constraints || []);
