@@ -119,14 +119,16 @@ model Subject {
 }
 
 model Course {
-  id          String @id @default(cuid())
-  courseNumber String // e.g., "101"
-  title       String // e.g., "Intro to CS"
-  subjectId   String
-  sessionId   String
+  id           String  @id @default(cuid())
+  courseNumber String  // e.g., "101"
+  title        String  // e.g., "Intro to CS"
+  subjectId    String
+  sessionId    String
+  campusId     String? // Optional: campus where this course is conducted
 
   subject       Subject         @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   session       AcademicSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  campus        Campus?         @relation(fields: [campusId], references: [id])
   sections      Section[]
   sectionGroups SectionGroup[]
 
@@ -192,6 +194,7 @@ model Campus {
   name      String
 
   buildings Building[]
+  courses   Course[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -569,6 +572,7 @@ model SolverConfig {
   useGreatDeluge       Boolean @default(false)
   useColoringConstruction Boolean @default(false)
   checkPeriodOverlaps  Boolean @default(false)
+  examOnCourseCampus   Boolean @default(false) // Hard constraint: exam rooms must be on the same campus as the course
 
   // Simulated Annealing parameters
   saInitialTemperature    Float @default(1.5)

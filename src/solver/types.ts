@@ -41,6 +41,8 @@ export interface SolverConfiguration {
     useGreatDeluge: boolean;
     useColoringConstruction: boolean;
     checkPeriodOverlaps: boolean;
+    /** Hard constraint: restrict exam rooms to the same campus as the course */
+    examOnCourseCampus: boolean;
 
     // Simulated Annealing
     saInitialTemperature: number;
@@ -91,6 +93,7 @@ export const DEFAULT_CONFIG: SolverConfiguration = {
     useGreatDeluge: false,
     useColoringConstruction: false,
     checkPeriodOverlaps: false,
+    examOnCourseCampus: false,
 
     saInitialTemperature: 1.5,
     saCoolingRate: 0.95,

@@ -58,6 +58,7 @@ export async function loadExamModel(
                 useGreatDeluge: dbConfig.useGreatDeluge,
                 useColoringConstruction: dbConfig.useColoringConstruction,
                 checkPeriodOverlaps: dbConfig.checkPeriodOverlaps,
+                examOnCourseCampus: dbConfig.examOnCourseCampus,
                 saInitialTemperature: dbConfig.saInitialTemperature,
                 saCoolingRate: dbConfig.saCoolingRate,
                 saReheatRate: dbConfig.saReheatRate,
@@ -108,9 +109,13 @@ export async function loadExamModel(
         model.addPeriod(period);
     }
 
-    // Load buildings and rooms
+    // Load buildings and rooms (including campus info for domain pruning)
     const dbRooms = await prisma.room.findMany({
-        include: { building: true },
+        include: {
+            building: {
+                include: { campus: true },
+            },
+        },
     });
 
     for (const dbRoom of dbRooms) {
@@ -121,6 +126,7 @@ export async function loadExamModel(
             altCapacity: dbRoom.altCapacity ?? undefined,
             coordX: dbRoom.coordX ?? dbRoom.building.coordX ?? undefined,
             coordY: dbRoom.coordY ?? dbRoom.building.coordY ?? undefined,
+            campusId: dbRoom.building.campus?.id ?? undefined,
         });
         model.addRoom(room);
 
@@ -166,6 +172,7 @@ export async function loadExamModel(
     }
 
     // Load exams with relationships
+    // Also fetch ExamOwner → Section → Course → Campus to support examOnCourseCampus
     const dbExams = await prisma.exam.findMany({
         where: { examType: { sessionId } },
         include: {
@@ -173,8 +180,23 @@ export async function loadExamModel(
             instructorAssignments: true,
             periodPreferences: true,
             roomPreferences: true,
+            owners: {
+                include: {
+                    section: {
+                        include: {
+                            course: {
+                                include: {
+                                    campus: true,
+                                },
+                            },
+                        },
+                    },
+                },
+            },
         },
     });
+
+    const examOnCourseCampus = model.config.examOnCourseCampus ?? false;
 
     for (const dbExam of dbExams) {
         const exam = new Exam({
@@ -223,6 +245,26 @@ export async function loadExamModel(
         }
 
         // Build room domain (all rooms minus prohibited)
+        // If examOnCourseCampus is enabled, determine the course campus for this exam.
+        // Rule: if all owning courses agree on a single campus → constrain to that campus.
+        //       if there is a conflict or no campus set → unconstrained.
+        let requiredCampusId: string | null = null;
+        if (examOnCourseCampus) {
+            const campusIds = new Set<string>();
+            let hasCampus = false;
+            for (const owner of dbExam.owners) {
+                const cId = owner.section.course.campus?.id;
+                if (cId) {
+                    campusIds.add(cId);
+                    hasCampus = true;
+                }
+            }
+            // Single campus agreed → enforce it; null campus or conflict → unconstrained
+            if (hasCampus && campusIds.size === 1) {
+                requiredCampusId = [...campusIds][0];
+            }
+        }
+
         const prohibitedRooms = new Set<string>();
         const roomPenalties = new Map<string, number>();
         for (const pref of dbExam.roomPreferences) {
@@ -235,6 +277,8 @@ export async function loadExamModel(
 
         for (const room of model.rooms) {
             if (prohibitedRooms.has(room.id)) continue;
+            // Campus constraint: skip rooms not on the required campus
+            if (requiredCampusId !== null && room.campusId !== requiredCampusId) continue;
             const penalty: number = roomPenalties.get(room.id) ?? 0;
             exam.addRoomPlacement(new ExamRoomPlacement(room, penalty));
         }

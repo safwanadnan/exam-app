@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FolderTree, Plus, ChevronRight, ChevronDown, Layers, BookOpen, Hash, Building } from "lucide-react";
+import { FolderTree, Plus, ChevronRight, ChevronDown, Layers, BookOpen, Hash, Building, Pencil, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
@@ -11,6 +11,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { DataPagination } from "@/components/data-pagination";
+import { Badge } from "@/components/ui/badge";
+
+const NO_CAMPUS = "__none__";
 
 export default function AcademicStructurePage() {
     const [sessions, setSessions] = useState<any[]>([]);
@@ -22,6 +25,9 @@ export default function AcademicStructurePage() {
     const [courses, setCourses] = useState<Record<string, any[]>>({});
     const [sections, setSections] = useState<Record<string, any[]>>({});
 
+    // Available campuses for picker
+    const [campuses, setCampuses] = useState<any[]>([]);
+
     // Expansion states
     const [expandedDepts, setExpandedDepts] = useState<Set<string>>(new Set());
     const [expandedSubjects, setExpandedSubjects] = useState<Set<string>>(new Set());
@@ -30,9 +36,15 @@ export default function AcademicStructurePage() {
     // Creation states
     const [createType, setCreateType] = useState<"dept" | "subj" | "course" | "section" | null>(null);
     const [createParentId, setCreateParentId] = useState<string>("");
-    const [formData, setFormData] = useState({ code: "", name: "", title: "", length: 0 });
+    const [formData, setFormData] = useState({ code: "", name: "", title: "", length: 0, campusId: "" });
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
+
+    // Course campus edit state
+    const [editCourse, setEditCourse] = useState<any | null>(null);
+    const [editCampusId, setEditCampusId] = useState<string>("");
+    // Track which subjectId owns the course being edited (for re-fetch)
+    const [editCourseSubjectId, setEditCourseSubjectId] = useState<string>("");
 
     useEffect(() => {
         fetch("/api/sessions").then(r => r.json()).then(data => {
@@ -40,6 +52,10 @@ export default function AcademicStructurePage() {
             const active = data.sessions?.find((s: any) => s.isActive);
             if (active) setSelectedSessionId(active.id);
             else if (data.sessions?.length) setSelectedSessionId(data.sessions[0].id);
+        });
+        // Load campuses for the campus picker
+        fetch("/api/campuses").then(r => r.json()).then(data => {
+            setCampuses(data.campuses || []);
         });
     }, []);
 
@@ -111,7 +127,13 @@ export default function AcademicStructurePage() {
             payload = { code: formData.code, name: formData.name, departmentId: createParentId };
         } else if (createType === "course") {
             endpoint = "/api/courses";
-            payload = { courseNumber: formData.code, title: formData.title, subjectId: createParentId, sessionId: selectedSessionId };
+            payload = {
+                courseNumber: formData.code,
+                title: formData.title,
+                subjectId: createParentId,
+                sessionId: selectedSessionId,
+                campusId: formData.campusId && formData.campusId !== NO_CAMPUS ? formData.campusId : null,
+            };
         } else if (createType === "section") {
             endpoint = "/api/sections";
             payload = { sectionNumber: formData.code, courseId: createParentId };
@@ -139,6 +161,33 @@ export default function AcademicStructurePage() {
                 const secData = await secRes.json();
                 setSections(prev => ({ ...prev, [createParentId]: secData.sections || [] }));
             }
+        } catch (e: any) {
+            toast.error(e.message);
+        }
+    };
+
+    const handleSaveCampus = async () => {
+        if (!editCourse) return;
+        try {
+            const campusId = editCampusId && editCampusId !== NO_CAMPUS ? editCampusId : null;
+            const res = await fetch(`/api/courses/${editCourse.id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ campusId }),
+            });
+            if (!res.ok) throw new Error("Failed to update course campus");
+            const { course: updated } = await res.json();
+            toast.success(campusId ? `Campus set to ${updated.campus?.code}` : "Campus cleared");
+            // Update local state
+            if (editCourseSubjectId) {
+                setCourses(prev => ({
+                    ...prev,
+                    [editCourseSubjectId]: (prev[editCourseSubjectId] || []).map((c: any) =>
+                        c.id === editCourse.id ? { ...c, campus: updated.campus, campusId: updated.campusId } : c
+                    ),
+                }));
+            }
+            setEditCourse(null);
         } catch (e: any) {
             toast.error(e.message);
         }
@@ -214,7 +263,7 @@ export default function AcademicStructurePage() {
                                                         </div>
                                                         <div className="flex gap-2">
                                                             <span className="text-xs bg-muted px-2 py-1 rounded-full">{subj._count?.courses || 0} Courses</span>
-                                                            <Button variant="ghost" size="sm" className="h-6 text-xs cursor-pointer" onClick={() => { setCreateType("course"); setCreateParentId(subj.id); }}><Plus className="h-3 w-3 mr-1" /> Course</Button>
+                                                            <Button variant="ghost" size="sm" className="h-6 text-xs cursor-pointer" onClick={() => { setCreateType("course"); setCreateParentId(subj.id); setFormData(f => ({ ...f, campusId: "" })); }}><Plus className="h-3 w-3 mr-1" /> Course</Button>
                                                         </div>
                                                     </div>
 
@@ -228,9 +277,29 @@ export default function AcademicStructurePage() {
                                                                             <BookOpen className="h-4 w-4 text-violet-500" />
                                                                             <span>{subj.code} {course.courseNumber}</span>
                                                                             <span className="text-muted-foreground">- {course.title}</span>
+                                                                            {course.campus && (
+                                                                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 gap-0.5 font-normal">
+                                                                                    <MapPin className="h-2.5 w-2.5" />
+                                                                                    {course.campus.code}
+                                                                                </Badge>
+                                                                            )}
                                                                         </div>
-                                                                        <div className="flex gap-2">
+                                                                        <div className="flex gap-2 items-center">
                                                                             <span className="text-[10px] bg-muted px-2 py-0.5 rounded-full">{course._count?.sections || 0} Sections</span>
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="sm"
+                                                                                className="h-5 w-5 p-0 cursor-pointer text-muted-foreground hover:text-foreground"
+                                                                                title="Set campus"
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    setEditCourse(course);
+                                                                                    setEditCampusId(course.campusId || NO_CAMPUS);
+                                                                                    setEditCourseSubjectId(subj.id);
+                                                                                }}
+                                                                            >
+                                                                                <Pencil className="h-3 w-3" />
+                                                                            </Button>
                                                                             <Button variant="ghost" size="sm" className="h-5 text-[10px] px-2 cursor-pointer" onClick={() => { setCreateType("section"); setCreateParentId(course.id); }}><Plus className="h-3 w-3 mr-1" /> Section</Button>
                                                                         </div>
                                                                     </div>
@@ -284,6 +353,22 @@ export default function AcademicStructurePage() {
                             <>
                                 <div className="space-y-2"><Label>Course Number</Label><Input value={formData.code} onChange={e => setFormData({ ...formData, code: e.target.value })} /></div>
                                 <div className="space-y-2"><Label>Course Title</Label><Input value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} /></div>
+                                <div className="space-y-2">
+                                    <Label className="flex items-center gap-1.5">
+                                        <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                                        Campus <span className="text-muted-foreground font-normal">(optional)</span>
+                                    </Label>
+                                    <Select value={formData.campusId || NO_CAMPUS} onValueChange={v => setFormData({ ...formData, campusId: v })}>
+                                        <SelectTrigger><SelectValue placeholder="No campus assigned" /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value={NO_CAMPUS}>No campus</SelectItem>
+                                            {campuses.map((c: any) => (
+                                                <SelectItem key={c.id} value={c.id}>{c.code} – {c.name}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <p className="text-xs text-muted-foreground">When the "Exam on course campus" constraint is enabled in the solver, exams for this course will only be scheduled in rooms on this campus.</p>
+                                </div>
                             </>
                         )}
                         {createType === "section" && (
@@ -292,6 +377,44 @@ export default function AcademicStructurePage() {
                             </>
                         )}
                         <Button onClick={handleCreate} className="w-full">Create</Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Course campus edit dialog */}
+            <Dialog open={!!editCourse} onOpenChange={(o) => !o && setEditCourse(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Set Campus for Course</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                        {editCourse && (
+                            <p className="text-sm text-muted-foreground">
+                                Course: <span className="font-medium text-foreground">{editCourse.title}</span>
+                            </p>
+                        )}
+                        <div className="space-y-2">
+                            <Label className="flex items-center gap-1.5">
+                                <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                                Campus
+                            </Label>
+                            <Select value={editCampusId || NO_CAMPUS} onValueChange={setEditCampusId}>
+                                <SelectTrigger><SelectValue placeholder="No campus assigned" /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value={NO_CAMPUS}>No campus (unconstrained)</SelectItem>
+                                    {campuses.map((c: any) => (
+                                        <SelectItem key={c.id} value={c.id}>{c.code} – {c.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <p className="text-xs text-muted-foreground">
+                                When "Exam on course campus" is enabled in the solver config, exams for this course will only be assigned to rooms on this campus.
+                            </p>
+                        </div>
+                        <div className="flex gap-2">
+                            <Button onClick={handleSaveCampus} className="flex-1">Save</Button>
+                            <Button variant="outline" onClick={() => setEditCourse(null)} className="flex-1">Cancel</Button>
+                        </div>
                     </div>
                 </DialogContent>
             </Dialog>

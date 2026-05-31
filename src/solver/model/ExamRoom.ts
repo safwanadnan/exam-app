@@ -16,6 +16,7 @@ export class ExamRoom {
     readonly altCapacity: number;   // Alternate (exam) seating
     readonly coordX: number;
     readonly coordY: number;
+    readonly campusId: string | undefined; // Campus this room belongs to (via building)
 
     // Period availability: periodId → penalty (undefined = available with 0 penalty, -1 = prohibited)
     private _periodAvailability: Map<string, number> = new Map();
@@ -27,6 +28,7 @@ export class ExamRoom {
         altCapacity?: number;
         coordX?: number;
         coordY?: number;
+        campusId?: string;
     }) {
         this.id = params.id;
         this.name = params.name;
@@ -34,6 +36,7 @@ export class ExamRoom {
         this.altCapacity = params.altCapacity ?? params.capacity;
         this.coordX = params.coordX ?? 0;
         this.coordY = params.coordY ?? 0;
+        this.campusId = params.campusId;
     }
 
     /** Get the capacity based on seating type */

@@ -27,6 +27,7 @@ interface Config {
     useGreatDeluge: boolean; useColoringConstruction: boolean;
     saInitialTemperature: number; saCoolingRate: number;
     hcMaxIdleIterations: number;
+    examOnCourseCampus: boolean;
     [key: string]: any;
 }
 
@@ -293,6 +294,13 @@ export default function SolverConfigPage() {
                                             <p className="text-xs text-muted-foreground">Count last slot + first slot next day as back-to-back</p>
                                         </div>
                                         <Switch checked={activeConfig.isDayBreakBackToBack || false} onCheckedChange={v => updateField("isDayBreakBackToBack", v)} />
+                                    </div>
+                                    <div className="flex items-center justify-between p-3 rounded-lg border-2 border-primary/30 bg-primary/5">
+                                        <div>
+                                            <Label className="flex items-center gap-1.5 font-semibold">Exam on Course Campus <span className="text-[10px] font-normal uppercase tracking-wider text-primary bg-primary/10 px-1.5 py-0.5 rounded">Hard Constraint</span></Label>
+                                            <p className="text-xs text-muted-foreground mt-0.5">When enabled, each exam is restricted to rooms on the same campus as its course. Courses with no campus set remain unconstrained. Conflicts are reported as NO_ROOMS_AVAILABLE.</p>
+                                        </div>
+                                        <Switch checked={activeConfig.examOnCourseCampus || false} onCheckedChange={v => updateField("examOnCourseCampus", v)} />
                                     </div>
                                 </div>
                             </CardContent>

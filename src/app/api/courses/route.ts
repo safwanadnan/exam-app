@@ -13,7 +13,10 @@ export async function GET(request: Request) {
 
         const courses = await prisma.course.findMany({
             where,
-            include: { _count: { select: { sections: true } } },
+            include: {
+                _count: { select: { sections: true } },
+                campus: { select: { id: true, code: true, name: true } },
+            },
             orderBy: { courseNumber: 'asc' }
         });
         return NextResponse.json({ courses });
@@ -31,7 +34,11 @@ export async function POST(request: Request) {
                 title: body.title,
                 subjectId: body.subjectId,
                 sessionId: body.sessionId,
-            }
+                campusId: body.campusId ?? null,
+            },
+            include: {
+                campus: { select: { id: true, code: true, name: true } },
+            },
         });
         return NextResponse.json({ course });
     } catch (error) {

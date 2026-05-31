@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 /**
- * GET /api/solver/config â€” List solver configs for a session
- * POST /api/solver/config â€” Create a solver config
+ * GET /api/solver/config – List solver configs for a session
+ * POST /api/solver/config – Create a solver config
  */
 import { NextRequest } from "next/server";
 import { z } from "zod";
@@ -11,7 +11,7 @@ const createConfigSchema = z.object({
     name: z.string().min(1),
     sessionId: z.string().min(1),
     isDefault: z.boolean().optional().default(false),
-    // All weight parameters are optional â€” defaults come from the DB schema
+    // All weight parameters are optional – defaults come from the DB schema
     directConflictWeight: z.number().optional(),
     moreThan2ADayWeight: z.number().optional(),
     backToBackConflictWeight: z.number().optional(),
@@ -34,6 +34,7 @@ const createConfigSchema = z.object({
     saInitialTemperature: z.number().optional(),
     saCoolingRate: z.number().optional(),
     hcMaxIdleIterations: z.number().int().optional(),
+    examOnCourseCampus: z.boolean().optional(),
 });
 
 export const GET = withErrorHandling(async (req: NextRequest) => {
@@ -57,4 +58,3 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     const config = await prisma.solverConfig.create({ data: parsed.data });
     return jsonResponse(config, 201);
 });
-

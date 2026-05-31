@@ -30,7 +30,9 @@ const configSchema = z.object({
     instructorDistBackToBackWeight: z.number().default(25),
     maxRooms: z.number().int().default(4),
     timeout: z.number().int().default(600),
+    examOnCourseCampus: z.boolean().default(false),
 }).partial().required({ name: true, sessionId: true });
+
 
 export const POST = withErrorHandling(async (req: NextRequest) => {
     const parsed = await parseBody(req, configSchema);
