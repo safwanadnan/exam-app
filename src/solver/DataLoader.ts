@@ -261,7 +261,7 @@ export async function loadExamModel(
             }
             // Single campus agreed → enforce it; null campus or conflict → unconstrained
             if (hasCampus && campusIds.size === 1) {
-                requiredCampusId = [...campusIds][0];
+                requiredCampusId = Array.from(campusIds)[0];
             }
         }
 

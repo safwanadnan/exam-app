@@ -17,7 +17,8 @@ import {
     generateTimeMove,
     generateRoomMove,
     generatePeriodSwapMove,
-    generateConflictMove
+    generateConflictMove,
+    generateKempeChainMove
 } from "./neighbours/ExamMoves";
 import { SolverPhase, SolverStatus, type SolverProgress, type SolverConfiguration } from "./types";
 
@@ -231,7 +232,7 @@ export class ExamSolver {
         console.log(`[Solver] Construction complete: ${this.model.nrAssigned}/${this.model.exams.length} assigned`);
 
         // Log unassigned exam reasons
-        const unassigned = [...this.examDiagnostics.values()].filter(d => !d.assigned);
+        const unassigned = Array.from(this.examDiagnostics.values()).filter(d => !d.assigned);
         if (unassigned.length > 0) {
             console.log(`[Solver] ${unassigned.length} exams could not be assigned:`);
             for (const d of unassigned.slice(0, 20)) {
@@ -253,6 +254,7 @@ export class ExamSolver {
             assigned: false,
             failureReasons: [],
             details: [],
+            distributionViolations: [],
             periodsTried: 0,
             periodsInDomain: exam.periodPlacements.length,
             periodRejections: {
@@ -300,6 +302,15 @@ export class ExamSolver {
             if (cost < bestCost) {
                 bestCost = cost;
                 bestPlacement = placement;
+            }
+        }
+
+        // Attempt backtracking if the best placement still has direct conflicts
+        if (bestPlacement && bestCost >= this.config.directConflictWeight) {
+            const backtrackResult = this.attemptConstructionBacktrack(exam);
+            if (backtrackResult) {
+                bestPlacement = backtrackResult.placement;
+                bestCost = backtrackResult.cost;
             }
         }
 
@@ -368,6 +379,65 @@ export class ExamSolver {
         }
 
         return bestPlacement;
+    }
+
+    /**
+     * Try to move a single conflicting exam to find a clean placement for this exam.
+     */
+    private attemptConstructionBacktrack(exam: Exam): { placement: ExamPlacement, cost: number } | null {
+        // Try each period
+        for (const pp of exam.periodPlacements) {
+            if (!this.model.isPeriodFeasible(exam, pp.period.id)) continue;
+            
+            // Find exams that cause direct conflicts in this period
+            const conflictingExams = new Set<Exam>();
+            for (const student of exam.students) {
+                for (const ce of Array.from(this.model.getStudentExamsInPeriod(student.id, pp.period.id))) {
+                    conflictingExams.add(ce);
+                }
+            }
+            for (const instructor of exam.instructors) {
+                for (const ce of Array.from(this.model.getInstructorExamsInPeriod(instructor.id, pp.period.id))) {
+                    conflictingExams.add(ce);
+                }
+            }
+
+            // If there's exactly ONE conflicting exam, try moving it
+            if (conflictingExams.size === 1) {
+                const confExam = Array.from(conflictingExams)[0];
+                const oldPlacement = confExam.assignment!;
+                
+                this.model.unassignExam(confExam);
+                
+                // See if we can place confExam somewhere else with 0 conflicts
+                const newConfPlacement = this.findBestPlacement(confExam);
+                if (newConfPlacement && this.computePlacementCost(confExam, newConfPlacement) < this.config.directConflictWeight) {
+                    // Success! We found a clean spot for confExam.
+                    this.model.assignExam(confExam, newConfPlacement);
+                    
+                    // Now place our original exam in this period
+                    const assignedRooms = this.model.getAssignedRoomsInPeriod(pp.period.id);
+                    const roomMap = new Map<string, Set<string>>();
+                    roomMap.set(pp.period.id, assignedRooms);
+                    const rooms = exam.findBestAvailableRooms(pp.period, roomMap);
+                    
+                    if (rooms) {
+                        const placement = new ExamPlacement(pp, rooms);
+                        const cost = this.computePlacementCost(exam, placement);
+                        if (cost < this.config.directConflictWeight) {
+                            return { placement, cost };
+                        }
+                    }
+                    
+                    // If it still didn't work out cleanly, revert
+                    this.model.unassignExam(confExam);
+                }
+                
+                // Revert
+                this.model.assignExam(confExam, oldPlacement);
+            }
+        }
+        return null;
     }
 
     /**
@@ -554,6 +624,8 @@ export class ExamSolver {
                 neighbour.apply(this.model);
                 this.hcIdleIterations = 0;
                 this.saveBestIfImproved();
+                const mt = (neighbour as any).__moveType;
+                if (mt !== undefined) this.moveSuccess[mt]++;
             } else {
                 this.hcIdleIterations++;
             }
@@ -579,8 +651,26 @@ export class ExamSolver {
         this.phase = SolverPhase.SIMULATED_ANNEALING;
         console.log("[Solver] Phase 3: Simulated Annealing");
 
-        // Initialize temperature
-        this.saTemperature = this.config.saInitialTemperature;
+        // Initialize temperature adaptively
+        let sampleValues: number[] = [];
+        for (let i = 0; i < 100; i++) {
+            const n = this.generateNeighbour();
+            if (n) {
+                const v = n.value(this.model);
+                if (v > 0) sampleValues.push(v);
+            }
+        }
+        if (sampleValues.length > 0) {
+            sampleValues.sort((a, b) => a - b);
+            const median = sampleValues[Math.floor(sampleValues.length / 2)];
+            // Probability = exp(-median / T0) = 0.5 => T0 = -median / ln(0.5)
+            this.saTemperature = -median / Math.log(0.5);
+            if (this.saTemperature < 0.1) this.saTemperature = this.config.saInitialTemperature;
+            console.log(`[Solver] SA T0 calibrated to ${this.saTemperature.toFixed(2)} (median delta: ${median})`);
+        } else {
+            this.saTemperature = this.config.saInitialTemperature;
+        }
+
         this.saLastImprovingIter = this.iteration;
         this.saLastCoolingIter = this.iteration;
         this.saLastReheatIter = this.iteration;
@@ -608,6 +698,8 @@ export class ExamSolver {
             if (this.acceptSA(value)) {
                 neighbour.apply(this.model);
                 this.saAccepted++;
+                const mt = (neighbour as any).__moveType;
+                if (mt !== undefined) this.moveSuccess[mt]++;
 
                 if (value < 0) {
                     this.saLastImprovingIter = this.iteration;
@@ -689,6 +781,8 @@ export class ExamSolver {
             if (newObj <= this.gdBound) {
                 neighbour.apply(this.model);
                 this.saveBestIfImproved();
+                const mt = (neighbour as any).__moveType;
+                if (mt !== undefined) this.moveSuccess[mt]++;
             }
 
             // Lower the bound
@@ -727,6 +821,8 @@ export class ExamSolver {
                 neighbour.apply(this.model);
                 this.hcIdleIterations = 0;
                 this.saveBestIfImproved();
+                const mt = (neighbour as any).__moveType;
+                if (mt !== undefined) this.moveSuccess[mt]++;
             } else {
                 this.hcIdleIterations++;
             }
@@ -744,16 +840,52 @@ export class ExamSolver {
 
     // ===================== HELPER METHODS =====================
 
+    private moveWeights = [1, 1, 1, 1, 1, 1]; // random, time, room, swap, conflict, kempe
+    private moveSuccess = [0, 0, 0, 0, 0, 0];
+    private moveAttempts = [0, 0, 0, 0, 0, 0];
+
     /**
-     * Generate a random neighbour move.
-     * Selects from 4 move types with equal probability.
+     * Generate a neighbour move using adaptive probabilities.
      */
     private generateNeighbour(): ExamNeighbour | null {
-        const r = Math.random();
-        if (r < 0.25) return generateRandomMove(this.model);
-        if (r < 0.50) return generateTimeMove(this.model);
-        if (r < 0.75) return generateRoomMove(this.model);
-        return generatePeriodSwapMove(this.model);
+        // Periodically update weights (e.g. every 1000 iterations)
+        if (this.iteration > 0 && this.iteration % 1000 === 0) {
+            for (let i = 0; i < this.moveWeights.length; i++) {
+                if (this.moveAttempts[i] > 0) {
+                    // Weight is proportional to success rate + small baseline
+                    this.moveWeights[i] = 0.1 + (this.moveSuccess[i] / this.moveAttempts[i]);
+                }
+            }
+            // Reset counters for next window
+            this.moveSuccess.fill(0);
+            this.moveAttempts.fill(0);
+        }
+
+        const total = this.moveWeights.reduce((a, b) => a + b, 0);
+        let r = Math.random() * total;
+        let moveType = 0;
+        for (let i = 0; i < this.moveWeights.length; i++) {
+            r -= this.moveWeights[i];
+            if (r <= 0) { moveType = i; break; }
+        }
+
+        this.moveAttempts[moveType]++;
+
+        let neighbour: ExamNeighbour | null = null;
+        switch (moveType) {
+            case 0: neighbour = generateRandomMove(this.model); break;
+            case 1: neighbour = generateTimeMove(this.model); break;
+            case 2: neighbour = generateRoomMove(this.model); break;
+            case 3: neighbour = generatePeriodSwapMove(this.model); break;
+            case 4: neighbour = generateConflictMove(this.model); break;
+            case 5: neighbour = generateKempeChainMove(this.model); break;
+        }
+
+        if (neighbour) {
+            (neighbour as any).__moveType = moveType;
+        }
+
+        return neighbour;
     }
 
     /** Check if timeout has been reached */
@@ -788,7 +920,7 @@ export class ExamSolver {
             }
         }
         // Restore best
-        for (const [examId, placement] of this.bestAssignments) {
+        for (const [examId, placement] of Array.from(this.bestAssignments.entries())) {
             const exam = this.model.getExam(examId);
             if (exam) {
                 this.model.assignExam(exam, placement);

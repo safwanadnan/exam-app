@@ -334,8 +334,8 @@ export class ExamModel {
     /** Count total student direct conflicts */
     countDirectConflicts(): number {
         let count = 0;
-        for (const [, studentMap] of this._studentsOfPeriod) {
-            for (const [, exams] of studentMap) {
+        for (const [, studentMap] of Array.from(this._studentsOfPeriod.entries())) {
+            for (const [, exams] of Array.from(studentMap.entries())) {
                 if (exams.size > 1) count += exams.size - 1;
             }
         }
@@ -372,7 +372,7 @@ export class ExamModel {
                 const day = exam.assignment!.period.day;
                 examsPerDay.set(day, (examsPerDay.get(day) ?? 0) + 1);
             }
-            for (const [, n] of examsPerDay) {
+            for (const [, n] of Array.from(examsPerDay.entries())) {
                 if (n > 2) count += n - 2;
             }
         }
@@ -400,8 +400,8 @@ export class ExamModel {
         let instB2b = 0;
         let instMoreThan2 = 0;
         
-        for (const [, instructorMap] of this._instructorsOfPeriod) {
-            for (const [, exams] of instructorMap) {
+        for (const [, instructorMap] of Array.from(this._instructorsOfPeriod.entries())) {
+            for (const [, exams] of Array.from(instructorMap.entries())) {
                 if (exams.size > 1) instDirect += exams.size - 1;
             }
         }
@@ -424,7 +424,7 @@ export class ExamModel {
                 const day = exam.assignment!.period.day;
                 examsPerDay.set(day, (examsPerDay.get(day) ?? 0) + 1);
             }
-            for (const [, n] of examsPerDay) {
+            for (const [, n] of Array.from(examsPerDay.entries())) {
                 if (n > 2) instMoreThan2 += n - 2;
             }
         }

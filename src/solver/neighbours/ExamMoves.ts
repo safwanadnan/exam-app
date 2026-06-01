@@ -4,9 +4,9 @@
  * Generates a random neighbour: picks a random exam and assigns it to a 
  * random feasible period+room combination.
  */
-import type { ExamModel } from "../model";
+import type { ExamModel, Exam } from "../model";
 import { ExamPlacement, ExamPeriodPlacement, ExamRoomPlacement } from "../model";
-import { ExamSimpleNeighbour, ExamSwapNeighbour, type ExamNeighbour } from "./ExamNeighbour";
+import { ExamSimpleNeighbour, ExamSwapNeighbour, ExamChainNeighbour, type ExamNeighbour } from "./ExamNeighbour";
 
 export function generateRandomMove(model: ExamModel): ExamNeighbour | null {
     const exams = model.exams;
@@ -250,5 +250,147 @@ export function generateConflictMove(model: ExamModel): ExamNeighbour | null {
     if (rooms === null) return null;
 
     return new ExamSimpleNeighbour(exam, new ExamPlacement(bestPlacement, rooms));
+}
+
+/**
+ * ExamKempeChainMove
+ * 
+ * Swaps two periods for a connected component of conflicting exams.
+ * Resolves deadlocks by moving an entire conflicting block at once.
+ */
+export function generateKempeChainMove(model: ExamModel): ExamNeighbour | null {
+    const assigned = model.assignedExams;
+    if (assigned.length === 0) return null;
+
+    // Pick an initial exam
+    const startExam = assigned[Math.floor(Math.random() * assigned.length)];
+    const p1 = startExam.assignment!.period;
+
+    // Pick a target period p2
+    const periods = startExam.periodPlacements;
+    if (periods.length <= 1) return null;
+    let targetPP: ExamPeriodPlacement | null = null;
+    for (let attempt = 0; attempt < 10; attempt++) {
+        const pp = periods[Math.floor(Math.random() * periods.length)];
+        if (pp.period.id !== p1.id) {
+            targetPP = pp;
+            break;
+        }
+    }
+    if (!targetPP) return null;
+    const p2 = targetPP.period;
+
+    // Build the chain
+    // We maintain sets of exams that need to be in p1 and p2.
+    // Initially, startExam goes to p2.
+    const toP1 = new Set<Exam>();
+    const toP2 = new Set<Exam>();
+    toP2.add(startExam);
+
+    const queue: { exam: Exam, targetPeriodId: string }[] = [{ exam: startExam, targetPeriodId: p2.id }];
+    const processed = new Set<string>();
+
+    while (queue.length > 0) {
+        const { exam, targetPeriodId } = queue.shift()!;
+        if (processed.has(exam.id)) continue;
+        processed.add(exam.id);
+
+        const currentPeriodId = targetPeriodId === p1.id ? p2.id : p1.id;
+
+        // Find all exams in targetPeriodId that conflict with this exam
+        const conflictsInTarget = new Set<Exam>();
+        
+        for (const student of exam.students) {
+            for (const ce of Array.from(model.getStudentExamsInPeriod(student.id, targetPeriodId))) {
+                conflictsInTarget.add(ce);
+            }
+        }
+        for (const instructor of exam.instructors) {
+            for (const ce of Array.from(model.getInstructorExamsInPeriod(instructor.id, targetPeriodId))) {
+                conflictsInTarget.add(ce);
+            }
+        }
+        for (const dc of exam.distributionConstraints) {
+            if (!dc.hard || !dc.isPeriodRelated()) continue;
+            const otherExamId = dc.examAId === exam.id ? dc.examBId : dc.examAId;
+            const otherExam = model.getExam(otherExamId);
+            if (otherExam?.isAssigned && otherExam.assignment!.period.id === targetPeriodId) {
+                // For simplicity, just add them to the chain
+                conflictsInTarget.add(otherExam);
+            }
+        }
+
+        // Move all these conflicting exams to the current period
+        for (const ce of Array.from(conflictsInTarget)) {
+            if (currentPeriodId === p1.id) {
+                if (!toP1.has(ce)) {
+                    toP1.add(ce);
+                    queue.push({ exam: ce, targetPeriodId: p1.id });
+                }
+            } else {
+                if (!toP2.has(ce)) {
+                    toP2.add(ce);
+                    queue.push({ exam: ce, targetPeriodId: p2.id });
+                }
+            }
+        }
+    }
+
+    // Now we have the chain (toP1 and toP2).
+    // Validate that all exams can be moved to their new periods.
+    const newAssignments = new Map<Exam, ExamPlacement>();
+
+    // We must gather all new room assignments without stepping on each other
+    // For p1, the assigned rooms are currently what's in p1, minus the exams leaving p1 (toP2), plus exams coming to p1 (toP1).
+    // Actually, we just compute available rooms for each exam.
+    
+    // Validate toP2 (exams currently in p1 moving to p2)
+    const assignedRoomsP2 = model.getAssignedRoomsInPeriod(p2.id);
+    // Remove rooms used by exams leaving p2 (toP1)
+    for (const e of Array.from(toP1)) {
+        for (const rp of e.assignment!.roomPlacements) assignedRoomsP2.delete(rp.room.id);
+    }
+    const roomMapP2 = new Map<string, Set<string>>();
+    roomMapP2.set(p2.id, assignedRoomsP2);
+
+    for (const e of Array.from(toP2)) {
+        if (!model.isPeriodFeasible(e, p2.id)) return null;
+        const pp = e.periodPlacements.find(p => p.period.id === p2.id);
+        if (!pp) return null;
+
+        const rooms = e.findBestAvailableRooms(p2, roomMapP2);
+        if (rooms === null) return null;
+        
+        // Add chosen rooms to assignedRoomsP2 so subsequent exams in toP2 don't use them
+        for (const rp of rooms) assignedRoomsP2.add(rp.room.id);
+        
+        newAssignments.set(e, new ExamPlacement(pp, rooms));
+    }
+
+    // Validate toP1 (exams currently in p2 moving to p1)
+    const assignedRoomsP1 = model.getAssignedRoomsInPeriod(p1.id);
+    // Remove rooms used by exams leaving p1 (toP2)
+    for (const e of Array.from(toP2)) {
+        if (e.isAssigned) {
+            for (const rp of e.assignment!.roomPlacements) assignedRoomsP1.delete(rp.room.id);
+        }
+    }
+    const roomMapP1 = new Map<string, Set<string>>();
+    roomMapP1.set(p1.id, assignedRoomsP1);
+
+    for (const e of Array.from(toP1)) {
+        if (!model.isPeriodFeasible(e, p1.id)) return null;
+        const pp = e.periodPlacements.find(p => p.period.id === p1.id);
+        if (!pp) return null;
+
+        const rooms = e.findBestAvailableRooms(p1, roomMapP1);
+        if (rooms === null) return null;
+
+        for (const rp of rooms) assignedRoomsP1.add(rp.room.id);
+
+        newAssignments.set(e, new ExamPlacement(pp, rooms));
+    }
+
+    return new ExamChainNeighbour(newAssignments);
 }
 

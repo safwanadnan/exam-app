@@ -35,18 +35,31 @@ function ExamDialog({ exam, open, onOpenChange, onSaved }: {
     const [length, setLength] = useState(120);
     const [maxRooms, setMaxRooms] = useState(4);
     const [altSeating, setAltSeating] = useState(false);
-    const [sections, setSections] = useState<Record<string, unknown>[]>([]);
+    interface CourseRef { id: string; courseNumber: string; subjectId?: string | null }
+    interface SectionRef { id: string; sectionNumber: string; courseId?: string | null; course?: CourseRef | null }
+    const [sections, setSections] = useState<SectionRef[]>([]);
     const [selectedSections, setSelectedSections] = useState<string[]>([]);
 
     useEffect(() => {
         if (open) {
             fetch("/api/courses").then(r => r.json()).then(cData => {
-                const courseMap = new Map((cData.courses || []).map((c: Record<string, unknown>) => [String(c['id']), c]));
+                const courses = (cData.courses || []) as unknown[];
+                const courseMap = new Map<string, CourseRef>(courses.map((c: unknown) => {
+                    const obj = c as Record<string, unknown>;
+                    return [String(obj.id), { id: String(obj.id), courseNumber: String(obj.courseNumber), subjectId: obj.subjectId ? String(obj.subjectId) : undefined }];
+                }));
                 fetch("/api/sections").then(r => r.json()).then(sData => {
-                    const enhanced = (sData.sections || []).map((s: Record<string, unknown>) => ({
-                        ...(s as Record<string, unknown>), course: courseMap.get(String((s as Record<string, unknown>)['courseId']))
-                    })).filter((s: Record<string, unknown>) => Boolean((s as Record<string, unknown>)['course']));
-                    setSections(enhanced as Record<string, unknown>[]);
+                    const secs = (sData.sections || []) as unknown[];
+                    const enhanced: SectionRef[] = secs.map((s: unknown) => {
+                        const obj = s as Record<string, unknown>;
+                        return {
+                            id: String(obj.id),
+                            sectionNumber: String(obj.sectionNumber),
+                            courseId: obj.courseId ? String(obj.courseId) : undefined,
+                            course: courseMap.get(String(obj.courseId)) || null,
+                        } as SectionRef;
+                    }).filter(s => s.course !== null);
+                    setSections(enhanced);
                 });
             });
 
@@ -119,8 +132,8 @@ function ExamDialog({ exam, open, onOpenChange, onSaved }: {
                                                 }}
                                             />
                                             <Label className="text-sm font-normal cursor-pointer select-none">
-                                                {sec.course.subjectId && <span className="text-muted-foreground mr-1">Subject | </span>}
-                                                <span className="font-semibold">{sec.course.courseNumber}</span> - Section {sec.sectionNumber}
+                                                {sec.course?.subjectId && <span className="text-muted-foreground mr-1">Subject | </span>}
+                                                <span className="font-semibold">{sec.course?.courseNumber}</span> - Section {sec.sectionNumber}
                                             </Label>
                                         </div>
                                     ))}
@@ -172,8 +185,9 @@ export default function ExamsPage() {
     const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
 
     // Features
+    interface Feature { id: string; name: string; code?: string }
     const [showFeatures, setShowFeatures] = useState<Exam | null>(null);
-    const [features, setFeatures] = useState<Record<string, unknown>[]>([]);
+    const [features, setFeatures] = useState<Feature[]>([]);
     const [preferences, setPreferences] = useState<{ id: string; penalty: number }[]>([]);
     const [savingFeatures, setSavingFeatures] = useState(false);
 
@@ -256,8 +270,11 @@ export default function ExamsPage() {
             fetch("/api/features?limit=100").then(r => r.json()),
             fetch(`/api/exams/${e.id}/features`).then(r => r.json())
         ]);
-        setFeatures((featRes.features || []) as Record<string, unknown>[]);
-        setPreferences((prefRes.preferences || []).map((p: Record<string, unknown>) => ({ id: String(p['featureId']), penalty: Number(p['penalty']) })));
+        setFeatures((featRes.features || []) as Feature[]);
+        setPreferences((prefRes.preferences || []).map((p: unknown) => {
+            const obj = p as Record<string, unknown>;
+            return { id: String(obj.featureId), penalty: Number(obj.penalty) };
+        }));
     };
 
     const handleFeatureChange = (featureId: string, penalty: string) => {

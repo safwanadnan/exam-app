@@ -5,8 +5,6 @@ import { Sidebar } from "@/components/sidebar";
 import { ThemeProvider } from "@/components/theme-provider";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Button } from "@/components/ui/button";
-import Image from "next/image";
 import { MobileNav } from "@/components/mobile-nav";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -49,7 +47,6 @@ export default function RootLayout({
                       <MobileNav />
                       <div className="w-full flex-1 flex items-center gap-4">
                         <Link href="/" className="flex items-center gap-3">
-                          <Image src="/exam-mascot.svg" alt="exam mascot" width={28} height={28} />
                           <h1 className="font-semibold text-lg">Exam Scheduler</h1>
                         </Link>
                       </div>

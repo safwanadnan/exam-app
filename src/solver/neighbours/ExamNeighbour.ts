@@ -116,3 +116,48 @@ export class ExamSwapNeighbour implements ExamNeighbour {
         return `Swap: ${this.exam1.name} ↔ ${this.exam2.name}`;
     }
 }
+
+/**
+ * ExamChainNeighbour - Move multiple exams to new placements simultaneously.
+ */
+export class ExamChainNeighbour implements ExamNeighbour {
+    readonly assignments: Map<Exam, ExamPlacement>;
+
+    constructor(assignments: Map<Exam, ExamPlacement>) {
+        this.assignments = assignments;
+    }
+
+    value(model: ExamModel): number {
+        const oldAssignments = new Map<Exam, ExamPlacement | null>();
+        for (const exam of Array.from(this.assignments.keys())) {
+            oldAssignments.set(exam, exam.assignment);
+        }
+
+        const oldObj = model.getTotalObjective();
+        for (const [exam, placement] of Array.from(this.assignments.entries())) {
+            model.assignExam(exam, placement);
+        }
+        const newObj = model.getTotalObjective();
+
+        // Revert
+        for (const [exam, oldPlacement] of Array.from(oldAssignments.entries())) {
+            if (oldPlacement) model.assignExam(exam, oldPlacement);
+            else model.unassignExam(exam);
+        }
+
+        return newObj - oldObj;
+    }
+
+    apply(model: ExamModel): number {
+        const oldObj = model.getTotalObjective();
+        for (const [exam, placement] of Array.from(this.assignments.entries())) {
+            model.assignExam(exam, placement);
+        }
+        const newObj = model.getTotalObjective();
+        return newObj - oldObj;
+    }
+
+    toString(): string {
+        return `Chain move (${this.assignments.size} exams)`;
+    }
+}
