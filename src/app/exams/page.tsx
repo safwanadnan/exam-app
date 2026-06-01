@@ -35,25 +35,25 @@ function ExamDialog({ exam, open, onOpenChange, onSaved }: {
     const [length, setLength] = useState(120);
     const [maxRooms, setMaxRooms] = useState(4);
     const [altSeating, setAltSeating] = useState(false);
-    const [sections, setSections] = useState<any[]>([]);
+    const [sections, setSections] = useState<Record<string, unknown>[]>([]);
     const [selectedSections, setSelectedSections] = useState<string[]>([]);
 
     useEffect(() => {
         if (open) {
             fetch("/api/courses").then(r => r.json()).then(cData => {
-                const courseMap = new Map((cData.courses || []).map((c: any) => [c.id, c]));
+                const courseMap = new Map((cData.courses || []).map((c: Record<string, unknown>) => [String(c['id']), c]));
                 fetch("/api/sections").then(r => r.json()).then(sData => {
-                    const enhanced = (sData.sections || []).map((s: any) => ({
-                        ...s, course: courseMap.get(s.courseId)
-                    })).filter((s: any) => s.course);
-                    setSections(enhanced);
+                    const enhanced = (sData.sections || []).map((s: Record<string, unknown>) => ({
+                        ...(s as Record<string, unknown>), course: courseMap.get(String((s as Record<string, unknown>)['courseId']))
+                    })).filter((s: Record<string, unknown>) => Boolean((s as Record<string, unknown>)['course']));
+                    setSections(enhanced as Record<string, unknown>[]);
                 });
             });
 
             if (exam) {
                 setName(exam.name || ""); setLength(exam.length); setMaxRooms(exam.maxRooms); setAltSeating(exam.altSeating);
-                fetch(`/api/exams/${exam.id}/owners`).then(r => r.json()).then(data => {
-                    setSelectedSections((data.owners || []).map((o: any) => o.sectionId));
+                    fetch(`/api/exams/${exam.id}/owners`).then(r => r.json()).then(data => {
+                    setSelectedSections((data.owners || []).map((o: Record<string, unknown>) => String(o['sectionId'])));
                 });
             } else {
                 setName(""); setLength(120); setMaxRooms(4); setAltSeating(false); setSelectedSections([]);
@@ -64,7 +64,7 @@ function ExamDialog({ exam, open, onOpenChange, onSaved }: {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault(); setSaving(true);
         try {
-            const body: any = { name, length, maxRooms, altSeating };
+            const body: Record<string, unknown> = { name, length, maxRooms, altSeating };
             const url = isEditing ? `/api/exams/${exam!.id}` : "/api/exams";
             if (!isEditing) {
                 toast.error("Creating exams requires an exam type. Use the import page for bulk creation.");
@@ -84,12 +84,12 @@ function ExamDialog({ exam, open, onOpenChange, onSaved }: {
 
             toast.success("Exam updated");
             onOpenChange(false); onSaved();
-        } catch (err: any) { toast.error(err.message); } finally { setSaving(false); }
+        } catch (err: unknown) { const message = err instanceof Error ? err.message : String(err); toast.error(message); } finally { setSaving(false); }
     };
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[480px]">
+            <DialogContent className="sm:max-w-120">
                 <form onSubmit={handleSubmit}>
                     <DialogHeader>
                         <DialogTitle>Edit Exam</DialogTitle>
@@ -173,7 +173,7 @@ export default function ExamsPage() {
 
     // Features
     const [showFeatures, setShowFeatures] = useState<Exam | null>(null);
-    const [features, setFeatures] = useState<any[]>([]);
+    const [features, setFeatures] = useState<Record<string, unknown>[]>([]);
     const [preferences, setPreferences] = useState<{ id: string; penalty: number }[]>([]);
     const [savingFeatures, setSavingFeatures] = useState(false);
 
@@ -216,7 +216,7 @@ export default function ExamsPage() {
             if (!res.ok) throw new Error("Failed to delete");
             toast.success("Exam deleted");
             setDeleteTarget(null); fetchExams();
-        } catch (err: any) { toast.error(err.message); }
+        } catch (err: unknown) { const message = err instanceof Error ? err.message : String(err); toast.error(message); }
     };
 
     const handleBulkDelete = async () => {
@@ -232,7 +232,7 @@ export default function ExamsPage() {
             setSelectedIds(new Set());
             setBulkDeleteDialogOpen(false);
             fetchExams();
-        } catch (err: any) { toast.error(err.message); }
+        } catch (err: unknown) { const message = err instanceof Error ? err.message : String(err); toast.error(message); }
     };
 
     const toggleSelect = (id: string) => {
@@ -256,8 +256,8 @@ export default function ExamsPage() {
             fetch("/api/features?limit=100").then(r => r.json()),
             fetch(`/api/exams/${e.id}/features`).then(r => r.json())
         ]);
-        setFeatures(featRes.features || []);
-        setPreferences((prefRes.preferences || []).map((p: any) => ({ id: p.featureId, penalty: p.penalty })));
+        setFeatures((featRes.features || []) as Record<string, unknown>[]);
+        setPreferences((prefRes.preferences || []).map((p: Record<string, unknown>) => ({ id: String(p['featureId']), penalty: Number(p['penalty']) })));
     };
 
     const handleFeatureChange = (featureId: string, penalty: string) => {
@@ -284,7 +284,7 @@ export default function ExamsPage() {
             if (!res.ok) throw new Error("Failed to save feature preferences");
             toast.success("Exam feature preferences saved");
             setShowFeatures(null);
-        } catch (e: any) { toast.error(e.message); }
+        } catch (e: unknown) { const message = e instanceof Error ? e.message : String(e); toast.error(message); }
         setSavingFeatures(false);
     };
 
@@ -328,7 +328,7 @@ export default function ExamsPage() {
                     {loading ? (
                         <div className="flex items-center justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
                     ) : filtered.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center p-8 text-center bg-muted/20 border border-dashed rounded-lg">
+                        <div className="flex flex-col items-center justify-center p-8 text-center bg-surface-soft/20 border border-dashed rounded-lg">
                             <GraduationCap className="h-10 w-10 text-muted-foreground mb-4 opacity-50" />
                             <h3 className="font-semibold text-lg">No exams found</h3>
                             <p className="text-sm text-muted-foreground max-w-sm mt-1">Import data or create exams to begin scheduling.</p>
@@ -336,7 +336,7 @@ export default function ExamsPage() {
                     ) : (
                         <div className="border rounded-md">
                             <Table>
-                                <TableHeader className="bg-muted/5">
+                                <TableHeader className="bg-surface-soft/5">
                                     <TableRow>
                                         <TableHead className="w-[40px]">
                                             <input 
@@ -359,7 +359,7 @@ export default function ExamsPage() {
                                     {filtered.map(exam => (
                                         <TableRow 
                                             key={exam.id} 
-                                            className={`cursor-pointer transition-colors ${selectedIds.has(exam.id) ? "bg-primary/5 hover:bg-primary/10" : "hover:bg-muted/40"}`}
+                                            className={`cursor-pointer transition-colors ${selectedIds.has(exam.id) ? "bg-primary/5 hover:bg-primary/10" : "hover:bg-surface-soft/40"}`}
                                             onClick={() => { setDetailExam(exam); setDetailOpen(true); }}
                                         >
                                             <TableCell onClick={e => e.stopPropagation()}>
@@ -416,7 +416,7 @@ export default function ExamsPage() {
                     </DialogHeader>
                     {detailExam && (
                         <div className="space-y-5">
-                            <div className="bg-muted/40 rounded-xl p-4 border">
+                            <div className="bg-surface-soft/40 rounded-xl p-4 border">
                                 <div className="text-xl font-bold">{detailExam.name || "Unnamed Exam"}</div>
                                 <div className="flex flex-wrap gap-2 mt-2">
                                     <Badge variant="outline">{detailExam.examType?.name}</Badge>
@@ -425,11 +425,11 @@ export default function ExamsPage() {
                             </div>
 
                             <div className="grid grid-cols-3 gap-3">
-                                <div className="bg-muted/30 border rounded-lg p-3">
+                                <div className="bg-surface-soft/30 border rounded-lg p-3">
                                     <div className="text-xs font-semibold uppercase text-muted-foreground tracking-wider flex items-center gap-1 mb-1"><Clock className="h-3 w-3" />Duration</div>
                                     <div className="text-2xl font-bold">{detailExam.length}m</div>
                                 </div>
-                                <div className="bg-muted/30 border rounded-lg p-3">
+                                <div className="bg-surface-soft/30 border rounded-lg p-3">
                                     <div className="text-xs font-semibold uppercase text-muted-foreground tracking-wider flex items-center gap-1 mb-1"><Users className="h-3 w-3" />Students</div>
                                     <div className="text-2xl font-bold">{detailExam._count.studentEnrollments}</div>
                                 </div>

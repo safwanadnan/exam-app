@@ -200,7 +200,7 @@ function AdmitCardContent() {
             {!studentData && !dataLoading && (
                 <Card className="border-dashed py-20 print:hidden">
                     <div className="flex flex-col items-center text-center space-y-4">
-                        <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center">
+                        <div className="h-16 w-16 rounded-full bg-surface-soft flex items-center justify-center">
                             <User className="h-8 w-8 text-muted-foreground" />
                         </div>
                         <div className="space-y-2">
@@ -226,7 +226,7 @@ function AdmitCardContent() {
                         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mt-32 print:hidden" />
                         <div className="absolute bottom-0 left-0 w-32 h-32 bg-primary/5 rounded-full -ml-16 -mb-16 print:hidden" />
 
-                        <CardHeader className="border-b bg-muted/30 print:bg-transparent print:border-b-2 print:border-black flex flex-row items-center justify-between">
+                        <CardHeader className="border-b bg-surface-soft/30 print:bg-transparent print:border-b-2 print:border-black flex flex-row items-center justify-between">
                             <div className="flex items-center gap-4">
                                 <div className="h-14 w-14 bg-primary rounded-xl flex items-center justify-center text-primary-foreground print:bg-black">
                                     <GraduationCap className="h-8 w-8" />
@@ -263,7 +263,7 @@ function AdmitCardContent() {
                                 ) : null;
                             })()}
                             {/* Student Profile Info */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-muted/20 p-6 rounded-2xl border print:border-black print:rounded-none print:bg-transparent">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-surface-soft/20 p-6 rounded-2xl border print:border-black print:rounded-none print:bg-transparent">
                                 <div className="space-y-4">
                                     <div>
                                         <div className="text-xs font-bold uppercase text-muted-foreground print:text-black">Full Name</div>
@@ -319,7 +319,7 @@ function AdmitCardContent() {
                                                     return (
                                                     <tr key={e.exam.id} className={cn(
                                                         "transition-colors",
-                                                        isClash ? "bg-red-500/10 hover:bg-red-500/15 print:outline print:outline-red-800" : "hover:bg-muted/30"
+                                                        isClash ? "bg-red-500/10 hover:bg-red-500/15 print:outline print:outline-red-800" : "hover:bg-surface-soft/30"
                                                     )}>
                                                         <td className="px-4 py-4">
                                                             <div className="font-bold flex items-center gap-2">
@@ -414,7 +414,7 @@ function AdmitCardContent() {
                         </CardContent>
 
                         {/* Security Footer */}
-                        <div className="bg-muted py-2 px-8 flex justify-between items-center text-[10px] text-muted-foreground font-mono print:bg-transparent print:text-black">
+                        <div className="bg-surface-soft py-2 px-8 flex justify-between items-center text-[10px] text-muted-foreground font-mono print:bg-transparent print:text-black">
                             <span>UID: {studentData.id.substring(0, 12).toUpperCase()}</span>
                             <span>VERIFIED GENERATION • SECURE SYSTEM</span>
                             <span>{new Date().toISOString()}</span>

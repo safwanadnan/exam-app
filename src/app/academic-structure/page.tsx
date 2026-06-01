@@ -204,14 +204,14 @@ export default function AcademicStructurePage() {
                 </div>
                 <div className="flex items-center gap-2">
                     <Select value={selectedSessionId} onValueChange={setSelectedSessionId}>
-                        <SelectTrigger className="w-[200px]"><SelectValue placeholder="Select session" /></SelectTrigger>
+                        <SelectTrigger className="w-50"><SelectValue placeholder="Select session" /></SelectTrigger>
                         <SelectContent>{sessions.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
                     </Select>
                 </div>
             </div>
 
             <Card>
-                <CardHeader className="flex flex-row items-center justify-between py-4 border-b bg-muted/20">
+                <CardHeader className="flex flex-row items-center justify-between py-4 border-b bg-surface-soft/20">
                     <CardTitle className="text-lg flex items-center gap-2">
                         <FolderTree className="h-5 w-5 text-muted-foreground" />
                         Hierarchy Browser
@@ -237,7 +237,7 @@ export default function AcademicStructurePage() {
                         <div className="divide-y">
                             {departments.map(dept => (
                                 <div key={dept.id} className="flex flex-col">
-                                    <div className="flex items-center justify-between p-3 hover:bg-muted/50 transition-colors">
+                                    <div className="flex items-center justify-between p-3 hover:bg-surface-soft/50 transition-colors">
                                         <div className="flex items-center gap-2 cursor-pointer" onClick={() => toggleDept(dept.id)}>
                                             {expandedDepts.has(dept.id) ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                                             <Building className="h-4 w-4 text-blue-500" />
@@ -245,7 +245,7 @@ export default function AcademicStructurePage() {
                                             <span className="text-muted-foreground text-sm">- {dept.name}</span>
                                         </div>
                                         <div className="flex gap-2">
-                                            <span className="text-xs bg-muted px-2 py-1 rounded-full">{dept._count.subjects} Subjects</span>
+                                            <span className="text-xs bg-surface-soft px-2 py-1 rounded-full">{dept._count.subjects} Subjects</span>
                                             <Button variant="ghost" size="sm" className="h-7 cursor-pointer" onClick={() => { setCreateType("subj"); setCreateParentId(dept.id); }}><Plus className="h-3 w-3 mr-1" /> Subject</Button>
                                         </div>
                                     </div>
@@ -253,8 +253,8 @@ export default function AcademicStructurePage() {
                                     {expandedDepts.has(dept.id) && (
                                         <div className="ml-6 border-l-2 pl-2">
                                             {(subjects[dept.id] || []).map(subj => (
-                                                <div key={subj.id} className="flex flex-col border-l border-b border-muted/50 last:border-b-0">
-                                                    <div className="flex items-center justify-between p-2 hover:bg-muted/50 transition-colors">
+                                                    <div key={subj.id} className="flex flex-col border-l border-b border-border/50 last:border-b-0">
+                                                    <div className="flex items-center justify-between p-2 hover:bg-surface-soft/50 transition-colors">
                                                         <div className="flex items-center gap-2 cursor-pointer" onClick={() => toggleSubject(subj.id)}>
                                                             {expandedSubjects.has(subj.id) ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                                                             <Layers className="h-4 w-4 text-emerald-500" />
@@ -262,16 +262,16 @@ export default function AcademicStructurePage() {
                                                             <span className="text-muted-foreground text-sm">- {subj.name}</span>
                                                         </div>
                                                         <div className="flex gap-2">
-                                                            <span className="text-xs bg-muted px-2 py-1 rounded-full">{subj._count?.courses || 0} Courses</span>
+                                                            <span className="text-xs bg-surface-soft px-2 py-1 rounded-full">{subj._count?.courses || 0} Courses</span>
                                                             <Button variant="ghost" size="sm" className="h-6 text-xs cursor-pointer" onClick={() => { setCreateType("course"); setCreateParentId(subj.id); setFormData(f => ({ ...f, campusId: "" })); }}><Plus className="h-3 w-3 mr-1" /> Course</Button>
                                                         </div>
                                                     </div>
 
                                                     {expandedSubjects.has(subj.id) && (
-                                                        <div className="ml-6 border-l-2 pl-2 bg-muted/5">
+                                                        <div className="ml-6 border-l-2 pl-2 bg-surface-soft/5">
                                                             {(courses[subj.id] || []).map(course => (
                                                                 <div key={course.id} className="flex flex-col border-b border-muted/50 last:border-b-0">
-                                                                    <div className="flex items-center justify-between p-2 text-sm hover:bg-muted/50">
+                                                                    <div className="flex items-center justify-between p-2 text-sm hover:bg-surface-soft/50">
                                                                         <div className="flex items-center gap-2 cursor-pointer" onClick={() => toggleCourse(course.id)}>
                                                                             {expandedCourses.has(course.id) ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                                                                             <BookOpen className="h-4 w-4 text-violet-500" />
@@ -285,7 +285,7 @@ export default function AcademicStructurePage() {
                                                                             )}
                                                                         </div>
                                                                         <div className="flex gap-2 items-center">
-                                                                            <span className="text-[10px] bg-muted px-2 py-0.5 rounded-full">{course._count?.sections || 0} Sections</span>
+                                                                            <span className="text-[10px] bg-surface-soft px-2 py-0.5 rounded-full">{course._count?.sections || 0} Sections</span>
                                                                             <Button
                                                                                 variant="ghost"
                                                                                 size="sm"

@@ -285,6 +285,34 @@ export class ExamModel {
         return exams.reduce((sum, e) => sum + e.size, 0);
     }
 
+    /**
+     * Check if a period is feasible for an exam (hard constraints only).
+     */
+    isPeriodFeasible(exam: Exam, periodId: string): boolean {
+        const period = this.getPeriod(periodId);
+        if (!period) return false;
+        // Check distribution constraints
+        for (const dc of exam.distributionConstraints) {
+            if (!dc.hard) continue;
+            const otherExamId = dc.examAId === exam.id ? dc.examBId : dc.examAId;
+            const otherExam = this.getExam(otherExamId);
+            if (!otherExam?.isAssigned) continue;
+            if (dc.isPeriodRelated()) {
+                const examIsA = dc.examAId === exam.id;
+                const p1 = examIsA ? period : otherExam.assignment!.period;
+                const p2 = examIsA ? otherExam.assignment!.period : period;
+                if (!dc.isPeriodSatisfied(p1, p2)) return false;
+            }
+        }
+        for (const student of exam.students) {
+            if (!student.isAvailable(period)) return false;
+        }
+        for (const instructor of exam.instructors) {
+            if (!instructor.isAvailable(period)) return false;
+        }
+        return true;
+    }
+
     // ===================== SOLUTION STATISTICS =====================
 
     get assignedExams(): Exam[] {
@@ -366,6 +394,44 @@ export class ExamModel {
         total += this.countDirectConflicts() * cfg.directConflictWeight;
         total += this.countBackToBackConflicts() * cfg.backToBackConflictWeight;
         total += this.countMoreThan2ADay() * cfg.moreThan2ADayWeight;
+
+        // Instructor conflicts
+        let instDirect = 0;
+        let instB2b = 0;
+        let instMoreThan2 = 0;
+        
+        for (const [, instructorMap] of this._instructorsOfPeriod) {
+            for (const [, exams] of instructorMap) {
+                if (exams.size > 1) instDirect += exams.size - 1;
+            }
+        }
+        
+        for (const instructor of this._instructors) {
+            // b2b
+            for (const exam1 of instructor.exams) {
+                if (!exam1.isAssigned) continue;
+                for (const exam2 of instructor.exams) {
+                    if (!exam2.isAssigned || exam1.id >= exam2.id) continue;
+                    if (exam1.assignment!.period.isBackToBack(exam2.assignment!.period, cfg.isDayBreakBackToBack)) {
+                        instB2b++;
+                    }
+                }
+            }
+            // more than 2 a day
+            const examsPerDay = new Map<number, number>();
+            for (const exam of instructor.exams) {
+                if (!exam.isAssigned) continue;
+                const day = exam.assignment!.period.day;
+                examsPerDay.set(day, (examsPerDay.get(day) ?? 0) + 1);
+            }
+            for (const [, n] of examsPerDay) {
+                if (n > 2) instMoreThan2 += n - 2;
+            }
+        }
+
+        total += instDirect * cfg.instructorDirectConflictWeight;
+        total += instB2b * cfg.instructorBackToBackConflictWeight;
+        total += instMoreThan2 * cfg.instructorMoreThan2ADayWeight;
 
         // Period penalties
         for (const exam of this._exams) {

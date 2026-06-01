@@ -35,25 +35,24 @@ interface DetailedStudent {
     }[];
 }
 
-function StudentDialog({ open, onOpenChange, onSaved }: {
-    open: boolean; onOpenChange: (o: boolean) => void; onSaved: () => void;
-}) {
+function StudentDialog({ open, onOpenChange, onSaved }: { open: boolean; onOpenChange: (o: boolean) => void; onSaved: () => void; }) {
     const [saving, setSaving] = useState(false);
     const [name, setName] = useState("");
     const [externalId, setExternalId] = useState("");
 
-    useEffect(() => { setName(""); setExternalId(""); }, [open]);
+    useEffect(() => { if (open) { setName(""); setExternalId(""); } }, [open]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault(); setSaving(true);
         try {
             const res = await fetch("/api/students", {
-                method: "POST", headers: { "Content-Type": "application/json" },
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ name, externalId }),
             });
             if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Failed"); }
             toast.success("Student created"); onOpenChange(false); onSaved();
-        } catch (err: any) { toast.error(err.message); } finally { setSaving(false); }
+        } catch (err: unknown) { const message = err instanceof Error ? err.message : String(err); toast.error(message); } finally { setSaving(false); }
     };
 
     return (
@@ -145,7 +144,7 @@ export default function StudentsPage() {
             setDeleteTarget(null);
             setDetailOpen(false);
             fetchStudents();
-        } catch (err: any) { toast.error(err.message); }
+        } catch (err: unknown) { const message = err instanceof Error ? err.message : String(err); toast.error(message); }
     };
 
     const openUnavail = async (s: Student) => {
@@ -170,7 +169,7 @@ export default function StudentsPage() {
             if (!res.ok) throw new Error("Failed to save unavailability");
             toast.success("Unavailability preferences saved");
             setShowUnavail(null);
-        } catch (e: any) { toast.error(e.message); }
+        } catch (e: unknown) { const message = e instanceof Error ? e.message : String(e); toast.error(message); }
         setSaving(false);
     };
 
@@ -203,7 +202,7 @@ export default function StudentsPage() {
                     {loading ? (
                         <div className="flex items-center justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
                     ) : students.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center p-8 text-center bg-muted/20 border border-dashed rounded-lg">
+                        <div className="flex flex-col items-center justify-center p-8 text-center bg-surface-soft/20 border border-dashed rounded-lg">
                             <Users className="h-10 w-10 text-muted-foreground mb-4 opacity-50" />
                             <h3 className="font-semibold text-lg">No students found</h3>
                             <p className="text-sm text-muted-foreground max-w-sm mt-1">Import data or add students manually.</p>
@@ -211,7 +210,7 @@ export default function StudentsPage() {
                     ) : (
                         <div className="border rounded-md">
                             <Table>
-                                <TableHeader className="bg-muted/5">
+                                <TableHeader className="bg-surface-soft/5">
                                     <TableRow>
                                         <TableHead>External ID <HelpTip text="University student ID" /></TableHead>
                                         <TableHead>Name</TableHead>
@@ -276,18 +275,18 @@ export default function StudentsPage() {
                     ) : detailStudent ? (
                         <div className="space-y-5">
                             {/* Identity */}
-                            <div className="bg-muted/40 rounded-xl p-4 border">
+                                <div className="bg-surface-soft/40 rounded-xl p-4 border">
                                 <div className="text-xl font-bold">{detailStudent.name}</div>
                                 <code className="text-xs bg-background px-2 py-0.5 rounded border mt-1 inline-block">{detailStudent.externalId}</code>
                             </div>
 
                             {/* Stats */}
                             <div className="grid grid-cols-2 gap-3">
-                                <div className="bg-muted/30 border rounded-lg p-3">
+                                <div className="bg-surface-soft/30 border rounded-lg p-3">
                                     <div className="text-xs font-semibold uppercase text-muted-foreground tracking-wider flex items-center gap-1.5 mb-1"><BookOpen className="h-3.5 w-3.5" />Enrolled Exams</div>
                                     <div className="text-2xl font-bold">{detailStudent.enrollments.length}</div>
                                 </div>
-                                <div className="bg-muted/30 border rounded-lg p-3">
+                                <div className="bg-surface-soft/30 border rounded-lg p-3">
                                     <div className="text-xs font-semibold uppercase text-muted-foreground tracking-wider flex items-center gap-1.5 mb-1"><Clock className="h-3.5 w-3.5" />Total Exam Time</div>
                                     <div className="text-2xl font-bold">
                                         {Math.round(detailStudent.enrollments.reduce((s, e) => s + (e.exam.length || 0), 0) / 60 * 10) / 10}h

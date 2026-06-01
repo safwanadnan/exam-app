@@ -37,7 +37,7 @@ function FeatureDialog({ open, onOpenChange, onSaved, sessionId }: {
             });
             if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Failed"); }
             toast.success("Feature created"); onOpenChange(false); onSaved();
-        } catch (err: any) { toast.error(err.message); } finally { setSaving(false); }
+        } catch (err: unknown) { const message = err instanceof Error ? err.message : String(err); toast.error(message); } finally { setSaving(false); }
     };
 
     return (
@@ -142,7 +142,7 @@ export default function FeaturesPage() {
                     {loading ? (
                         <div className="flex items-center justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
                     ) : filtered.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center p-8 text-center bg-muted/20 border border-dashed rounded-lg m-4">
+                        <div className="flex flex-col items-center justify-center p-8 text-center bg-surface-soft/20 border border-dashed rounded-lg m-4">
                             <Tags className="h-10 w-10 text-muted-foreground mb-4 opacity-50" />
                             <h3 className="font-semibold text-lg">No features found</h3>
                             <p className="text-sm text-muted-foreground max-w-sm mt-1">Add features like "Projector" or "Computers" to assign them to rooms.</p>

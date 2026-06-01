@@ -26,7 +26,7 @@ export function MobileNav() {
                         className="fixed inset-0 bg-black/50"
                         onClick={() => setOpen(false)}
                     />
-                    <div className="fixed inset-y-0 left-0 w-[280px] bg-background border-r shadow-lg flex flex-col">
+                    <div className="fixed inset-y-0 left-0 w-60 bg-background border-r flex flex-col">
                         <div className="flex items-center justify-end p-2 flex-none">
                             <Button
                                 variant="ghost"

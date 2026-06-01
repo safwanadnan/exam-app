@@ -41,7 +41,7 @@ function CampusDialog({ campus, open, onOpenChange, onSaved }: {
             if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Failed"); }
             toast.success(isEditing ? "Campus updated" : "Campus created");
             onOpenChange(false); onSaved();
-        } catch (err: any) { toast.error(err.message); } finally { setSaving(false); }
+        } catch (err: unknown) { const message = err instanceof Error ? err.message : String(err); toast.error(message); } finally { setSaving(false); }
     };
 
     return (
@@ -128,7 +128,7 @@ export default function CampusesPage() {
             if (!res.ok) throw new Error("Failed to delete campus");
             toast.success("Campus deleted");
             setDeleteTarget(null); fetchData();
-        } catch (err: any) { toast.error(err.message); }
+        } catch (err: unknown) { const message = err instanceof Error ? err.message : String(err); toast.error(message); }
     };
 
     const totalBuildings = campuses.reduce((acc, c) => acc + c._count.buildings, 0);
@@ -156,19 +156,19 @@ export default function CampusesPage() {
                 {loading ? (
                     <div className="flex items-center justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
                 ) : campuses.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center p-8 text-center bg-muted/20 border border-dashed rounded-lg">
+                    <div className="flex flex-col items-center justify-center p-8 text-center bg-surface-soft/20 border border-dashed rounded-lg">
                         <Map className="h-10 w-10 text-muted-foreground mb-4 opacity-50" />
                         <h3 className="font-semibold text-lg text-foreground">No campuses configured</h3>
                         <p className="text-sm text-muted-foreground max-w-sm mt-1">Add campuses to logically group your buildings and configure travel constraints.</p>
                     </div>
                 ) : (
                     <Card className="overflow-hidden">
-                        <CardHeader className="bg-muted/10 border-b py-4">
+                        <CardHeader className="bg-surface-soft/10 border-b py-4">
                             <CardTitle className="text-lg">All Campuses</CardTitle>
                         </CardHeader>
                         <CardContent className="p-0">
                             <Table>
-                                <TableHeader className="bg-muted/5">
+                                <TableHeader className="bg-surface-soft/5">
                                     <TableRow>
                                         <TableHead className="pl-6 w-[30%]">Campus Name</TableHead>
                                         <TableHead>Code</TableHead>

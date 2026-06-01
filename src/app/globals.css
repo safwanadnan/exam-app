@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700;800&family=Source+Code+Pro:wght@400;500&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -87,74 +88,97 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-    --radius: 0.5rem;
+    /* Design tokens from design.md (PostHog-inspired cream canvas system) */
+    --canvas: 75 16% 92%; /* #eeefe9 */
+    --ink: 84 8% 13%; /* #23251d */
+    --body-text: 85 6% 31%; /* #4d4f46 */
+    --surface-card: 0 0% 100%; /* #ffffff */
+    --surface-doc: 60 10% 99%; /* #fcfcfa */
+    --surface-soft: 120 8% 89%; /* #e5e7e0 approx */
+    --surface-dark: 84 8% 13%; /* same as ink for inverted code blocks */
+    --hairline: 80 8% 73%; /* #bfc1b7 */
+    --hairline-soft: 78 7% 82%; /* #dcdfd2 */
+    --primary: 43 99% 49%; /* #f7a501 */
+    --primary-pressed: 37 93% 39%; /* #dd9001 */
+    --primary-active: 36 69% 30%; /* #b17816 */
+    --link-blue: 217 72% 43%; /* #1d4ed8 */
+    --link-teal: 194 88% 32%; /* #1078a3 */
+    --accent-blue: 209 60% 47%;
+    --accent-blue-soft: 210 60% 94%; /* #dceaf6 */
+    --accent-green: 150 40% 32%;
+    --accent-green-soft: 140 30% 90%; /* #d9eddf */
+    --accent-red: 6 60% 50%;
+    --accent-red-soft: 7 80% 96%; /* #f7d6d3 */
+    --accent-purple: 280 35% 40%;
+    --accent-purple-soft: 270 30% 93%; /* #e7d8ee */
+    --focus-ring: 217.2 91.2% 59.8%; /* rgba(59,130,246,0.5) mapped */
+
+    /* Map original theme variables to design tokens for compatibility */
+    --background: var(--canvas);
+    --foreground: var(--ink);
+    --card: var(--surface-card);
+    --card-foreground: var(--ink);
+    --popover: var(--surface-card);
+    --popover-foreground: var(--ink);
+    --primary: var(--primary);
+    --primary-foreground: var(--ink);
+    --secondary: var(--surface-soft);
+    --secondary-foreground: var(--ink);
+    --muted: var(--surface-soft);
+    --muted-foreground: 210 6% 43%;
+    --accent: var(--accent-blue-soft);
+    --accent-foreground: var(--ink);
+    --destructive: 6 60% 50%;
+    --destructive-foreground: var(--surface-card);
+    --border: var(--hairline);
+    --input: var(--surface-card);
+    --ring: var(--focus-ring);
+    --radius: 6px; /* base radius aligned to {rounded.md} */
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --sidebar: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar: var(--canvas);
+    --sidebar-foreground: 210 6% 43%;
+    --sidebar-primary: 210 6% 43%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: var(--surface-soft);
+    --sidebar-accent-foreground: var(--ink);
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-ring: var(--focus-ring);
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-    --sidebar: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    /* For now, invert using the same ink for dark surfaces to keep contrast
+       while preserving the cream canvas philosophy when not explicitly in dark mode. */
+    --background: 210 6% 9%; /* deep near-black */
+    --foreground: 0 0% 100%;
+    --card: 210 6% 9%;
+    --card-foreground: 0 0% 100%;
+    --popover: 210 6% 9%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 43 99% 49%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 6% 9%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 210 6% 18%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 217 6% 9%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 6 60% 30%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 210 6% 18%;
+    --input: 210 6% 12%;
+    --ring: var(--focus-ring);
+    --sidebar: 210 6% 9%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 224 76% 48%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 210 6% 9%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 210 6% 18%;
+    --sidebar-ring: var(--focus-ring);
   }
 }
 
@@ -165,7 +189,29 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'IBM Plex Sans', 'IBM Plex Sans Variable', -apple-system, system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-text-size-adjust: 100%;
   }
+
+  code, kbd, samp, pre {
+    font-family: 'Source Code Pro', ui-monospace, SFMono-Regular, Menlo, Monaco, 'Roboto Mono', 'Courier New', monospace;
+    font-size: 14px;
+  }
+
+  /* Typography scale based on design.md tokens */
+  h1 { font-size: 36px; line-height: 1.5; font-weight: 700; letter-spacing: 0; }
+  h2 { font-size: 24px; line-height: 1.33; font-weight: 800; letter-spacing: -0.6px; }
+  h3 { font-size: 21px; line-height: 1.4; font-weight: 700; }
+  h4 { font-size: 20px; line-height: 1.4; font-weight: 700; }
+  h5 { font-size: 18px; line-height: 1.5; font-weight: 700; text-transform: uppercase; }
+  p, li { font-size: 16px; line-height: 1.5; font-weight: 400; color: hsl(var(--body-text)); }
+  small, .caption { font-size: 13px; line-height: 1.5; color: hsl(var(--hairline)); }
+
+  /* Inline code chips */
+  code.inline { background: hsl(var(--surface-soft)); padding: 2px 6px; border-radius: 2px; font-family: inherit; }
 }
 
 /* Scrollbar and UI tweaks */

@@ -295,7 +295,7 @@ export default function InstructorsPage() {
                     ) : detailInstructor ? (
                         <div className="space-y-5">
                             {/* Identity */}
-                            <div className="bg-muted/40 rounded-xl p-4 border space-y-2">
+                            <div className="bg-surface-soft/40 rounded-xl p-4 border space-y-2">
                                 <div className="text-xl font-bold">{detailInstructor.name}</div>
                                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                     <code className="bg-background px-2 py-0.5 rounded text-xs border">{detailInstructor.externalId}</code>
@@ -304,11 +304,11 @@ export default function InstructorsPage() {
 
                             {/* Stats */}
                             <div className="grid grid-cols-2 gap-3">
-                                <div className="bg-muted/30 border rounded-lg p-3 space-y-0.5">
+                                <div className="bg-surface-soft/30 border rounded-lg p-3 space-y-0.5">
                                     <div className="text-xs font-semibold uppercase text-muted-foreground tracking-wider flex items-center gap-1.5"><BookOpen className="h-3.5 w-3.5" />Assigned Exams</div>
                                     <div className="text-2xl font-bold">{detailInstructor.assignments.length}</div>
                                 </div>
-                                <div className="bg-muted/30 border rounded-lg p-3 space-y-0.5">
+                                <div className="bg-surface-soft/30 border rounded-lg p-3 space-y-0.5">
                                     <div className="text-xs font-semibold uppercase text-muted-foreground tracking-wider flex items-center gap-1.5"><Users className="h-3.5 w-3.5" />Total Students</div>
                                     <div className="text-2xl font-bold">{detailInstructor.assignments.reduce((s, a) => s + (a.exam.size || 0), 0)}</div>
                                 </div>

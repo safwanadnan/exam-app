@@ -30,7 +30,7 @@ function MiniBar({ value, max, color }: { value: number; max: number; color: str
     const pct = max > 0 ? Math.round((value / max) * 100) : 0;
     return (
         <div className="flex items-center gap-2 flex-1">
-            <div className="flex-1 bg-muted rounded-full h-2 overflow-hidden">
+            <div className="flex-1 bg-surface-soft rounded-full h-2 overflow-hidden">
                 <div className={`h-2 rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
             </div>
             <span className="text-xs text-muted-foreground w-8 text-right">{pct}%</span>
@@ -181,7 +181,7 @@ export default function AnalyticsPage() {
                 </Card>
             ) : (
                 <Tabs defaultValue="overview" className="space-y-6">
-                    <TabsList className="bg-muted/50 border">
+                    <TabsList className="bg-surface-soft/50 border">
                         <TabsTrigger value="overview">Overview & Utilization</TabsTrigger>
                         <TabsTrigger value="conflicts" className="relative">
                             Conflict Analysis
@@ -403,7 +403,7 @@ export default function AnalyticsPage() {
                                             // Render logic based on view type
                                             if (conflictView === "period") {
                                                 return (
-                                                    <div key={id} className="hover:bg-muted/30 transition-colors">
+                                                    <div key={id} className="hover:bg-surface-soft/30 transition-colors">
                                                         <div 
                                                             className="flex items-center justify-between p-4 cursor-pointer select-none"
                                                             onClick={() => toggleExpand(id)}
@@ -425,7 +425,7 @@ export default function AnalyticsPage() {
                                                             </div>
                                                         </div>
                                                         {isExpanded && (
-                                                            <div className="bg-muted/10 p-4 border-t shadow-inner space-y-3">
+                                                            <div className="bg-surface-soft/10 p-4 border-t space-y-3">
                                                                 {data.items.map((c: Conflict, i: number) => (
                                                                     <ConflictDetailRow key={i} conflict={c} />
                                                                 ))}
@@ -437,7 +437,7 @@ export default function AnalyticsPage() {
 
                                             if (conflictView === "course") {
                                                 return (
-                                                    <div key={id} className="hover:bg-muted/30 transition-colors">
+                                                    <div key={id} className="hover:bg-surface-soft/30 transition-colors">
                                                         <div 
                                                             className="flex items-center justify-between p-4 cursor-pointer select-none"
                                                             onClick={() => toggleExpand(id)}
@@ -459,7 +459,7 @@ export default function AnalyticsPage() {
                                                             </div>
                                                         </div>
                                                         {isExpanded && (
-                                                            <div className="bg-muted/10 p-4 border-t shadow-inner space-y-3">
+                                                            <div className="bg-surface-soft/10 p-4 border-t space-y-3">
                                                                 {data.items.map((c: Conflict, i: number) => (
                                                                     <ConflictDetailRow key={i} conflict={c} highlightCourse={data.courseName} />
                                                                 ))}
@@ -471,7 +471,7 @@ export default function AnalyticsPage() {
 
                                             if (conflictView === "student") {
                                                 return (
-                                                    <div key={id} className="hover:bg-muted/30 transition-colors">
+                                                    <div key={id} className="hover:bg-surface-soft/30 transition-colors">
                                                         <div 
                                                             className="flex items-center justify-between p-4 cursor-pointer select-none"
                                                             onClick={() => toggleExpand(id)}
@@ -493,11 +493,11 @@ export default function AnalyticsPage() {
                                                             </div>
                                                         </div>
                                                         {isExpanded && (
-                                                            <div className="bg-muted/10 p-4 border-t shadow-inner space-y-3">
+                                                            <div className="bg-surface-soft/10 p-4 border-t space-y-3">
                                                                 {data.items.map((c: Conflict, i: number) => (
                                                                     <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-background border p-3 rounded-md shadow-sm">
                                                                         <div className="flex items-center gap-3">
-                                                                            <div className="bg-muted px-2 py-1 rounded text-xs font-medium shrink-0">
+                                                                            <div className="bg-surface-soft px-2 py-1 rounded text-xs font-medium shrink-0">
                                                                                 {format(new Date(c.periodDate), "MMM d")} • {c.periodTime}
                                                                             </div>
                                                                         </div>
@@ -550,13 +550,13 @@ function ConflictDetailRow({ conflict: c, highlightCourse }: { conflict: Conflic
                     <span className="text-[10px] font-bold text-muted-foreground">VS</span>
                 </div>
                 
-                <div className={cn("p-2 rounded border border-transparent", aIsHighlight ? "bg-amber-50/50 border-amber-200 dark:bg-amber-900/10 dark:border-amber-800" : "bg-muted/30")}>
+                <div className={cn("p-2 rounded border border-transparent", aIsHighlight ? "bg-amber-50/50 border-amber-200 dark:bg-amber-900/10 dark:border-amber-800" : "bg-surface-soft/30")}>
                     <div className="text-xs text-muted-foreground uppercase tracking-wider mb-0.5">Exam A</div>
                     <div className="font-semibold text-sm truncate" title={c.examA.courseName}>{c.examA.courseName}</div>
                     <div className="text-xs text-muted-foreground mt-0.5 truncate">{c.examA.name}</div>
                 </div>
                 
-                <div className={cn("p-2 rounded border border-transparent", bIsHighlight ? "bg-amber-50/50 border-amber-200 dark:bg-amber-900/10 dark:border-amber-800" : "bg-muted/30")}>
+                <div className={cn("p-2 rounded border border-transparent", bIsHighlight ? "bg-amber-50/50 border-amber-200 dark:bg-amber-900/10 dark:border-amber-800" : "bg-surface-soft/30")}>
                     <div className="text-xs text-muted-foreground uppercase tracking-wider mb-0.5">Exam B</div>
                     <div className="font-semibold text-sm truncate" title={c.examB.courseName}>{c.examB.courseName}</div>
                     <div className="text-xs text-muted-foreground mt-0.5 truncate">{c.examB.name}</div>
@@ -569,12 +569,12 @@ function ConflictDetailRow({ conflict: c, highlightCourse }: { conflict: Conflic
                     <div className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Affected Students</div>
                     <div className="flex flex-wrap gap-1.5">
                         {c.students.slice(0, 10).map(s => (
-                            <span key={s.id} className="text-[11px] bg-muted px-1.5 py-0.5 rounded text-foreground/80 border" title={s.externalId}>
+                            <span key={s.id} className="text-[11px] bg-surface-soft px-1.5 py-0.5 rounded text-foreground/80 border" title={s.externalId}>
                                 {s.name}
                             </span>
                         ))}
                         {c.students.length > 10 && (
-                            <span className="text-[11px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground italic border">
+                            <span className="text-[11px] bg-surface-soft px-1.5 py-0.5 rounded text-muted-foreground italic border">
                                 +{c.students.length - 10} more
                             </span>
                         )}

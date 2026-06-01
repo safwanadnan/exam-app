@@ -48,7 +48,7 @@ function BuildingDialog({ building, open, onOpenChange, onSaved }: {
             if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Failed"); }
             toast.success(isEditing ? "Building updated" : "Building created");
             onOpenChange(false); onSaved();
-        } catch (err: any) { toast.error(err.message); } finally { setSaving(false); }
+        } catch (err: unknown) { const message = err instanceof Error ? err.message : String(err); toast.error(message); } finally { setSaving(false); }
     };
 
     return (
@@ -97,7 +97,7 @@ function RoomDialog({ room, buildings, open, onOpenChange, onSaved }: {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault(); setSaving(true);
         try {
-            const body: any = { name, buildingId, capacity };
+            const body: Record<string, unknown> = { name, buildingId, capacity };
             if (altCapacity) body.altCapacity = parseInt(altCapacity);
             if (coordX) body.coordX = parseFloat(coordX);
             if (coordY) body.coordY = parseFloat(coordY);
@@ -106,7 +106,7 @@ function RoomDialog({ room, buildings, open, onOpenChange, onSaved }: {
             if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Failed"); }
             toast.success(isEditing ? "Room updated" : "Room created");
             onOpenChange(false); onSaved();
-        } catch (err: any) { toast.error(err.message); } finally { setSaving(false); }
+        } catch (err: unknown) { const message = err instanceof Error ? err.message : String(err); toast.error(message); } finally { setSaving(false); }
     };
 
     return (
@@ -222,7 +222,7 @@ export default function RoomsPage() {
             if (!res.ok) throw new Error("Failed to delete");
             toast.success(`${deleteTarget.type === "building" ? "Building" : "Room"} deleted`);
             setDeleteTarget(null); fetchData();
-        } catch (err: any) { toast.error(err.message); }
+        } catch (err: unknown) { const message = err instanceof Error ? err.message : String(err); toast.error(message); }
     };
 
     const openUnavail = async (r: Room) => {
@@ -247,7 +247,7 @@ export default function RoomsPage() {
             if (!res.ok) throw new Error("Failed to save room blackout periods");
             toast.success("Room blackout periods saved");
             setShowUnavail(null);
-        } catch (e: any) { toast.error(e.message); }
+        } catch (e: unknown) { const message = e instanceof Error ? e.message : String(e); toast.error(message); }
         setSavingUnavail(false);
     };
 
@@ -272,7 +272,7 @@ export default function RoomsPage() {
             if (!res.ok) throw new Error("Failed to save room features");
             toast.success("Room features saved");
             setShowFeatures(null);
-        } catch (e: any) { toast.error(e.message); }
+        } catch (e: unknown) { const message = e instanceof Error ? e.message : String(e); toast.error(message); }
         setSavingFeatures(false);
     };
 

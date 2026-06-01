@@ -1,17 +1,18 @@
 export const dynamic = 'force-dynamic';
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 import { Sidebar } from "@/components/sidebar";
 import { ThemeProvider } from "@/components/theme-provider";
+import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Button } from "@/components/ui/button";
+import Image from "next/image";
 import { MobileNav } from "@/components/mobile-nav";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/components/providers";
 import { AcademicSessionProvider } from "@/components/academic-session-provider";
 
-const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Exam Scheduler",
@@ -29,7 +30,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full" suppressHydrationWarning>
-      <body className={`${inter.className} h-full overflow-hidden antialiased bg-background`}>
+      <body className={`h-full overflow-hidden antialiased bg-background`}>
         <AuthProvider>
           <AcademicSessionProvider>
             <ThemeProvider
@@ -39,19 +40,24 @@ export default function RootLayout({
               disableTransitionOnChange
             >
               <TooltipProvider delayDuration={300}>
-                <div className="grid h-full lg:grid-cols-[250px_1fr]">
-                  <div className="hidden border-r bg-muted/10 lg:block h-full overflow-hidden">
+                <div className="grid h-full lg:grid-cols-[240px_1fr]">
+                  <div className="hidden border-r bg-background lg:block h-full overflow-hidden">
                     <Sidebar />
                   </div>
                   <div className="flex flex-col h-full overflow-hidden">
                     <header className="flex h-14 lg:h-[60px] items-center gap-4 border-b bg-background px-6">
                       <MobileNav />
-                      <div className="w-full flex-1">
-                        <h1 className="font-semibold text-lg">Exam Scheduler</h1>
+                      <div className="w-full flex-1 flex items-center gap-4">
+                        <Link href="/" className="flex items-center gap-3">
+                          <Image src="/exam-mascot.svg" alt="exam mascot" width={28} height={28} />
+                          <h1 className="font-semibold text-lg">Exam Scheduler</h1>
+                        </Link>
                       </div>
-                      <ThemeToggle />
+                      <div className="flex items-center gap-3">
+                        <ThemeToggle />
+                      </div>
                     </header>
-                    <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 overflow-auto bg-muted/5">
+                    <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 overflow-auto bg-background">
                       {children}
                     </main>
                   </div>

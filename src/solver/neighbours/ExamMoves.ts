@@ -140,6 +140,9 @@ export function generatePeriodSwapMove(model: ExamModel): ExamNeighbour | null {
     const canSwap2 = exam2.periodPlacements.some(pp => pp.period.id === p1.period.id);
     if (!canSwap1 || !canSwap2) return null;
 
+    if (!model.isPeriodFeasible(exam1, p2.period.id)) return null;
+    if (!model.isPeriodFeasible(exam2, p1.period.id)) return null;
+
     // Find rooms for each in the new period
     const pp1 = exam1.periodPlacements.find(pp => pp.period.id === p2.period.id)!;
     const pp2 = exam2.periodPlacements.find(pp => pp.period.id === p1.period.id)!;
@@ -169,3 +172,83 @@ export function generatePeriodSwapMove(model: ExamModel): ExamNeighbour | null {
         exam2, new ExamPlacement(pp2, rooms2)
     );
 }
+
+/**
+ * ExamConflictMove
+ * 
+ * Target an exam that currently has conflicts, and attempt to move it to a
+ * period that minimizes its local conflicts.
+ */
+export function generateConflictMove(model: ExamModel): ExamNeighbour | null {
+    const assigned = model.assignedExams;
+    if (assigned.length === 0) return null;
+
+    // Pick an exam that currently has direct conflicts
+    let exam: Exam | null = null;
+    for (let i = 0; i < 5; i++) {
+        const cand = assigned[Math.floor(Math.random() * assigned.length)];
+        const periodId = cand.assignment!.period.id;
+        let hasConflict = false;
+        for (const student of cand.students) {
+            if (model.getStudentExamsInPeriod(student.id, periodId).size > 1) {
+                hasConflict = true;
+                break;
+            }
+        }
+        if (!hasConflict) {
+            for (const instructor of cand.instructors) {
+                if (model.getInstructorExamsInPeriod(instructor.id, periodId).size > 1) {
+                    hasConflict = true;
+                    break;
+                }
+            }
+        }
+        if (hasConflict) {
+            exam = cand;
+            break;
+        }
+    }
+    
+    // Fallback to random if no conflict found after 5 tries
+    if (!exam) exam = assigned[Math.floor(Math.random() * assigned.length)];
+
+    const periods = exam.periodPlacements;
+    if (periods.length <= 1) return null;
+
+    let bestPlacement: ExamPeriodPlacement | null = null;
+    let minConflicts = Infinity;
+
+    // Try a few periods and pick the one with fewest conflicts
+    for (let i = 0; i < Math.min(10, periods.length); i++) {
+        const pp = periods[Math.floor(Math.random() * periods.length)];
+        if (pp.period.id === exam.assignment!.period.id) continue;
+        if (!model.isPeriodFeasible(exam, pp.period.id)) continue;
+
+        let conflicts = 0;
+        for (const student of exam.students) {
+            if (model.getStudentExamsInPeriod(student.id, pp.period.id).size > 0) conflicts++;
+        }
+        for (const instructor of exam.instructors) {
+            if (model.getInstructorExamsInPeriod(instructor.id, pp.period.id).size > 0) conflicts++;
+        }
+
+        if (conflicts < minConflicts) {
+            minConflicts = conflicts;
+            bestPlacement = pp;
+            if (conflicts === 0) break; // Perfect period found
+        }
+    }
+
+    if (!bestPlacement) return null;
+
+    // Find rooms for the chosen period
+    const assignedRooms = model.getAssignedRoomsInPeriod(bestPlacement.period.id);
+    const roomMap = new Map<string, Set<string>>();
+    roomMap.set(bestPlacement.period.id, assignedRooms);
+
+    const rooms = exam.findBestAvailableRooms(bestPlacement.period, roomMap);
+    if (rooms === null) return null;
+
+    return new ExamSimpleNeighbour(exam, new ExamPlacement(bestPlacement, rooms));
+}
+

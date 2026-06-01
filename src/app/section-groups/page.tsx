@@ -344,7 +344,7 @@ export default function SectionGroupsPage() {
             )}
 
             {/* ── Main list ── */}
-            <Card className="shadow-lg border-muted/60">
+            <Card className="shadow-lg border-border/60">
                 <CardHeader className="border-b bg-muted/20 py-5">
                     <CardTitle className="text-xl flex items-center gap-2">
                         Course Groups
@@ -435,7 +435,7 @@ export default function SectionGroupsPage() {
 
                                         {/* ── Section Rows ── */}
                                         {isCourseExpanded && (
-                                            <div className="bg-muted/10 border-t border-muted/40 divide-y divide-muted/40">
+                                            <div className="bg-surface-soft/10 border-t border-border/40 divide-y divide-border/40">
                                                 {node.groups.map((group) => {
                                                     const isToggling = toggling.has(group.id);
                                                     const groupStudents = group.members.reduce(
@@ -453,7 +453,7 @@ export default function SectionGroupsPage() {
                                                                 >
                                                                     <div className={cn(
                                                                         "h-8 w-8 rounded-full flex items-center justify-center shrink-0 border",
-                                                                        group.sameDayRequired ? "bg-indigo-100 border-indigo-200 text-indigo-700" : "bg-muted border-muted-foreground/20 text-muted-foreground"
+                                                                        group.sameDayRequired ? "bg-indigo-100 border-indigo-200 text-indigo-700" : "bg-surface-soft border-muted-foreground/20 text-muted-foreground"
                                                                     )}>
                                                                         <Users className="h-4 w-4" />
                                                                     </div>

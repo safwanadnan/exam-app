@@ -43,7 +43,7 @@ export default function LoginClient({ hasUsers }: { hasUsers: boolean }) {
     };
 
     return (
-        <div className="flex h-screen w-full items-center justify-center bg-muted/20 px-4">
+        <div className="flex h-screen w-full items-center justify-center bg-surface-soft/20 px-4">
             <Card className="w-full max-w-sm">
                 <CardHeader className="space-y-2 text-center">
                     <div className="flex justify-center mb-2">

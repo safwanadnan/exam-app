@@ -91,7 +91,7 @@ export default function SolverConfigPage() {
             });
             if (!res.ok) throw new Error("Failed to save");
             toast.success("Configuration saved");
-        } catch (e: any) { toast.error(e.message); }
+        } catch (e: unknown) { const message = e instanceof Error ? e.message : String(e); toast.error(message); }
         setSaving(false);
     };
 
@@ -109,7 +109,7 @@ export default function SolverConfigPage() {
             setActiveConfig(config);
             setShowNewDialog(false);
             toast.success("Configuration created");
-        } catch (e: any) { toast.error(e.message); }
+        } catch (e: unknown) { const message = e instanceof Error ? e.message : String(e); toast.error(message); }
     };
 
     const handleDelete = async () => {
@@ -120,7 +120,7 @@ export default function SolverConfigPage() {
             if (activeConfig?.id === deleteConfig.id) setActiveConfig(configs.find(c => c.id !== deleteConfig.id) || null);
             setDeleteConfig(null);
             toast.success("Configuration deleted");
-        } catch (e: any) { toast.error(e.message); }
+        } catch (e: unknown) { const message = e instanceof Error ? e.message : String(e); toast.error(message); }
     };
 
     const updateField = (key: string, value: any) => {
@@ -274,21 +274,21 @@ export default function SolverConfigPage() {
                                         <Label>HC Max Idle Iterations</Label>
                                         <Input type="number" value={activeConfig.hcMaxIdleIterations} onChange={e => updateField("hcMaxIdleIterations", parseInt(e.target.value) || 25000)} />
                                     </div>
-                                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                                    <div className="flex items-center justify-between p-3 bg-surface-soft/50 rounded-lg">
                                         <div>
                                             <Label>Use Great Deluge</Label>
                                             <p className="text-xs text-muted-foreground">Alternative to simulated annealing</p>
                                         </div>
                                         <Switch checked={activeConfig.useGreatDeluge || false} onCheckedChange={v => updateField("useGreatDeluge", v)} />
                                     </div>
-                                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                                    <div className="flex items-center justify-between p-3 bg-surface-soft/50 rounded-lg">
                                         <div>
                                             <Label>Graph Coloring Construction</Label>
                                             <p className="text-xs text-muted-foreground">Use graph coloring for initial solution</p>
                                         </div>
                                         <Switch checked={activeConfig.useColoringConstruction || false} onCheckedChange={v => updateField("useColoringConstruction", v)} />
                                     </div>
-                                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                                    <div className="flex items-center justify-between p-3 bg-surface-soft/50 rounded-lg">
                                         <div>
                                             <Label>Day Break Back-to-Back</Label>
                                             <p className="text-xs text-muted-foreground">Count last slot + first slot next day as back-to-back</p>

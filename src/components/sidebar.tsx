@@ -59,7 +59,7 @@ export function Sidebar() {
         : session?.user?.email?.substring(0, 2).toUpperCase() || "U";
 
     return (
-        <div className="flex h-full w-64 flex-col border-r bg-muted/20">
+        <div className="flex h-full w-60 flex-col border-r bg-background">
             <div className="flex h-14 items-center border-b px-4 lg:h-15 lg:px-6">
                 <Link href="/" className="flex items-center gap-2 font-semibold">
                     <CalendarCheck className="h-6 w-6 text-primary" />
@@ -68,7 +68,7 @@ export function Sidebar() {
             </div>
 
             <div className="flex-1 overflow-auto py-4">
-                <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
+                <nav className="grid items-start px-2 text-xs font-medium lg:px-4">
                     <div className="mb-2 px-4 text-xs font-semibold tracking-tight text-muted-foreground uppercase h-6 flex items-center">
                         Data Management
                     </div>
@@ -77,10 +77,10 @@ export function Sidebar() {
                             <Link
                                 href={item.href}
                                 className={cn(
-                                    "flex items-center gap-3 rounded-lg px-3 py-2.5 transition-all w-full",
+                                    "flex items-center gap-3 rounded-md px-3 py-2.5 transition-all w-full",
                                     pathname === item.href || (item.href !== "/" && pathname?.startsWith(item.href))
                                         ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                        : "text-muted-foreground hover:bg-surface-soft hover:text-foreground"
                                 )}
                             >
                                 <item.icon className="h-4 w-4" />
@@ -97,10 +97,10 @@ export function Sidebar() {
                             <Link
                                 href={item.href}
                                 className={cn(
-                                    "flex items-center gap-3 rounded-lg px-3 py-2.5 transition-all w-full",
+                                    "flex items-center gap-3 rounded-md px-3 py-2.5 transition-all w-full",
                                     pathname === item.href
                                         ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                        : "text-muted-foreground hover:bg-surface-soft hover:text-foreground"
                                 )}
                             >
                                 <item.icon className="h-4 w-4" />
@@ -113,7 +113,7 @@ export function Sidebar() {
 
             {session && (
                 <div className="p-4 border-t">
-                    <div className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground">
                         <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
                             {initials}
                         </div>
@@ -122,7 +122,7 @@ export function Sidebar() {
                             <span className="text-xs truncate">{session.user?.email}</span>
                         </div>
                         <Tip content="Sign out">
-                            <button onClick={() => signOut()} className="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground hover:text-foreground">
+                            <button onClick={() => signOut()} className="p-2 hover:bg-surface-soft rounded-md transition-colors text-muted-foreground hover:text-foreground">
                                 <LogOut className="h-4 w-4" />
                             </button>
                         </Tip>

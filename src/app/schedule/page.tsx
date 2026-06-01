@@ -91,7 +91,7 @@ const PALETTE = [
 
 function StatCard({ label, value, icon: Icon, highlight }: { label: string; value: string | number; icon: any; highlight?: "red" | "green" }) {
     return (
-        <div className={`flex items-center gap-3 bg-muted/40 border rounded-xl px-4 py-3 ${highlight === "red" ? "border-destructive/40 bg-destructive/5" : highlight === "green" ? "border-emerald-500/40 bg-emerald-500/5" : ""}`}>
+        <div className={`flex items-center gap-3 bg-surface-soft/40 border rounded-xl px-4 py-3 ${highlight === "red" ? "border-destructive/40 bg-destructive/5" : highlight === "green" ? "border-emerald-500/40 bg-emerald-500/5" : ""}`}>
             <Icon className={`h-5 w-5 flex-shrink-0 ${highlight === "red" ? "text-destructive" : highlight === "green" ? "text-emerald-500" : "text-muted-foreground"}`} />
             <div>
                 <div className={`text-2xl font-bold leading-none ${highlight === "red" ? "text-destructive" : highlight === "green" ? "text-emerald-600 dark:text-emerald-400" : ""}`}>{value}</div>
@@ -707,7 +707,7 @@ export default function SchedulePage() {
                                                             "flex items-center gap-2 px-2 py-1.5 rounded text-xs cursor-pointer border transition-colors",
                                                             isSelected 
                                                                 ? "bg-primary text-primary-foreground border-primary" 
-                                                                : "bg-background hover:bg-muted border-muted outline-none focus:ring-1 focus:ring-primary"
+                                                                : "bg-background hover:bg-surface-soft border-border outline-none focus:ring-1 focus:ring-primary"
                                                         )}
                                                     >
                                                         <Building2 className="h-3 w-3" />
@@ -776,7 +776,7 @@ export default function SchedulePage() {
                                     <div className="space-y-2">
                                         <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Select Component (Code | Teacher)</Label>
                                         <Select value={selectedExamId || ""} onValueChange={setSelectedExamId}>
-                                            <SelectTrigger className="w-full bg-muted/30 border-muted">
+                                            <SelectTrigger className="w-full bg-surface-soft/30 border-border">
                                                 <SelectValue placeholder="Select a section" />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -796,7 +796,7 @@ export default function SchedulePage() {
                                         
                                         return (
                                             <div className="animate-in fade-in slide-in-from-top-1 duration-300 space-y-4">
-                                                <div className="bg-muted/40 border rounded-xl p-4 space-y-3">
+                                                <div className="bg-surface-soft/40 border rounded-xl p-4 space-y-3">
                                                     <div className="flex justify-between items-start">
                                                         <div className="font-semibold text-base text-primary">{ex.name}</div>
                                                         <div className="flex gap-1">
@@ -897,7 +897,7 @@ export default function SchedulePage() {
 
                                     {/* Totals & Utilization */}
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div className="bg-muted/50 rounded-lg p-3 border space-y-0.5">
+                                        <div className="bg-surface-soft/50 rounded-lg p-3 border space-y-0.5">
                                             <div className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">Total Students</div>
                                             <div className="text-2xl font-bold">
                                                 {detailedAssignment.exams.reduce((s, e) => s + e.students, 0)}
@@ -923,7 +923,7 @@ export default function SchedulePage() {
                                                     <span>Overall Room Utilization</span>
                                                     <span className={overCapacity ? "text-destructive font-semibold" : ""}>{pct}%{overCapacity ? " — OVER CAPACITY" : ""}</span>
                                                 </div>
-                                                <div className="w-full bg-muted rounded-full h-2.5">
+                                                <div className="w-full bg-surface-soft rounded-full h-2.5">
                                                     <div
                                                         className={`h-2.5 rounded-full transition-all ${pct > 90 ? "bg-destructive" : pct > 70 ? "bg-amber-500" : "bg-emerald-500"}`}
                                                         style={{ width: `${pct}%` }}
@@ -938,7 +938,7 @@ export default function SchedulePage() {
                                         <div className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">Rooms in Use</div>
                                         <div className="flex flex-wrap gap-2">
                                             {detailedAssignment.rooms.map(r => (
-                                                <div key={r.name} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-muted text-sm font-medium">
+                                                <div key={r.name} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-surface-soft text-sm font-medium">
                                                     <Building2 className="h-3.5 w-3.5" />
                                                     {r.name}
                                                     <span className="text-muted-foreground text-xs font-normal">cap {r.capacity}</span>

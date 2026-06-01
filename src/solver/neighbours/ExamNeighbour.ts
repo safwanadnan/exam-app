@@ -34,8 +34,19 @@ export class ExamSimpleNeighbour implements ExamNeighbour {
 
     value(model: ExamModel): number {
         if (this._value !== null) return this._value;
-        // TODO: compute exact delta value
-        return 0;
+        const wasAssigned = this.exam.isAssigned;
+        const oldPlacement = this.exam.assignment;
+        const oldObj = model.getTotalObjective();
+        model.assignExam(this.exam, this.placement);
+        const newObj = model.getTotalObjective();
+        // Revert
+        if (wasAssigned && oldPlacement) {
+            model.assignExam(this.exam, oldPlacement);
+        } else {
+            model.unassignExam(this.exam);
+        }
+        this._value = newObj - oldObj;
+        return this._value;
     }
 
     apply(model: ExamModel): number {
@@ -71,7 +82,24 @@ export class ExamSwapNeighbour implements ExamNeighbour {
     }
 
     value(model: ExamModel): number {
-        return 0; // Computed during apply
+        const wasAssigned1 = this.exam1.isAssigned;
+        const oldPlacement1 = this.exam1.assignment;
+        const wasAssigned2 = this.exam2.isAssigned;
+        const oldPlacement2 = this.exam2.assignment;
+
+        const oldObj = model.getTotalObjective();
+        model.assignExam(this.exam1, this.placement1);
+        model.assignExam(this.exam2, this.placement2);
+        const newObj = model.getTotalObjective();
+
+        // Revert
+        if (wasAssigned2 && oldPlacement2) model.assignExam(this.exam2, oldPlacement2);
+        else model.unassignExam(this.exam2);
+
+        if (wasAssigned1 && oldPlacement1) model.assignExam(this.exam1, oldPlacement1);
+        else model.unassignExam(this.exam1);
+
+        return newObj - oldObj;
     }
 
     apply(model: ExamModel): number {

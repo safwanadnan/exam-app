@@ -16,7 +16,8 @@ import {
     generateRandomMove,
     generateTimeMove,
     generateRoomMove,
-    generatePeriodSwapMove
+    generatePeriodSwapMove,
+    generateConflictMove
 } from "./neighbours/ExamMoves";
 import { SolverPhase, SolverStatus, type SolverProgress, type SolverConfiguration } from "./types";
 
@@ -440,6 +441,34 @@ export class ExamSolver {
                 examsThisDay += exams.size;
             }
             if (examsThisDay >= 2) cost += cfg.moreThan2ADayWeight;
+        }
+
+        // Instructor direct conflicts
+        for (const instructor of exam.instructors) {
+            const existing = this.model.getInstructorExamsInPeriod(instructor.id, period.id);
+            if (existing.size > 0) cost += cfg.instructorDirectConflictWeight;
+        }
+
+        // Instructor back-to-back
+        for (const instructor of exam.instructors) {
+            if (period.prev) {
+                const prev = this.model.getInstructorExamsInPeriod(instructor.id, period.prev.id);
+                if (prev.size > 0) cost += cfg.instructorBackToBackConflictWeight;
+            }
+            if (period.next) {
+                const next = this.model.getInstructorExamsInPeriod(instructor.id, period.next.id);
+                if (next.size > 0) cost += cfg.instructorBackToBackConflictWeight;
+            }
+        }
+
+        // Instructor more-than-2-a-day
+        for (const instructor of exam.instructors) {
+            let examsThisDay = 0;
+            for (const p of this.model.getPeriodsOfDay(period.day)) {
+                const exams = this.model.getInstructorExamsInPeriod(instructor.id, p.id);
+                examsThisDay += exams.size;
+            }
+            if (examsThisDay >= 2) cost += cfg.instructorMoreThan2ADayWeight;
         }
 
         // Period penalty

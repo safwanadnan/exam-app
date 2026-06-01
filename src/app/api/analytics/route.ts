@@ -14,7 +14,7 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
         prisma.examPeriod.count(),
     ]);
 
-    const result: any = {
+    const result = {
         overview: { exams: examCount, students: studentCount, rooms: roomCount, periods: periodCount },
         conflicts: [],
         roomUtilization: [],
@@ -66,7 +66,7 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
             });
         }
 
-        const conflicts: any[] = [];
+        const conflicts: Array<Record<string, unknown>> = [];
         for (const [periodId, periodExams] of periodStudentMap) {
             for (let i = 0; i < periodExams.length; i++) {
                 for (let j = i + 1; j < periodExams.length; j++) {

@@ -55,7 +55,7 @@ function PeriodDialog({ period, open, onOpenChange, onSaved }: {
             });
             if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Failed"); }
             toast.success("Period updated"); onOpenChange(false); onSaved();
-        } catch (err: any) { toast.error(err.message); } finally { setSaving(false); }
+        } catch (err: unknown) { const message = err instanceof Error ? err.message : String(err); toast.error(message); } finally { setSaving(false); }
     };
 
     return (
@@ -150,7 +150,7 @@ export default function PeriodsPage() {
             const res = await fetch(`/api/periods/${deleteTarget.id}`, { method: "DELETE" });
             if (!res.ok) throw new Error("Failed"); toast.success("Period deleted");
             setDeleteTarget(null); fetchPeriods();
-        } catch (err: any) { toast.error(err.message); }
+        } catch (err: unknown) { const message = err instanceof Error ? err.message : String(err); toast.error(message); }
     };
 
     const filtered = periods; // Handled by server
@@ -179,8 +179,8 @@ export default function PeriodsPage() {
                 <CardContent>
                     {loading ? (
                         <div className="flex items-center justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-                    ) : filtered.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center p-8 text-center bg-muted/20 border border-dashed rounded-lg">
+                        ) : filtered.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center p-8 text-center bg-surface-soft/20 border border-dashed rounded-lg">
                             <Clock className="h-10 w-10 text-muted-foreground mb-4 opacity-50" />
                             <h3 className="font-semibold text-lg">No periods configured</h3>
                             <p className="text-sm text-muted-foreground max-w-sm mt-1">Configure exam periods to define when exams can be scheduled.</p>
@@ -188,7 +188,7 @@ export default function PeriodsPage() {
                     ) : (
                         <div className="border rounded-md">
                             <Table>
-                                <TableHeader className="bg-muted/5">
+                                <TableHeader className="bg-surface-soft/5">
                                     <TableRow>
                                         <TableHead>Date</TableHead>
                                         <TableHead>Time</TableHead>

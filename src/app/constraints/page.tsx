@@ -176,7 +176,10 @@ function ConstraintDialog({ constraint, open, onOpenChange, onSaved }: {
       }
       onOpenChange(false);
       onSaved();
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err: unknown) { 
+      const message = err instanceof Error ? err.message : String(err); 
+      toast.error(message); 
+    }
     finally { setSaving(false); }
   };
 
@@ -235,7 +238,7 @@ function ConstraintDialog({ constraint, open, onOpenChange, onSaved }: {
                   </Label>
 
                   {constraintRows.map((row, idx) => (
-                    <div key={row.id} className="rounded-lg border p-3 grid gap-3 bg-muted/20 relative">
+                    <div key={row.id} className="rounded-lg border p-3 grid gap-3 bg-surface-soft/20 relative">
                       {idx > 0 && (
                         <button type="button"
                           className="absolute top-2 right-2 text-muted-foreground hover:text-destructive"
@@ -412,7 +415,7 @@ export default function ConstraintsPage() {
       if (!res.ok) throw new Error("Failed");
       toast.success("Constraint deleted"); setDeleteTarget(null); fetchData();
       setSelectedIds(prev => { const next = new Set(prev); next.delete(deleteTarget.id); return next; });
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err: unknown) { const message = err instanceof Error ? err.message : String(err); toast.error(message); }
   };
 
   const handleBulkDelete = async () => {
@@ -428,8 +431,9 @@ export default function ConstraintsPage() {
       toast.success(`${selectedIds.size} constraints deleted`);
       setSelectedIds(new Set());
       fetchData();
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error(message);
     } finally {
       setBulkDeleting(false);
     }
@@ -487,7 +491,7 @@ export default function ConstraintsPage() {
           {loading ? (
             <div className="flex items-center justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
           ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-8 text-center bg-muted/20 border border-dashed rounded-lg">
+                <div className="flex flex-col items-center justify-center p-8 text-center bg-surface-soft/20 border border-dashed rounded-lg">
               <Settings2 className="h-10 w-10 text-muted-foreground mb-4 opacity-50" />
               <h3 className="font-semibold text-lg">No constraints found</h3>
               <p className="text-sm text-muted-foreground max-w-sm mt-1">Distribution constraints map rules between two specific exams.</p>
@@ -495,7 +499,7 @@ export default function ConstraintsPage() {
           ) : (
             <div className="border rounded-md">
               <Table>
-                <TableHeader className="bg-muted/5">
+                <TableHeader className="bg-surface-soft/5">
                   <TableRow>
                     <TableHead className="w-[40px] px-4">
                       <input
@@ -515,7 +519,7 @@ export default function ConstraintsPage() {
                 </TableHeader>
                 <TableBody>
                   {filtered.map(c => (
-                    <TableRow key={c.id} className={selectedIds.has(c.id) ? "bg-muted/50" : ""}>
+                    <TableRow key={c.id} className={selectedIds.has(c.id) ? "bg-surface-soft/50" : ""}>
                       <TableCell className="px-4">
                         <input
                           type="checkbox"

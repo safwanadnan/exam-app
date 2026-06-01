@@ -273,17 +273,22 @@ export class Exam {
      * Maps to Exam.compareTo() in CPSolver.
      */
     comparePriority(other: Exam): number {
-        // More students = higher priority
+        // 1. Number of correlated exams (shared students) — most constrained first
+        const corr1 = this.getCorrelatedExams().length;
+        const corr2 = other.getCorrelatedExams().length;
+        if (corr1 !== corr2) return corr2 - corr1;
+
+        // 2. More students = higher priority
         if (this.size !== other.size) return other.size - this.size;
-        // Smaller domain = higher priority (more constrained)
+        // 3. Smaller domain = higher priority (more constrained)
         const d1 = this.getEstimatedDomainSize();
         const d2 = other.getEstimatedDomainSize();
         if (d1 !== d2) return d1 - d2;
-        // More constraints = higher priority
+        // 4. More constraints = higher priority
         const c1 = this._distributionConstraints.length;
         const c2 = other._distributionConstraints.length;
         if (c1 !== c2) return c2 - c1;
-        // Tie-break by ID
+        // 5. Tie-break by ID
         return this.id.localeCompare(other.id);
     }
 
