@@ -22,6 +22,8 @@ export function generateRandomMove(model: ExamModel): ExamNeighbour | null {
     const periodPlacement = periods[Math.floor(Math.random() * periods.length)];
     const period = periodPlacement.period;
 
+    if (!model.isPeriodFeasible(exam, period.id)) return null;
+
     // Find available rooms
     const assignedRooms = model.getAssignedRoomsInPeriod(period.id);
     // Exclude rooms used by current exam if reassigning
@@ -65,8 +67,10 @@ export function generateTimeMove(model: ExamModel): ExamNeighbour | null {
     for (let attempt = 0; attempt < 10; attempt++) {
         const pp = periods[Math.floor(Math.random() * periods.length)];
         if (pp.period.id !== currentPlacement.period.id) {
-            periodPlacement = pp;
-            break;
+            if (model.isPeriodFeasible(exam, pp.period.id)) {
+                periodPlacement = pp;
+                break;
+            }
         }
     }
     if (!periodPlacement) return null;

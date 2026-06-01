@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma, jsonResponse, getPagination, getSearch, withErrorHandling, buildSearchOR } from "@/lib/api-helpers";
+import type { Prisma } from "@prisma/client";
 
 /**
  * GET /api/section-groups?sessionId=...
@@ -14,7 +15,7 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
     const url = new URL(req.url);
     const sessionId = url.searchParams.get("sessionId");
 
-    const where: any = sessionId ? { course: { sessionId } } : {};
+    const where: Prisma.SectionGroupWhereInput = sessionId ? { course: { sessionId } } : {};
     
     if (search) {
         where.OR = buildSearchOR(search, [["course", "title"], ["course", "courseNumber"], ["instructorKey"]], exact) ?? [];

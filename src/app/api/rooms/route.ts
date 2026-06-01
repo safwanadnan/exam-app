@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma, jsonResponse, parseBody, getPagination, getSearch, withErrorHandling, buildSearchOR } from "@/lib/api-helpers";
+import type { Prisma } from "@prisma/client";
 
 const createRoomSchema = z.object({
     name: z.string().min(1),
@@ -23,7 +24,7 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
     const url = new URL(req.url);
     const buildingId = url.searchParams.get("buildingId");
 
-    const where: any = buildingId ? { buildingId } : {};
+    const where: Prisma.RoomWhereInput = buildingId ? { buildingId } : {};
     
     if (search) {
         where.OR = buildSearchOR(search, [["name"], ["building", "name"], ["building", "code"]], exact) ?? [];

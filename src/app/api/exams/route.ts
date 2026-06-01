@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma, jsonResponse, parseBody, getPagination, withErrorHandling, buildSearchOR } from "@/lib/api-helpers";
+import type { Prisma } from "@prisma/client";
 
 const createExamSchema = z.object({
     name: z.string().optional(),
@@ -28,7 +29,7 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
     const exact = url.searchParams.get("exact") === "true";
     const minimal = url.searchParams.get("minimal") === "true";
 
-    const where: any = {};
+    const where: Prisma.ExamWhereInput = {};
     if (examTypeId) where.examTypeId = examTypeId;
     else if (sessionId) where.examType = { sessionId };
     
@@ -37,7 +38,7 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
         if (orConds) where.OR = orConds;
     }
 
-    const queryArgs: any = {
+    const queryArgs: Prisma.ExamFindManyArgs = {
         where,
         skip,
         take: limit,

@@ -481,12 +481,15 @@ export class ExamModel {
 
         // Distribution constraint penalties
         for (const dc of this._distributionConstraints) {
-            if (dc.hard) continue; // Hard constraints are either satisfied or cause unassignment
             const examA = this._examById.get(dc.examAId);
             const examB = this._examById.get(dc.examBId);
             if (!examA?.isAssigned || !examB?.isAssigned) continue;
             if (!dc.isSatisfied(examA.assignment!, examB.assignment!)) {
-                total += dc.weight * cfg.distributionWeight;
+                if (dc.hard) {
+                    total += 1000000; // Massive penalty for hard constraint violation
+                } else {
+                    total += dc.weight * cfg.distributionWeight;
+                }
             }
         }
 

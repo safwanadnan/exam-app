@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma, jsonResponse, getPagination, getSearch, withErrorHandling, parseBody, buildSearchOR } from "@/lib/api-helpers";
+import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 export const GET = withErrorHandling(async (req: NextRequest) => {
@@ -9,7 +10,7 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
     const url = new URL(req.url);
     const sessionId = url.searchParams.get("sessionId");
     
-    const where: any = sessionId ? { sessionId } : {};
+    const where: Prisma.RoomFeatureWhereInput = sessionId ? { sessionId } : {};
     if (search) {
         where.OR = buildSearchOR(search, [["name"], ["code"]], exact) ?? [];
     }

@@ -3,19 +3,21 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma, jsonResponse, parseBody, withErrorHandling } from "@/lib/api-helpers";
 
+type RouteContext = { params: Promise<{ id: string }> };
+
 const updateSchema = z.object({
     code: z.string().min(1).optional(),
     name: z.string().min(1).optional(),
     type: z.enum(["BOOLEAN", "NUMERIC"]).optional(),
 });
 
-export const DELETE = withErrorHandling(async (_req: NextRequest, { params }: any) => {
+export const DELETE = withErrorHandling(async (_req: NextRequest, { params }: RouteContext["params"]) => {
     const { id } = await params;
     await prisma.roomFeature.delete({ where: { id } });
     return jsonResponse({ success: true });
 });
 
-export const PUT = withErrorHandling(async (req: NextRequest, { params }: any) => {
+export const PUT = withErrorHandling(async (req: NextRequest, { params }: RouteContext["params"]) => {
     const { id } = await params;
     const parsed = await parseBody(req, updateSchema);
     if (parsed.error) return parsed.error;

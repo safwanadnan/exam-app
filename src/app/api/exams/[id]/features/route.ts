@@ -19,18 +19,28 @@ export async function GET(_request: Request, { params }: RouteContext) {
 export async function POST(request: Request, { params }: RouteContext) {
     try {
         const { id } = await params;
-        const { features } = await request.json();
+        const body = await request.json().catch(() => null) as unknown;
 
         await prisma.roomFeaturePreference.deleteMany({ where: { examId: id } });
 
-        if (features && features.length > 0) {
-            await prisma.roomFeaturePreference.createMany({
-                data: features.map((f: any) => ({
-                    examId: id,
-                    featureId: f.id,
-                    penalty: f.penalty
-                }))
-            });
+        if (body && typeof body === "object" && Array.isArray((body as any).features)) {
+            const raw = (body as any).features as unknown[];
+            const data = raw
+                .map(item => {
+                    if (item && typeof item === "object") {
+                        const fid = (item as any).id;
+                        const penalty = (item as any).penalty;
+                        if (typeof fid === "string") {
+                            return { examId: id, featureId: fid, penalty: typeof penalty === "number" ? penalty : undefined };
+                        }
+                    }
+                    return null;
+                })
+                .filter(Boolean) as { examId: string; featureId: string; penalty?: number }[];
+
+            if (data.length > 0) {
+                await prisma.roomFeaturePreference.createMany({ data });
+            }
         }
 
         return NextResponse.json({ success: true });
