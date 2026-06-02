@@ -101,16 +101,16 @@ function ActiveSolverPanel({ runId }: { runId: string }) {
     if (!progress && status !== "CONNECTING") {
         const isOffline = status === "FAILED" || status === "DISCONNECTED";
         return (
-            <Card className="border-primary bg-primary/5">
+            <Card className="border-hairline bg-surface-soft">
                 <CardContent className="p-6 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         {isOffline ? (
-                            <AlertCircle className="h-8 w-8 text-destructive" />
+                            <AlertCircle className="h-8 w-8 text-accent-red" />
                         ) : (
-                            <Activity className="h-8 w-8 text-primary animate-pulse" />
+                            <Activity className="h-8 w-8 text-accent-blue animate-pulse" />
                         )}
                         <div>
-                            <h3 className={`font-semibold text-lg ${isOffline ? "text-destructive" : "text-primary"}`}>
+                            <h3 className={`font-semibold text-lg ${isOffline ? "text-accent-red" : "text-accent-blue"}`}>
                                 {isOffline ? "Solver Disconnected" : "Engine Initializing"}
                             </h3>
                             <p className="text-sm text-muted-foreground">
@@ -131,18 +131,18 @@ function ActiveSolverPanel({ runId }: { runId: string }) {
     const p = progress || {};
 
     return (
-        <Card className={isComplete ? "border-emerald-500/50 bg-emerald-500/5" : "border-primary bg-primary/5"}>
+        <Card className={isComplete ? "border-accent-green bg-accent-green-soft" : "border-hairline bg-surface-soft"}>
             <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                     <div>
                         <CardTitle className="flex items-center gap-2">
                             {isComplete ? (
-                                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                                <CheckCircle2 className="h-5 w-5 text-accent-green" />
                             ) : (
-                                <Activity className="h-5 w-5 text-primary animate-pulse" />
+                                <Activity className="h-5 w-5 text-accent-blue animate-pulse" />
                             )}
                             {isComplete ? "Schedule Generated" : "Solver Active"}
-                            <Badge variant={isComplete ? "outline" : "default"} className={isComplete ? "text-emerald-500 border-emerald-500" : ""}>
+                            <Badge variant={isComplete ? "outline" : "default"} className={isComplete ? "text-accent-green border-accent-green" : ""}>
                                 {p.phase || "Phase 1"}
                             </Badge>
                         </CardTitle>
@@ -182,9 +182,9 @@ function ActiveSolverPanel({ runId }: { runId: string }) {
                             <div className="text-xs text-muted-foreground mb-1 uppercase tracking-wider font-semibold">Total Penalty</div>
                             <div className="text-2xl font-bold font-mono">{Math.round(p.totalPenalty ?? 0).toLocaleString()}</div>
                         </div>
-                        <div className="bg-background rounded-lg p-3 border">
+                        <div className="bg-background rounded-lg p-3 border border-hairline">
                             <div className="text-xs text-muted-foreground mb-1 uppercase tracking-wider font-semibold">Hard Conflicts</div>
-                            <div className={`text-2xl font-bold font-mono ${(p.directConflicts ?? 0) > 0 ? "text-destructive" : "text-emerald-500"}`}>
+                            <div className={`text-2xl font-bold font-mono ${(p.directConflicts ?? 0) > 0 ? "text-accent-red" : "text-accent-green"}`}>
                                 {p.directConflicts ?? 0}
                             </div>
                         </div>
@@ -360,7 +360,7 @@ export default function SolverDashboard() {
                                             </div>
                                             <div className="flex flex-col items-end">
                                                 <span className="text-muted-foreground text-xs uppercase">Hard Conflicts</span>
-                                                <span className={`font-semibold ${run.directConflicts > 0 ? 'text-destructive' : 'text-emerald-500'}`}>
+                                                <span className={`font-semibold ${run.directConflicts > 0 ? 'text-accent-red' : 'text-accent-green'}`}>
                                                     {run.directConflicts || 0}
                                                 </span>
                                             </div>
@@ -430,9 +430,9 @@ export default function SolverDashboard() {
                                     <div className="text-xs text-muted-foreground mb-1 uppercase tracking-wider font-semibold">Total Penalty</div>
                                     <div className="text-xl font-bold font-mono">{Math.round(detailsRun.totalPenalty ?? 0).toLocaleString()}</div>
                                 </div>
-                                <div className="bg-background rounded-lg p-3 border">
+                                <div className="bg-background rounded-lg p-3 border border-hairline">
                                     <div className="text-xs text-muted-foreground mb-1 uppercase tracking-wider font-semibold">Hard Conflicts</div>
-                                    <div className={`text-xl font-bold font-mono ${(detailsRun.directConflicts ?? 0) > 0 ? "text-destructive" : "text-emerald-500"}`}>
+                                    <div className={`text-xl font-bold font-mono ${(detailsRun.directConflicts ?? 0) > 0 ? "text-accent-red" : "text-accent-green"}`}>
                                         {detailsRun.directConflicts ?? 0}
                                     </div>
                                 </div>
@@ -467,11 +467,11 @@ export default function SolverDashboard() {
                                                 {detailsDiag.topIssues.map((issue: string, i: number) => (
                                                     <div key={i} className="text-sm flex items-start gap-2 p-2 rounded-md bg-muted/50 border">
                                                         {issue.includes("successfully") ? (
-                                                            <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
+                                                            <CheckCircle2 className="h-4 w-4 text-accent-green mt-0.5 shrink-0" />
                                                         ) : issue.includes("reduced") ? (
-                                                            <Activity className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+                                                            <Activity className="h-4 w-4 text-accent-blue mt-0.5 shrink-0" />
                                                         ) : (
-                                                            <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                                                            <AlertTriangle className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                                                         )}
                                                         <span>{issue}</span>
                                                     </div>
@@ -505,7 +505,7 @@ export default function SolverDashboard() {
                                                                 <td className="p-2 text-right font-mono">{ps.movesAccepted.toLocaleString()}</td>
                                                                 <td className="p-2 text-right font-mono">{Math.round(ps.startObjective).toLocaleString()}</td>
                                                                 <td className="p-2 text-right font-mono">
-                                                                    <span className={ps.endObjective < ps.startObjective ? "text-emerald-500" : ""}>
+                                                                    <span className={ps.endObjective < ps.startObjective ? "text-accent-green" : ""}>
                                                                         {Math.round(ps.endObjective).toLocaleString()}
                                                                     </span>
                                                                 </td>
@@ -577,10 +577,10 @@ export default function SolverDashboard() {
                                                 {(() => {
                                                     const unassigned = detailsDiag.examDiagnostics.filter((d: any) => !d.assigned);
                                                     const cats = [
-                                                        { label: "No Periods", count: unassigned.filter((d: any) => d.failureReasons.includes("NO_PERIODS_IN_DOMAIN")).length, color: "text-red-500" },
-                                                        { label: "No Rooms", count: unassigned.filter((d: any) => d.failureReasons.includes("NO_ROOMS_AVAILABLE")).length, color: "text-orange-500" },
-                                                        { label: "Student Avail.", count: unassigned.filter((d: any) => d.failureReasons.includes("STUDENT_UNAVAILABILITY")).length, color: "text-amber-500" },
-                                                        { label: "Hard Constraints", count: unassigned.filter((d: any) => d.failureReasons.includes("HARD_DISTRIBUTION_CONSTRAINT")).length, color: "text-violet-500" },
+                                                        { label: "No Periods", count: unassigned.filter((d: any) => d.failureReasons.includes("NO_PERIODS_IN_DOMAIN")).length, color: "text-accent-red" },
+                                                        { label: "No Rooms", count: unassigned.filter((d: any) => d.failureReasons.includes("NO_ROOMS_AVAILABLE")).length, color: "text-primary" },
+                                                        { label: "Student Avail.", count: unassigned.filter((d: any) => d.failureReasons.includes("STUDENT_UNAVAILABILITY")).length, color: "text-primary" },
+                                                        { label: "Hard Constraints", count: unassigned.filter((d: any) => d.failureReasons.includes("HARD_DISTRIBUTION_CONSTRAINT")).length, color: "text-accent-purple" },
                                                     ];
                                                     return cats.filter(c => c.count > 0).map(c => (
                                                         <div key={c.label} className="bg-background rounded-lg p-3 border">

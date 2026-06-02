@@ -307,8 +307,8 @@ export default function AcademicStructurePage() {
                                                                     {expandedCourses.has(course.id) && (
                                                                         <div className="ml-8 border-l pl-2 py-1 flex flex-wrap gap-2">
                                                                             {(sections[course.id] || []).map(sec => (
-                                                                                <div key={sec.id} className="flex items-center gap-1.5 text-xs bg-background border px-2 py-1 rounded-md shadow-sm">
-                                                                                    <Hash className="h-3 w-3 text-amber-500" />
+                                                                                <div key={sec.id} className="flex items-center gap-1.5 text-xs bg-background border border-hairline px-2 py-1 rounded-md">
+                                                                                    <Hash className="h-3 w-3 text-accent-purple" />
                                                                                     Section {sec.sectionNumber}
                                                                                     <span className="text-muted-foreground ml-1">({sec._count?.enrollments || 0} students)</span>
                                                                                 </div>

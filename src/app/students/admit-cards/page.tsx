@@ -141,11 +141,11 @@ function AdmitCardContent() {
                 </div>
                 <div className="flex gap-2">
                     <Button variant="outline" onClick={pickRandom} disabled={dataLoading}>
-                        {dataLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Dice5 className="mr-2 h-4 w-4 text-purple-500" />}
+                        {dataLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Dice5 className="mr-2 h-4 w-4 text-accent-purple" />}
                         Random Student
                     </Button>
                     {studentData && (
-                        <Button onClick={handlePrint} className="bg-primary hover:bg-primary/90">
+                        <Button onClick={handlePrint}>
                             <Printer className="mr-2 h-4 w-4" /> Print Admit Card
                         </Button>
                     )}
@@ -158,7 +158,7 @@ function AdmitCardContent() {
                     <Search className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <Input
-                    className="pl-10 h-12 text-lg bg-background border-2 focus-visible:ring-primary/20"
+                    className="pl-10 h-12 text-lg bg-surface-card border border-hairline focus-visible:outline-none focus-visible:border-accent-blue focus-visible:ring-[3px] focus-visible:ring-accent-blue/40"
                     placeholder="Search student by name or ID..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
@@ -171,7 +171,7 @@ function AdmitCardContent() {
 
                 {/* Suggestions List */}
                 {students.length > 0 && (
-                    <div className="absolute z-10 w-full mt-2 bg-popover border rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95">
+                    <div className="absolute z-10 w-full mt-2 bg-surface-card border border-hairline rounded-md overflow-hidden">
                         <div className="py-2">
                             {students.map((s) => (
                                 <button
@@ -221,10 +221,7 @@ function AdmitCardContent() {
             {studentData && !dataLoading && (
                 <div className="space-y-8">
                     {/* The Admit Card Document */}
-                    <Card className="relative overflow-hidden border-2 shadow-xl print:shadow-none print:border-black print:rounded-none">
-                        {/* Decorative background for screen */}
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mt-32 print:hidden" />
-                        <div className="absolute bottom-0 left-0 w-32 h-32 bg-primary/5 rounded-full -ml-16 -mb-16 print:hidden" />
+                    <Card className="relative overflow-hidden border border-hairline rounded-md print:border-black print:rounded-none">
 
                         <CardHeader className="border-b bg-surface-soft/30 print:bg-transparent print:border-b-2 print:border-black flex flex-row items-center justify-between">
                             <div className="flex items-center gap-4">
@@ -251,11 +248,11 @@ function AdmitCardContent() {
                                     .map(p => `${p!.date}|${p!.startTime}`);
                                 const clashKeys = new Set(keys.filter((k, i) => keys.indexOf(k) !== i));
                                 return clashKeys.size > 0 ? (
-                                    <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 print:border-red-800">
-                                        <AlertCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+                                    <div className="flex items-start gap-3 bg-accent-red-soft border border-accent-red/30 rounded-md px-4 py-3 print:border-red-800">
+                                        <AlertCircle className="h-5 w-5 text-accent-red shrink-0 mt-0.5" />
                                         <div>
-                                            <div className="font-bold text-red-700 text-sm print:text-black">Schedule Clash Detected</div>
-                                            <div className="text-xs text-red-600/80 mt-0.5 print:text-black">
+                                            <div className="font-bold text-accent-red text-sm print:text-black">Schedule Clash Detected</div>
+                                            <div className="text-xs text-accent-red/80 mt-0.5 print:text-black">
                                                 {clashKeys.size} time slot{clashKeys.size > 1 ? "s have" : " has"} multiple exams scheduled simultaneously. Highlighted rows require immediate attention.
                                             </div>
                                         </div>
@@ -263,7 +260,7 @@ function AdmitCardContent() {
                                 ) : null;
                             })()}
                             {/* Student Profile Info */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-surface-soft/20 p-6 rounded-2xl border print:border-black print:rounded-none print:bg-transparent">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-surface-soft/30 p-6 rounded-md border border-hairline print:border-black print:rounded-none print:bg-transparent">
                                 <div className="space-y-4">
                                     <div>
                                         <div className="text-xs font-bold uppercase text-muted-foreground print:text-black">Full Name</div>
@@ -275,7 +272,7 @@ function AdmitCardContent() {
                                     </div>
                                 </div>
                                 <div className="flex flex-col md:items-end justify-center space-y-2">
-                                    <div className="text-sm px-3 py-1 bg-green-500/10 text-green-600 rounded-full border border-green-500/20 flex items-center gap-2 print:border-black print:text-black">
+                                    <div className="text-sm px-3 py-1 bg-accent-green-soft text-accent-green rounded-full border border-accent-green/20 flex items-center gap-2 print:border-black print:text-black">
                                         <CheckCircle2 className="h-4 w-4" /> Validated Profile
                                     </div>
                                     <div className="text-xs text-muted-foreground print:text-black">Session: {currentSessionId || "Default"}</div>
@@ -319,13 +316,13 @@ function AdmitCardContent() {
                                                     return (
                                                     <tr key={e.exam.id} className={cn(
                                                         "transition-colors",
-                                                        isClash ? "bg-red-500/10 hover:bg-red-500/15 print:outline print:outline-red-800" : "hover:bg-surface-soft/30"
+                                                        isClash ? "bg-accent-red-soft/25 hover:bg-accent-red-soft/40 print:outline print:outline-red-800" : "hover:bg-surface-soft/30"
                                                     )}>
                                                         <td className="px-4 py-4">
                                                             <div className="font-bold flex items-center gap-2">
                                                                 {e.exam.name}
                                                                 {isClash && (
-                                                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-600 bg-red-500/15 border border-red-500/30 px-1.5 py-0.5 rounded-full print:border-red-800">
+                                                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-accent-red bg-accent-red-soft border border-accent-red/20 px-1.5 py-0.5 rounded-full print:border-red-800">
                                                                         <AlertCircle className="h-3 w-3" /> CLASH
                                                                     </span>
                                                                 )}
@@ -389,12 +386,12 @@ function AdmitCardContent() {
                             </div>
 
                             {/* Instructions / Footer */}
-                            <div className="bg-orange-500/5 p-6 rounded-xl border border-orange-500/10 space-y-3 print:bg-transparent print:border-black print:rounded-none">
-                                <h5 className="text-sm font-bold flex items-center gap-2 text-orange-700 print:text-black">
+                            <div className="bg-accent-blue-soft/30 p-6 rounded-md border border-accent-blue/10 space-y-3 print:bg-transparent print:border-black print:rounded-none">
+                                <h5 className="text-sm font-bold flex items-center gap-2 text-accent-blue print:text-black">
                                     <Info className="h-4 w-4" />
                                     Important Instructions
                                 </h5>
-                                <ul className="text-xs text-orange-800/80 space-y-1.5 list-disc pl-4 print:text-black">
+                                <ul className="text-xs text-body-text/80 space-y-1.5 list-disc pl-4 print:text-black">
                                     <li>Students must present this admit card and a valid University ID for entry to the exam hall.</li>
                                     <li>Please arrive at the examination center at least 30 minutes before the scheduled start time.</li>
                                     <li>No electronic devices (smartphones, watches, etc.) are allowed inside the examination hall.</li>
@@ -423,33 +420,33 @@ function AdmitCardContent() {
 
                     {/* Quick Tips - Screen Only */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 print:hidden">
-                        <Card className="bg-blue-500/5 border-blue-500/10">
+                        <Card className="bg-accent-blue-soft border border-accent-blue/10">
                             <CardHeader className="p-4 pb-2">
-                                <CardTitle className="text-sm flex items-center gap-2 text-blue-700">
+                                <CardTitle className="text-sm flex items-center gap-2 text-accent-blue">
                                     <Printer className="h-4 w-4" /> Print Tips
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="p-4 pt-0 text-xs text-blue-800/70">
+                            <CardContent className="p-4 pt-0 text-xs text-body-text/75">
                                 Use "Save as PDF" for a digital copy. Set layout to "Portrait" for best results.
                             </CardContent>
                         </Card>
-                        <Card className="bg-purple-500/5 border-purple-500/10">
+                        <Card className="bg-accent-purple-soft border border-accent-purple/10">
                             <CardHeader className="p-4 pb-2">
-                                <CardTitle className="text-sm flex items-center gap-2 text-purple-700">
-                                    < Dice5 className="h-4 w-4" /> Bulk Mode
+                                <CardTitle className="text-sm flex items-center gap-2 text-accent-purple">
+                                    <Dice5 className="h-4 w-4" /> Bulk Mode
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="p-4 pt-0 text-xs text-purple-800/70">
+                            <CardContent className="p-4 pt-0 text-xs text-body-text/75">
                                 Coming soon: Generate admit cards for an entire department or course at once.
                             </CardContent>
                         </Card>
-                        <Card className="bg-green-500/5 border-green-500/10">
+                        <Card className="bg-accent-green-soft border border-accent-green/10">
                             <CardHeader className="p-4 pb-2">
-                                <CardTitle className="text-sm flex items-center gap-2 text-green-700">
+                                <CardTitle className="text-sm flex items-center gap-2 text-accent-green">
                                     <RefreshCw className="h-4 w-4" /> Real-time Updates
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="p-4 pt-0 text-xs text-green-800/70">
+                            <CardContent className="p-4 pt-0 text-xs text-body-text/75">
                                 Schedule changes reflect instantly on generated admit cards.
                             </CardContent>
                         </Card>

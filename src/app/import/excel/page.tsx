@@ -172,8 +172,8 @@ export default function ExcelImportPage() {
                         )}
                         {status === "success" && result && (
                             <div className="space-y-4">
-                                <Alert className="bg-emerald-500/10 border-emerald-500/20">
-                                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                                <Alert className="bg-accent-green-soft text-accent-green border-accent-green/20">
+                                    <CheckCircle2 className="h-4 w-4 text-accent-green" />
                                     <AlertTitle>Import Complete</AlertTitle>
                                     <AlertDescription>
                                         Successfully imported <strong>{result.imported}</strong> of {result.total} rows

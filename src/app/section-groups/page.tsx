@@ -257,8 +257,8 @@ export default function SectionGroupsPage() {
             {/* ── Header ── */}
             <div className="flex items-center justify-between flex-wrap gap-3">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2 text-indigo-950 dark:text-indigo-100">
-                        <Layers className="h-7 w-7 text-indigo-600" />
+                    <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2 text-ink">
+                        <Layers className="h-7 w-7 text-accent-blue" />
                         Section Management
                     </h2>
                     <p className="text-muted-foreground mt-1 text-sm">
@@ -280,7 +280,7 @@ export default function SectionGroupsPage() {
                     <Button
                         onClick={handleRecompute}
                         disabled={recomputing || !selectedSessionId}
-                        className="gap-2 h-10 bg-indigo-600 hover:bg-indigo-700"
+                        className="gap-2 h-10"
                     >
                         {recomputing
                             ? <><Loader2 className="h-4 w-4 animate-spin" /> Recomputing…</>
@@ -291,7 +291,7 @@ export default function SectionGroupsPage() {
                         variant="outline"
                         onClick={handleClearAll}
                         disabled={clearing || loading || !selectedSessionId}
-                        className="gap-2 h-10 text-destructive hover:bg-destructive/10 border-destructive/30"
+                        className="gap-2 h-10 text-accent-red hover:bg-accent-red-soft/20 border-accent-red/30"
                     >
                         {clearing
                             ? <><Loader2 className="h-4 w-4 animate-spin" /> Clearing…</>
@@ -318,23 +318,23 @@ export default function SectionGroupsPage() {
             {/* ── Stats row ── */}
             {courseNodes.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Card className="border-indigo-500/20 bg-indigo-500/5 shadow-sm">
+                    <Card className="border-hairline bg-surface-soft">
                         <CardContent className="pt-4 pb-4">
-                            <div className="text-2xl font-bold text-indigo-700">{courseNodes.length}</div>
+                            <div className="text-2xl font-bold text-accent-blue">{courseNodes.length}</div>
                             <div className="text-sm text-muted-foreground font-medium uppercase tracking-wider">Unique Courses</div>
                         </CardContent>
                     </Card>
-                    <Card className="border-emerald-500/20 bg-emerald-500/5 shadow-sm">
+                    <Card className="border-hairline bg-surface-soft">
                         <CardContent className="pt-4 pb-4">
-                            <div className="text-2xl font-bold text-emerald-600">{sameDayCount}</div>
+                            <div className="text-2xl font-bold text-accent-green">{sameDayCount}</div>
                             <div className="text-sm text-muted-foreground font-medium uppercase tracking-wider flex items-center gap-1">
                                 <ShieldCheck className="h-3 w-3" /> Synced Sections
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="border-amber-500/20 bg-amber-500/5 shadow-sm">
+                    <Card className="border-hairline bg-surface-soft">
                         <CardContent className="pt-4 pb-4">
-                            <div className="text-2xl font-bold text-amber-600">{flexCount}</div>
+                            <div className="text-2xl font-bold text-primary">{flexCount}</div>
                             <div className="text-sm text-muted-foreground font-medium uppercase tracking-wider flex items-center gap-1">
                                 <ToggleLeft className="h-3 w-3" /> Independent Sections
                             </div>
@@ -344,8 +344,8 @@ export default function SectionGroupsPage() {
             )}
 
             {/* ── Main list ── */}
-            <Card className="shadow-lg border-border/60">
-                <CardHeader className="border-b bg-muted/20 py-5">
+            <Card className="border-hairline">
+                <CardHeader className="border-b bg-surface-soft/40 py-5">
                     <CardTitle className="text-xl flex items-center gap-2">
                         Course Groups
                     </CardTitle>
@@ -356,7 +356,7 @@ export default function SectionGroupsPage() {
                 <CardContent className="p-0">
                     {loading ? (
                         <div className="p-20 text-center">
-                            <Loader2 className="h-10 w-10 mx-auto animate-spin text-indigo-600 mb-4" />
+                            <Loader2 className="h-10 w-10 mx-auto animate-spin text-primary mb-4" />
                             <p className="text-muted-foreground font-medium">Loading courses and sections…</p>
                         </div>
                     ) : courseNodes.length === 0 ? (
@@ -379,7 +379,7 @@ export default function SectionGroupsPage() {
                                     <div key={courseKey} className="group/course">
                                         {/* ── Course Row ── */}
                                         <div
-                                            className="flex items-center gap-4 px-6 py-4 cursor-pointer hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 transition-all select-none"
+                                            className="flex items-center gap-4 px-6 py-4 cursor-pointer hover:bg-surface-soft/40 transition-all select-none"
                                             onClick={() => toggleCourse(courseKey)}
                                         >
                                             <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -389,11 +389,11 @@ export default function SectionGroupsPage() {
                                                         : <ChevronRight className="h-5 w-5" />
                                                     }
                                                 </span>
-                                                <div className="h-10 w-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center shrink-0">
-                                                    <GraduationCap className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                                                <div className="h-10 w-10 rounded-xl bg-accent-blue-soft flex items-center justify-center shrink-0">
+                                                    <GraduationCap className="h-5 w-5 text-accent-blue" />
                                                 </div>
                                                 <div className="min-w-0">
-                                                    <div className="font-bold text-base truncate text-indigo-950 dark:text-indigo-100">
+                                                    <div className="font-bold text-base truncate text-ink">
                                                         {node.courseTitle}
                                                     </div>
                                                     <div className="flex items-center gap-3 mt-0.5">
@@ -411,14 +411,14 @@ export default function SectionGroupsPage() {
 
                                             {/* Course-level Toggle */}
                                             <div 
-                                                className="flex items-center gap-3 px-4 py-2 bg-background border rounded-2xl shadow-sm hover:shadow-md transition-shadow"
+                                                className="flex items-center gap-3 px-4 py-2 bg-background border border-hairline rounded-2xl"
                                                 onClick={e => e.stopPropagation()}
                                             >
                                                 <Label 
                                                     htmlFor={`bulk-toggle-${courseKey}`}
                                                     className={cn(
                                                         "text-xs font-bold uppercase tracking-wider cursor-pointer",
-                                                        allSynced ? "text-indigo-600" : "text-muted-foreground"
+                                                        allSynced ? "text-accent-blue" : "text-muted-foreground"
                                                     )}
                                                 >
                                                     {allSynced ? "Grouped" : "Separate"}
@@ -428,7 +428,7 @@ export default function SectionGroupsPage() {
                                                     checked={allSynced}
                                                     disabled={isSomeToggling}
                                                     onCheckedChange={val => handleBulkToggle(node, val)}
-                                                    className="data-[state=checked]:bg-indigo-600"
+                                                    className="data-[state=checked]:bg-accent-blue"
                                                 />
                                             </div>
                                         </div>
@@ -453,7 +453,7 @@ export default function SectionGroupsPage() {
                                                                 >
                                                                     <div className={cn(
                                                                         "h-8 w-8 rounded-full flex items-center justify-center shrink-0 border",
-                                                                        group.sameDayRequired ? "bg-indigo-100 border-indigo-200 text-indigo-700" : "bg-surface-soft border-muted-foreground/20 text-muted-foreground"
+                                                                        group.sameDayRequired ? "bg-accent-blue-soft border-accent-blue/30 text-accent-blue" : "bg-surface-soft border-hairline text-muted-foreground"
                                                                     )}>
                                                                         <Users className="h-4 w-4" />
                                                                     </div>
@@ -466,7 +466,7 @@ export default function SectionGroupsPage() {
                                                                             <span>•</span>
                                                                             <span>{groupStudents} Students</span>
                                                                             {group.sameDayRequired && (
-                                                                                <Badge variant="outline" className="h-4 text-[9px] border-indigo-200 bg-indigo-50 text-indigo-700 px-1 font-bold">
+                                                                                <Badge variant="outline" className="h-4 text-[9px] border-accent-blue/30 bg-accent-blue-soft text-accent-blue px-1 font-bold">
                                                                                     SYNCED
                                                                                 </Badge>
                                                                             )}
@@ -478,7 +478,7 @@ export default function SectionGroupsPage() {
                                                                 <div className="flex items-center gap-4">
                                                                     {!group.sameInstructorSyncRequired && group.members.length > 1 && (
                                                                         <Tip content="Same-instructor sync is OFF for this section.">
-                                                                            <Badge variant="outline" className="h-6 text-[10px] border-amber-200 bg-amber-50 text-amber-700 px-1.5 font-bold flex items-center gap-1">
+                                                                            <Badge variant="outline" className="h-6 text-[10px] border-accent-red/30 bg-accent-red-soft text-accent-red px-1.5 font-bold flex items-center gap-1">
                                                                                 <ToggleLeft className="h-3 w-3" /> NO INST. SYNC
                                                                             </Badge>
                                                                         </Tip>
@@ -487,7 +487,7 @@ export default function SectionGroupsPage() {
                                                                         checked={group.sameDayRequired}
                                                                         disabled={isToggling}
                                                                         onCheckedChange={val => handleCourseSyncToggle(group.id, val)}
-                                                                        className="scale-90 data-[state=checked]:bg-indigo-600"
+                                                                        className="scale-90 data-[state=checked]:bg-accent-blue"
                                                                     />
                                                                 </div>
                                                             </div>
@@ -498,9 +498,9 @@ export default function SectionGroupsPage() {
                                                                     {group.members.map(member => (
                                                                         <div
                                                                             key={member.id}
-                                                                            className="flex items-center gap-1.5 text-[11px] bg-background border px-2 py-1 rounded shadow-sm"
+                                                                            className="flex items-center gap-1.5 text-[11px] bg-background border border-hairline px-2 py-1 rounded"
                                                                         >
-                                                                            <span className="font-bold text-indigo-600">#{member.section.sectionNumber}</span>
+                                                                            <span className="font-bold text-accent-blue">#{member.section.sectionNumber}</span>
                                                                             <span className="text-muted-foreground">({member.section._count.enrollments} enroll)</span>
                                                                         </div>
                                                                     ))}

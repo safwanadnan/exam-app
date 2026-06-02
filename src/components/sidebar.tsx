@@ -77,9 +77,9 @@ export function Sidebar() {
                             <Link
                                 href={item.href}
                                 className={cn(
-                                    "flex items-center gap-3 rounded-md px-3 py-2.5 transition-all w-full",
+                                    "flex items-center gap-3 rounded-md px-3 py-2.5 transition-all w-full border border-transparent",
                                     pathname === item.href || (item.href !== "/" && pathname?.startsWith(item.href))
-                                        ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                                        ? "bg-surface-card text-ink border-hairline"
                                         : "text-muted-foreground hover:bg-surface-soft hover:text-foreground"
                                 )}
                             >
@@ -97,9 +97,9 @@ export function Sidebar() {
                             <Link
                                 href={item.href}
                                 className={cn(
-                                    "flex items-center gap-3 rounded-md px-3 py-2.5 transition-all w-full",
+                                    "flex items-center gap-3 rounded-md px-3 py-2.5 transition-all w-full border border-transparent",
                                     pathname === item.href
-                                        ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                                        ? "bg-surface-card text-ink border-hairline"
                                         : "text-muted-foreground hover:bg-surface-soft hover:text-foreground"
                                 )}
                             >

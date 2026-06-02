@@ -19,12 +19,12 @@ interface DashboardData {
 }
 
 const statCards = [
-  { key: "sessions", label: "Sessions", icon: CalendarDays, href: "/sessions", desc: "Terms configured", color: "text-blue-500" },
-  { key: "exams", label: "Total Exams", icon: GraduationCap, href: "/exams", desc: "Filtered by session", color: "text-emerald-500" },
-  { key: "students", label: "Students", icon: Users, href: "/students", desc: "Enrolled in system", color: "text-violet-500" },
-  { key: "rooms", label: "Rooms", icon: Building2, href: "/rooms", desc: "Available for scheduling", color: "text-amber-500" },
-  { key: "periods", label: "Periods", icon: Clock, href: "/periods", desc: "Time slots configured", color: "text-rose-500" },
-  { key: "constraints", label: "Constraints", icon: Settings2, href: "/constraints", desc: "Distribution rules", color: "text-cyan-500" },
+  { key: "sessions", label: "Sessions", icon: CalendarDays, href: "/sessions", desc: "Terms configured", color: "text-accent-blue" },
+  { key: "exams", label: "Total Exams", icon: GraduationCap, href: "/exams", desc: "Filtered by session", color: "text-accent-green" },
+  { key: "students", label: "Students", icon: Users, href: "/students", desc: "Enrolled in system", color: "text-accent-purple" },
+  { key: "rooms", label: "Rooms", icon: Building2, href: "/rooms", desc: "Available for scheduling", color: "text-primary" },
+  { key: "periods", label: "Periods", icon: Clock, href: "/periods", desc: "Time slots configured", color: "text-accent-red" },
+  { key: "constraints", label: "Constraints", icon: Settings2, href: "/constraints", desc: "Distribution rules", color: "text-accent-blue" },
 ] as const;
 
 export default function DashboardPage() {
@@ -70,7 +70,7 @@ export default function DashboardPage() {
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">Active Session:</span>
             <Select value={currentSessionId || ""} onValueChange={setCurrentSessionId}>
-              <SelectTrigger className="w-[200px] h-9 bg-background shadow-sm border-primary/20">
+              <SelectTrigger className="w-[200px] h-9 bg-background border-hairline">
                 <SelectValue placeholder="Select a session" />
               </SelectTrigger>
               <SelectContent>
@@ -83,10 +83,10 @@ export default function DashboardPage() {
             </Select>
           </div>
           {(data?.activeRuns ?? 0) > 0 && (
-            <div className="hidden sm:flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary animate-pulse">
+            <div className="hidden sm:flex items-center gap-2 rounded-full border border-accent-blue bg-accent-blue-soft px-3 py-1.5 text-sm font-medium text-accent-blue animate-pulse">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent-blue opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-accent-blue" />
               </span>
               {data?.activeRuns} Active {data?.activeRuns === 1 ? 'Run' : 'Runs'}
             </div>
@@ -97,7 +97,7 @@ export default function DashboardPage() {
 
       {/* Setup Progress */}
       {setupProgress < 100 && (
-        <Card className="border-primary/20 bg-primary/5">
+        <Card className="border-hairline bg-surface-soft">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium">Setup Progress</span>
@@ -117,7 +117,7 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {statCards.map(({ key, label, icon: Icon, href, desc, color }) => (
           <Link key={key} href={href}>
-            <Card className="hover:shadow-lg hover:border-primary/30 transition-all duration-200 cursor-pointer group">
+            <Card className="border-hairline hover:border-ink transition-all duration-150 cursor-pointer group">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
                 <Icon className={`h-4 w-4 ${color} group-hover:scale-110 transition-transform`} />
@@ -188,9 +188,9 @@ export default function DashboardPage() {
               <div className="space-y-3">
                 {data!.recentRuns.map((run: any) => (
                   <div key={run.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors">
-                    <div className={`flex h-8 w-8 items-center justify-center rounded-full ${run.status === "COMPLETE" ? "bg-emerald-500/10 text-emerald-500" :
-                        run.status === "FAILED" ? "bg-destructive/10 text-destructive" :
-                          "bg-primary/10 text-primary"
+                    <div className={`flex h-8 w-8 items-center justify-center rounded-full border ${run.status === "COMPLETE" ? "bg-accent-green-soft text-accent-green border-accent-green/20" :
+                        run.status === "FAILED" ? "bg-accent-red-soft text-accent-red border-accent-red/20" :
+                          "bg-primary/10 text-primary border-primary/25"
                       }`}>
                       <TrendingUp className="h-4 w-4" />
                     </div>

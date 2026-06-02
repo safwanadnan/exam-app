@@ -75,7 +75,7 @@ function SearchableExamSelect({ value, onValueChange, sessionId, initialName, pl
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in fade-in-0 zoom-in-95">
+          <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover text-popover-foreground outline-none animate-in fade-in-0 zoom-in-95">
             <div className="p-2 border-b">
               <Input placeholder="Search exams..." value={search} onChange={e => setSearch(e.target.value)} className="h-8" autoFocus />
             </div>
@@ -504,7 +504,7 @@ export default function ConstraintsPage() {
                     <TableHead className="w-[40px] px-4">
                       <input
                         type="checkbox"
-                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                        className="h-4 w-4 rounded border-hairline text-ink focus:ring-ink bg-surface-card"
                         checked={filtered.length > 0 && selectedIds.size === filtered.length}
                         onChange={toggleSelectAll}
                       />
@@ -523,7 +523,7 @@ export default function ConstraintsPage() {
                       <TableCell className="px-4">
                         <input
                           type="checkbox"
-                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                          className="h-4 w-4 rounded border-hairline text-ink focus:ring-ink bg-surface-card"
                           checked={selectedIds.has(c.id)}
                           onChange={() => toggleSelect(c.id)}
                         />
@@ -533,8 +533,8 @@ export default function ConstraintsPage() {
                       <TableCell>{c.examB.name || "Unnamed"}</TableCell>
                       <TableCell className="text-center">
                         {c.hard
-                          ? <span className="inline-flex items-center rounded-full bg-destructive/10 px-2.5 py-0.5 text-xs font-semibold text-destructive">HARD</span>
-                          : <span className="inline-flex items-center rounded-full bg-secondary px-2.5 py-0.5 text-xs font-semibold text-secondary-foreground">SOFT</span>}
+                          ? <span className="inline-flex items-center rounded-full bg-accent-red-soft px-2.5 py-0.5 text-xs font-bold text-accent-red border border-accent-red/20">HARD</span>
+                          : <span className="inline-flex items-center rounded-full bg-accent-blue-soft px-2.5 py-0.5 text-xs font-bold text-accent-blue border border-accent-blue/20">SOFT</span>}
                       </TableCell>
                       <TableCell className="text-right text-muted-foreground">{c.hard ? "—" : c.weight}</TableCell>
                       <TableCell>

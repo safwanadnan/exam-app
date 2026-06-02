@@ -105,7 +105,7 @@ export default function ComparePage() {
                                 <ArrowRight className="h-4 w-4 text-muted-foreground" />
                                 <div className="text-xl font-mono">{diff.score.runB}</div>
                                 {diff.score.delta !== 0 && (
-                                    <Badge variant={diff.score.delta < 0 ? "secondary" : "destructive"} className={diff.score.delta < 0 ? "ml-auto bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20" : "ml-auto"}>
+                                    <Badge variant={diff.score.delta < 0 ? "secondary" : "destructive"} className={diff.score.delta < 0 ? "ml-auto bg-accent-green-soft text-accent-green border border-accent-green/20" : "ml-auto"}>
                                         {diff.score.delta > 0 ? "+" : ""}{diff.score.delta}
                                     </Badge>
                                 )}
@@ -118,7 +118,7 @@ export default function ComparePage() {
                                 <ArrowRight className="h-4 w-4 text-muted-foreground" />
                                 <div className="text-xl font-mono">{diff.conflicts.runB}</div>
                                 {diff.conflicts.delta !== 0 && (
-                                    <Badge variant={diff.conflicts.delta < 0 ? "secondary" : "destructive"} className={diff.conflicts.delta < 0 ? "ml-auto bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20" : "ml-auto"}>
+                                    <Badge variant={diff.conflicts.delta < 0 ? "secondary" : "destructive"} className={diff.conflicts.delta < 0 ? "ml-auto bg-accent-green-soft text-accent-green border border-accent-green/20" : "ml-auto"}>
                                         {diff.conflicts.delta > 0 ? "+" : ""}{diff.conflicts.delta}
                                     </Badge>
                                 )}
@@ -153,9 +153,9 @@ export default function ComparePage() {
                                                 <TableRow key={i}>
                                                     <TableCell className="font-medium">{c.examName}</TableCell>
                                                     <TableCell>
-                                                        {c.changeType === "ADDED" ? <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20">Added</Badge> :
+                                                        {c.changeType === "ADDED" ? <Badge variant="secondary" className="bg-accent-green-soft text-accent-green border border-accent-green/20">Added</Badge> :
                                                             c.changeType === "REMOVED" ? <Badge variant="destructive">Removed</Badge> :
-                                                                <Badge variant="secondary" className="bg-blue-500/10 text-blue-500 border-blue-500/20 hover:bg-blue-500/20">Modified</Badge>}
+                                                                <Badge variant="secondary" className="bg-accent-blue-soft text-accent-blue border border-accent-blue/20">Modified</Badge>}
                                                     </TableCell>
                                                     <TableCell className="text-muted-foreground">
                                                         {c.old ? (
@@ -165,7 +165,7 @@ export default function ComparePage() {
                                                             </>
                                                         ) : "—"}
                                                     </TableCell>
-                                                    <TableCell className={c.changeType === "MODIFIED" ? "text-blue-600 dark:text-blue-400 font-medium" : "text-foreground"}>
+                                                    <TableCell className={c.changeType === "MODIFIED" ? "text-accent-blue font-semibold" : "text-foreground"}>
                                                         {c.new ? (
                                                             <>
                                                                 <div>{c.new.period ? `${c.new.period.startTime}-${c.new.period.endTime}` : "No time"}</div>

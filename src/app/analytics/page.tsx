@@ -208,16 +208,16 @@ export default function AnalyticsPage() {
                                 </CardContent>
                             </Card>
 
-                            <Card className={conflicts.length > 0 ? "border-destructive/40 bg-destructive/5" : "border-emerald-500/40 bg-emerald-500/5"}>
+                            <Card className={conflicts.length > 0 ? "border-accent-red/20 bg-accent-red-soft" : "border-accent-green/20 bg-accent-green-soft"}>
                                 <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
                                     <CardTitle className="text-sm font-medium text-muted-foreground">Student Conflicts</CardTitle>
                                     {conflicts.length > 0
-                                        ? <AlertTriangle className="h-4 w-4 text-destructive" />
-                                        : <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                                        ? <AlertTriangle className="h-4 w-4 text-accent-red" />
+                                        : <CheckCircle2 className="h-4 w-4 text-accent-green" />
                                     }
                                 </CardHeader>
                                 <CardContent>
-                                    <div className={`text-3xl font-bold ${conflicts.length > 0 ? "text-destructive" : "text-emerald-600 dark:text-emerald-400"}`}>
+                                    <div className={`text-3xl font-bold ${conflicts.length > 0 ? "text-accent-red" : "text-accent-green"}`}>
                                         {conflicts.length}
                                     </div>
                                     <p className="text-xs text-muted-foreground mt-1">
@@ -282,7 +282,7 @@ export default function AnalyticsPage() {
                                                     <MiniBar value={p.examCount} max={maxPeriodExams} color="bg-primary" />
                                                 </div>
                                                 <div className="col-span-4">
-                                                    <MiniBar value={p.studentCount} max={maxPeriodStudents} color="bg-violet-500" />
+                                                    <MiniBar value={p.studentCount} max={maxPeriodStudents} color="bg-accent-purple" />
                                                 </div>
                                                 <div className="col-span-1 text-right text-xs font-medium">{p.examCount}</div>
                                             </div>
@@ -309,7 +309,7 @@ export default function AnalyticsPage() {
                                         </div>
                                         {roomUtil.map((r, i) => {
                                             const usagePct = periodUtil.length > 0 ? Math.round((r.usedSlots / periodUtil.length) * 100) : 0;
-                                            const barColor = usagePct > 75 ? "bg-emerald-500" : usagePct > 40 ? "bg-primary" : "bg-amber-500";
+                                            const barColor = usagePct > 75 ? "bg-accent-green" : usagePct > 40 ? "bg-primary" : "bg-accent-blue";
                                             return (
                                                 <div key={i} className="grid grid-cols-12 items-center gap-2">
                                                     <div className="col-span-4">
@@ -334,7 +334,7 @@ export default function AnalyticsPage() {
 
                     {/* ─── CONFLICT ANALYSIS TAB ───────────────────────────────── */}
                     <TabsContent value="conflicts" className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                        <Card className="border-destructive/20 shadow-sm">
+                        <Card className="border-accent-red/20">
                             <CardHeader className="bg-destructive/5 border-b border-destructive/10 pb-4">
                                 <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                                     <div>
@@ -356,7 +356,7 @@ export default function AnalyticsPage() {
                                                 onChange={e => setConflictSearch(e.target.value)}
                                             />
                                         </div>
-                                        <div className="flex items-center bg-background border rounded-md p-1 shadow-sm">
+                                        <div className="flex items-center bg-background border border-hairline rounded-md p-1">
                                             <Button 
                                                 variant={conflictView === "period" ? "secondary" : "ghost"} 
                                                 size="sm" className="h-7 text-xs px-3"
@@ -385,8 +385,8 @@ export default function AnalyticsPage() {
                             <CardContent className="p-0">
                                 {conflicts.length === 0 ? (
                                     <div className="p-16 text-center">
-                                        <CheckCircle2 className="h-12 w-12 text-emerald-500 mx-auto mb-3 opacity-80" />
-                                        <p className="text-emerald-700 dark:text-emerald-400 font-semibold text-lg">Perfect Schedule</p>
+                                        <CheckCircle2 className="h-12 w-12 text-accent-green mx-auto mb-3 opacity-80" />
+                                        <p className="text-accent-green font-semibold text-lg">Perfect Schedule</p>
                                         <p className="text-sm text-muted-foreground mt-1">Every student has a unique exam slot.</p>
                                     </div>
                                 ) : groupedConflicts.length === 0 ? (
@@ -409,7 +409,7 @@ export default function AnalyticsPage() {
                                                             onClick={() => toggleExpand(id)}
                                                         >
                                                             <div className="flex items-center gap-4">
-                                                                <div className="bg-destructive/10 text-destructive h-10 w-10 rounded-md flex flex-col items-center justify-center shrink-0 border border-destructive/20">
+                                                                <div className="bg-accent-red-soft text-accent-red h-10 w-10 rounded-md flex flex-col items-center justify-center shrink-0 border border-accent-red/20">
                                                                     <span className="text-xs font-bold">{format(new Date(data.date), "MMM d")}</span>
                                                                 </div>
                                                                 <div>
@@ -443,7 +443,7 @@ export default function AnalyticsPage() {
                                                             onClick={() => toggleExpand(id)}
                                                         >
                                                             <div className="flex items-center gap-4">
-                                                                <div className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 h-10 w-10 rounded-md flex items-center justify-center shrink-0 border border-amber-200 dark:border-amber-800">
+                                                                <div className="bg-accent-purple-soft text-accent-purple h-10 w-10 rounded-md flex items-center justify-center shrink-0 border border-accent-purple/20">
                                                                     <BarChart3 className="h-5 w-5" />
                                                                 </div>
                                                                 <div>
@@ -452,7 +452,7 @@ export default function AnalyticsPage() {
                                                                 </div>
                                                             </div>
                                                             <div className="flex items-center gap-4">
-                                                                <Badge variant="outline" className="border-amber-500/50 text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50">
+                                                                <Badge variant="outline" className="border-accent-purple/20 text-accent-purple bg-accent-purple-soft">
                                                                     {data.uniqueStudents.size} unique students affected
                                                                 </Badge>
                                                                 {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
@@ -477,7 +477,7 @@ export default function AnalyticsPage() {
                                                             onClick={() => toggleExpand(id)}
                                                         >
                                                             <div className="flex items-center gap-4">
-                                                                <div className="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 h-10 w-10 rounded-full flex items-center justify-center shrink-0 border border-indigo-200 dark:border-indigo-800">
+                                                                <div className="bg-accent-blue-soft text-accent-blue h-10 w-10 rounded-full flex items-center justify-center shrink-0 border border-accent-blue/20">
                                                                     <Users className="h-5 w-5" />
                                                                 </div>
                                                                 <div>
@@ -486,7 +486,7 @@ export default function AnalyticsPage() {
                                                                 </div>
                                                             </div>
                                                             <div className="flex items-center gap-4">
-                                                                <Badge variant="outline" className="border-indigo-500/50 text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50">
+                                                                <Badge variant="outline" className="border-accent-blue/20 text-accent-blue bg-accent-blue-soft">
                                                                     {data.items.length} overlapping exams
                                                                 </Badge>
                                                                 {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
@@ -495,7 +495,7 @@ export default function AnalyticsPage() {
                                                         {isExpanded && (
                                                             <div className="bg-surface-soft/10 p-4 border-t space-y-3">
                                                                 {data.items.map((c: Conflict, i: number) => (
-                                                                    <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-background border p-3 rounded-md shadow-sm">
+                                                                    <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-background border border-hairline p-3 rounded-md">
                                                                         <div className="flex items-center gap-3">
                                                                             <div className="bg-surface-soft px-2 py-1 rounded text-xs font-medium shrink-0">
                                                                                 {format(new Date(c.periodDate), "MMM d")} • {c.periodTime}
@@ -532,7 +532,7 @@ function ConflictDetailRow({ conflict: c, highlightCourse }: { conflict: Conflic
     const bIsHighlight = highlightCourse && c.examB.courseName === highlightCourse;
 
     return (
-        <div className="flex flex-col bg-background border p-3 rounded-lg shadow-sm">
+        <div className="flex flex-col bg-background border border-hairline p-3 rounded-md">
             <div className="flex items-center justify-between gap-4 mb-2">
                 <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
                     <Clock className="h-3.5 w-3.5" />
@@ -540,7 +540,7 @@ function ConflictDetailRow({ conflict: c, highlightCourse }: { conflict: Conflic
                     <span>•</span>
                     <span>{c.periodTime}</span>
                 </div>
-                <Badge variant="secondary" className="text-[10px] uppercase tracking-wider font-bold text-destructive border-destructive/20 bg-destructive/10">
+                <Badge variant="secondary" className="text-[10px] uppercase tracking-wider font-bold text-accent-red border-accent-red/20 bg-accent-red-soft">
                     {c.sharedStudents} Shared Student{c.sharedStudents !== 1 ? "s" : ""}
                 </Badge>
             </div>
@@ -550,13 +550,13 @@ function ConflictDetailRow({ conflict: c, highlightCourse }: { conflict: Conflic
                     <span className="text-[10px] font-bold text-muted-foreground">VS</span>
                 </div>
                 
-                <div className={cn("p-2 rounded border border-transparent", aIsHighlight ? "bg-amber-50/50 border-amber-200 dark:bg-amber-900/10 dark:border-amber-800" : "bg-surface-soft/30")}>
+                <div className={cn("p-2 rounded border border-transparent", aIsHighlight ? "bg-accent-purple-soft border-accent-purple/20" : "bg-surface-soft/30")}>
                     <div className="text-xs text-muted-foreground uppercase tracking-wider mb-0.5">Exam A</div>
                     <div className="font-semibold text-sm truncate" title={c.examA.courseName}>{c.examA.courseName}</div>
                     <div className="text-xs text-muted-foreground mt-0.5 truncate">{c.examA.name}</div>
                 </div>
                 
-                <div className={cn("p-2 rounded border border-transparent", bIsHighlight ? "bg-amber-50/50 border-amber-200 dark:bg-amber-900/10 dark:border-amber-800" : "bg-surface-soft/30")}>
+                <div className={cn("p-2 rounded border border-transparent", bIsHighlight ? "bg-accent-purple-soft border-accent-purple/20" : "bg-surface-soft/30")}>
                     <div className="text-xs text-muted-foreground uppercase tracking-wider mb-0.5">Exam B</div>
                     <div className="font-semibold text-sm truncate" title={c.examB.courseName}>{c.examB.courseName}</div>
                     <div className="text-xs text-muted-foreground mt-0.5 truncate">{c.examB.name}</div>

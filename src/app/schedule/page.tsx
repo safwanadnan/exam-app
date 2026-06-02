@@ -91,10 +91,10 @@ const PALETTE = [
 
 function StatCard({ label, value, icon: Icon, highlight }: { label: string; value: string | number; icon: any; highlight?: "red" | "green" }) {
     return (
-        <div className={`flex items-center gap-3 bg-surface-soft/40 border rounded-xl px-4 py-3 ${highlight === "red" ? "border-destructive/40 bg-destructive/5" : highlight === "green" ? "border-emerald-500/40 bg-emerald-500/5" : ""}`}>
-            <Icon className={`h-5 w-5 flex-shrink-0 ${highlight === "red" ? "text-destructive" : highlight === "green" ? "text-emerald-500" : "text-muted-foreground"}`} />
+        <div className={`flex items-center gap-3 bg-surface-soft/40 border rounded-xl px-4 py-3 ${highlight === "red" ? "border-accent-red/20 bg-accent-red-soft" : highlight === "green" ? "border-accent-green/20 bg-accent-green-soft" : ""}`}>
+            <Icon className={`h-5 w-5 flex-shrink-0 ${highlight === "red" ? "text-accent-red" : highlight === "green" ? "text-accent-green" : "text-muted-foreground"}`} />
             <div>
-                <div className={`text-2xl font-bold leading-none ${highlight === "red" ? "text-destructive" : highlight === "green" ? "text-emerald-600 dark:text-emerald-400" : ""}`}>{value}</div>
+                <div className={`text-2xl font-bold leading-none ${highlight === "red" ? "text-accent-red" : highlight === "green" ? "text-accent-green" : ""}`}>{value}</div>
                 <div className="text-xs text-muted-foreground mt-0.5">{label}</div>
             </div>
         </div>
@@ -488,7 +488,7 @@ export default function SchedulePage() {
                                 placeholder="Search exam name…"
                                 value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
-                                className="w-full pl-9 pr-4 py-2 text-sm border rounded-md bg-background outline-none focus:ring-2 focus:ring-primary/40 transition"
+                                className="w-full pl-9 pr-4 py-2 text-sm border border-hairline rounded-md bg-surface-card outline-none focus:border-accent-blue focus:ring-[3px] focus:ring-accent-blue/40 transition-all"
                             />
                             {searchQuery && (
                                 <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
@@ -496,17 +496,17 @@ export default function SchedulePage() {
                                 </button>
                             )}
                         </div>
-                        <div className="flex items-center gap-2 bg-muted rounded-lg p-1">
+                        <div className="flex items-center gap-2 bg-surface-soft rounded-lg p-1 border border-hairline">
                             {(["all", "clashing", "clean"] as FilterMode[]).map(mode => (
                                 <button
                                     key={mode}
                                     onClick={() => setFilterMode(mode)}
                                     className={`px-3 py-1.5 text-sm rounded-md font-medium transition-all ${filterMode === mode
                                         ? mode === "clashing"
-                                            ? "bg-destructive text-white shadow"
+                                            ? "bg-accent-red text-white"
                                             : mode === "clean"
-                                                ? "bg-emerald-500 text-white shadow"
-                                                : "bg-background shadow text-foreground"
+                                                ? "bg-accent-green text-white"
+                                                : "bg-surface-card text-ink border border-hairline"
                                         : "text-muted-foreground hover:text-foreground"}`}
                                 >
                                     {mode === "all" ? "All" : mode === "clashing" ? `⚠ Has Clashes` : "✓ Clash-Free"}
@@ -519,7 +519,7 @@ export default function SchedulePage() {
                             {Array.from(colorIdxMap.entries()).map(([code, idx]) => {
                                 const p = PALETTE[idx];
                                 return (
-                                    <span key={code} className={`px-2.5 py-1 rounded-md text-xs font-semibold border bg-gradient-to-br ${p.bg} ${p.border} ${p.text}`}>
+                                    <span key={code} className={`px-2.5 py-1 rounded-md text-xs font-semibold border ${p.bg} ${p.border} ${p.text}`}>
                                         {code}
                                     </span>
                                 );
@@ -534,8 +534,8 @@ export default function SchedulePage() {
                             if (pa.length === 0) return null;
                             const periodClashes = periodClashMap[period.id] ?? 0;
                             return (
-                                <Card key={period.id} className="overflow-hidden shadow-sm">
-                                    <CardHeader className="bg-muted/20 border-b py-3 px-5">
+                                <Card key={period.id} className="overflow-hidden border-hairline">
+                                    <CardHeader className="bg-surface-soft/25 border-b py-3 px-5">
                                         <CardTitle className="text-base flex justify-between items-center">
                                             <div className="flex items-center gap-2">
                                                 <span>{format(new Date(period.date), "EEEE, MMM d, yyyy")}</span>
@@ -569,31 +569,30 @@ export default function SchedulePage() {
                                                         ref={el => { g.exams.forEach(e => { cardRefs.current[e.id] = el; }); }}
                                                         onClick={() => openAssignmentDetails(g.mainId)}
                                                         className={`
-                                                            relative border rounded-xl p-3.5 cursor-pointer transition-all duration-200 
-                                                            bg-gradient-to-br ${style.bg} 
-                                                            hover:shadow-lg hover:-translate-y-0.5 hover:ring-2 hover:ring-primary/40
+                                                            relative border border-hairline rounded-xl p-3.5 cursor-pointer transition-all duration-150 
+                                                            bg-surface-card hover:border-ink
                                                             ${hasIssues
-                                                                ? "border-destructive/50 ring-1 ring-destructive/30"
-                                                                : `${style.border}`}
-                                                            ${isHighlighted ? "ring-4 ring-primary scale-105 shadow-xl" : ""}
+                                                                ? "border-accent-red/50 ring-1 ring-accent-red/30 bg-accent-red-soft/20"
+                                                                : ""}
+                                                            ${isHighlighted ? "ring-2 ring-primary bg-primary/10 border-primary" : ""}
                                                         `}
                                                     >
                                                         {/* Clash / Clean badge */}
                                                         <div className="absolute top-2.5 right-2.5 flex gap-1">
                                                             {g.hasViolations && (
-                                                                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 shadow">
+                                                                <span className="inline-flex items-center gap-1 rounded-full bg-accent-purple-soft text-accent-purple text-[10px] font-bold px-2 py-0.5 border border-accent-purple/20">
                                                                     <AlertTriangle className="h-2.5 w-2.5" />
                                                                     Rules
                                                                 </span>
                                                             )}
                                                             {g.totalClashes > 0 ? (
-                                                                <span className="inline-flex items-center gap-1 rounded-full bg-destructive/90 text-white text-[10px] font-bold px-2 py-0.5 shadow">
+                                                                <span className="inline-flex items-center gap-1 rounded-full bg-accent-red-soft text-accent-red text-[10px] font-bold px-2 py-0.5 border border-accent-red/20">
                                                                     <Users className="h-2.5 w-2.5" />
                                                                     {g.totalClashes}
                                                                 </span>
                                                             ) : (
                                                                 !g.hasViolations && (
-                                                                    <span className="inline-flex items-center rounded-full bg-emerald-500/80 text-white text-[10px] px-1.5 py-0.5">
+                                                                    <span className="inline-flex items-center rounded-full bg-accent-green-soft text-accent-green text-[10px] px-1.5 py-0.5 border border-accent-green/20">
                                                                         <CheckCircle2 className="h-3 w-3" />
                                                                     </span>
                                                                 )
@@ -722,24 +721,24 @@ export default function SchedulePage() {
 
                                     {/* Room Conflict Warning */}
                                     {roomConflicts.length > 0 && (
-                                        <div className="rounded-xl bg-orange-500/10 border border-orange-500/40 p-3.5 space-y-2">
-                                            <div className="flex items-center gap-2 text-sm font-bold text-orange-600 dark:text-orange-400">
+                                        <div className="rounded-xl bg-accent-red-soft border border-accent-red/40 p-3.5 space-y-2">
+                                            <div className="flex items-center gap-2 text-sm font-bold text-accent-red">
                                                 <AlertTriangle className="h-4 w-4" />
                                                 Room Already In Use
                                             </div>
-                                            <p className="text-xs text-orange-600/80 dark:text-orange-400/80">
+                                            <p className="text-xs text-accent-red/80">
                                                 The following rooms are already assigned to another exam at this time slot:
                                             </p>
                                             <ul className="space-y-1">
                                                 {roomConflicts.map((c, i) => (
-                                                    <li key={i} className="flex items-center justify-between text-xs bg-orange-500/10 px-2.5 py-1.5 rounded-md border border-orange-500/20">
-                                                        <span className="font-semibold text-orange-700 dark:text-orange-300">{c.roomName}</span>
-                                                        <span className="text-orange-600/70 dark:text-orange-400/70 italic">used by: {c.usedByExam}</span>
+                                                    <li key={i} className="flex items-center justify-between text-xs bg-accent-red-soft/20 px-2.5 py-1.5 rounded-md border border-accent-red/20 text-accent-red">
+                                                        <span className="font-semibold">{c.roomName}</span>
+                                                        <span className="italic opacity-80">used by: {c.usedByExam}</span>
                                                     </li>
                                                 ))}
                                             </ul>
                                             <Button 
-                                                className="w-full bg-orange-600 hover:bg-orange-700 text-white mt-1"
+                                                className="w-full bg-accent-red text-white hover:bg-accent-red/90 mt-1"
                                                 onClick={handleForceUpdateAssignment}
                                                 disabled={updating}
                                             >
@@ -749,7 +748,7 @@ export default function SchedulePage() {
                                         </div>
                                     )}
 
-                                    <Button className="w-full bg-indigo-600 hover:bg-indigo-700" onClick={handleUpdateAssignment} disabled={updating}>
+                                    <Button className="w-full" onClick={handleUpdateAssignment} disabled={updating}>
                                         {updating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
                                         Save Changes
                                     </Button>
@@ -821,25 +820,24 @@ export default function SchedulePage() {
                                                             <Users className="h-3 w-3" />
                                                             Teachers: {ex.instructors.join(", ") || "No instructor assigned"}
                                                         </div>
-                                                    </div>
-
-                                                    {/* Violations for this specific section */}
-                                                    {ex.violations && ex.violations.length > 0 && (
-                                                        <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 p-3 space-y-2">
-                                                            <div className="flex items-center gap-2 text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-tighter">
-                                                                <AlertTriangle className="h-3.5 w-3.5" />
-                                                                Rule Violations
+                                                        {/* Violations for this specific section */}
+                                                        {ex.violations && ex.violations.length > 0 && (
+                                                            <div className="rounded-xl bg-accent-purple-soft border border-accent-purple/20 p-3 space-y-2">
+                                                                <div className="flex items-center gap-2 text-[11px] font-bold text-accent-purple uppercase tracking-tighter">
+                                                                    <AlertTriangle className="h-3.5 w-3.5" />
+                                                                    Rule Violations
+                                                                </div>
+                                                                <ul className="text-[11px] space-y-1 text-body-text">
+                                                                    {ex.violations.map((v, i) => (
+                                                                        <li key={i} className="flex items-start gap-1.5 leading-tight">
+                                                                            <div className="h-1 w-1 rounded-full bg-accent-purple mt-1 flex-shrink-0" />
+                                                                            {v}
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
                                                             </div>
-                                                            <ul className="text-[11px] space-y-1 text-amber-700 dark:text-amber-500/80">
-                                                                {ex.violations.map((v, i) => (
-                                                                    <li key={i} className="flex items-start gap-1.5 leading-tight">
-                                                                        <div className="h-1 w-1 rounded-full bg-amber-500 mt-1 flex-shrink-0" />
-                                                                        {v}
-                                                                    </li>
-                                                                ))}
-                                                            </ul>
-                                                        </div>
-                                                    )}
+                                                        )}
+                                                    </div>
 
                                                     {/* Clashes for this specific exam section */}
                                                     {ex.clashDetails && ex.clashDetails.length > 0 && (
@@ -921,11 +919,11 @@ export default function SchedulePage() {
                                             <div className="space-y-1">
                                                 <div className="flex justify-between text-xs text-muted-foreground">
                                                     <span>Overall Room Utilization</span>
-                                                    <span className={overCapacity ? "text-destructive font-semibold" : ""}>{pct}%{overCapacity ? " — OVER CAPACITY" : ""}</span>
+                                                    <span className={overCapacity ? "text-accent-red font-semibold" : ""}>{pct}%{overCapacity ? " — OVER CAPACITY" : ""}</span>
                                                 </div>
                                                 <div className="w-full bg-surface-soft rounded-full h-2.5">
                                                     <div
-                                                        className={`h-2.5 rounded-full transition-all ${pct > 90 ? "bg-destructive" : pct > 70 ? "bg-amber-500" : "bg-emerald-500"}`}
+                                                        className={`h-2.5 rounded-full transition-all ${pct > 90 ? "bg-accent-red" : pct > 70 ? "bg-primary" : "bg-accent-green"}`}
                                                         style={{ width: `${pct}%` }}
                                                     />
                                                 </div>
@@ -949,22 +947,22 @@ export default function SchedulePage() {
 
                                     {/* Conflicts warning */}
                                     {detailedAssignment.exams.some(e => e.clashes > 0) ? (
-                                        <div className="rounded-xl bg-destructive/10 border border-destructive/30 p-4 space-y-2">
-                                            <div className="flex items-center gap-2 text-sm font-bold text-destructive">
+                                        <div className="rounded-xl bg-accent-red-soft border border-accent-red/20 p-4 space-y-2">
+                                            <div className="flex items-center gap-2 text-sm font-bold text-accent-red">
                                                 <AlertTriangle className="h-4 w-4" />
                                                 Student Conflict Warning
                                             </div>
-                                            <p className="text-xs text-destructive/70">
+                                            <p className="text-xs text-accent-red/75">
                                                 One or more sections in this group have students scheduled for multiple exams at this same time slot. 
                                                 Check the analytics page for individual student names and details.
                                             </p>
                                         </div>
                                     ) : (
-                                        <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-3.5 flex items-center gap-3">
-                                            <CheckCircle2 className="h-5 w-5 text-emerald-500 flex-shrink-0" />
+                                        <div className="rounded-xl bg-accent-green-soft border border-accent-green/20 p-3.5 flex items-center gap-3">
+                                            <CheckCircle2 className="h-5 w-5 text-accent-green flex-shrink-0" />
                                             <div>
-                                                <div className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">No Student Clashes</div>
-                                                <div className="text-xs text-emerald-600/70 dark:text-emerald-500/70">All enrolled students are free during this period.</div>
+                                                <div className="text-sm font-semibold text-accent-green">No Student Clashes</div>
+                                                <div className="text-xs text-accent-green/75">All enrolled students are free during this period.</div>
                                             </div>
                                         </div>
                                     )}

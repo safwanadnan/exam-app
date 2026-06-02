@@ -313,11 +313,11 @@ export default function ExamsPage() {
                 <h2 className="text-3xl font-bold tracking-tight">Exams & Courses</h2>
                 {selectedIds.size > 0 && (
                     <div className="flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
-                        <span className="text-sm font-medium text-muted-foreground bg-muted px-3 py-1.5 rounded-full border shadow-sm flex items-center gap-2">
+                        <span className="text-sm font-medium text-muted-foreground bg-surface-soft px-3 py-1.5 rounded-full border border-hairline flex items-center gap-2">
                             <CheckCircle2 className="h-4 w-4 text-primary" />
                             {selectedIds.size} selected
                         </span>
-                        <Button variant="destructive" size="sm" className="shadow-sm hover:shadow-md transition-all active:scale-95" onClick={() => setBulkDeleteDialogOpen(true)}>
+                        <Button variant="destructive" size="sm" className="transition-all active:scale-95" onClick={() => setBulkDeleteDialogOpen(true)}>
                             <Trash2 className="mr-2 h-4 w-4" /> Delete Selected
                         </Button>
                     </div>
@@ -358,7 +358,7 @@ export default function ExamsPage() {
                                         <TableHead className="w-[40px]">
                                             <input 
                                                 type="checkbox" 
-                                                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary accent-primary cursor-pointer"
+                                                className="h-4 w-4 rounded border-hairline text-ink focus:ring-ink bg-surface-card cursor-pointer"
                                                 checked={selectedIds.size === filtered.length && filtered.length > 0}
                                                 onChange={toggleSelectAll}
                                             />
@@ -376,13 +376,13 @@ export default function ExamsPage() {
                                     {filtered.map(exam => (
                                         <TableRow 
                                             key={exam.id} 
-                                            className={`cursor-pointer transition-colors ${selectedIds.has(exam.id) ? "bg-primary/5 hover:bg-primary/10" : "hover:bg-surface-soft/40"}`}
+                                            className={`cursor-pointer transition-colors ${selectedIds.has(exam.id) ? "bg-surface-soft/50" : "hover:bg-surface-soft/20"}`}
                                             onClick={() => { setDetailExam(exam); setDetailOpen(true); }}
                                         >
                                             <TableCell onClick={e => e.stopPropagation()}>
                                                 <input 
                                                     type="checkbox" 
-                                                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary accent-primary cursor-pointer"
+                                                    className="h-4 w-4 rounded border-hairline text-ink focus:ring-ink bg-surface-card cursor-pointer"
                                                     checked={selectedIds.has(exam.id)}
                                                     onChange={() => toggleSelect(exam.id)}
                                                 />
@@ -394,7 +394,7 @@ export default function ExamsPage() {
                                             <TableCell className="text-right text-muted-foreground">{exam.maxRooms}</TableCell>
                                             <TableCell className="text-center">
                                                 {exam.altSeating ? (
-                                                    <span className="inline-flex items-center rounded-full bg-blue-500/10 px-2 py-1 text-xs font-medium text-blue-600 dark:text-blue-400">Required</span>
+                                                    <span className="inline-flex items-center rounded-full bg-accent-blue-soft px-2.5 py-0.5 text-xs font-bold text-accent-blue border border-accent-blue/20">Required</span>
                                                 ) : <span className="text-muted-foreground text-xs">—</span>}
                                             </TableCell>
                                             <TableCell>
@@ -433,26 +433,26 @@ export default function ExamsPage() {
                     </DialogHeader>
                     {detailExam && (
                         <div className="space-y-5">
-                            <div className="bg-surface-soft/40 rounded-xl p-4 border">
-                                <div className="text-xl font-bold">{detailExam.name || "Unnamed Exam"}</div>
+                            <div className="bg-surface-soft/20 rounded-md p-4 border border-hairline">
+                                <div className="text-xl font-bold text-ink">{detailExam.name || "Unnamed Exam"}</div>
                                 <div className="flex flex-wrap gap-2 mt-2">
-                                    <Badge variant="outline">{detailExam.examType?.name}</Badge>
-                                    {detailExam.altSeating && <Badge className="bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-400/30">Alt Seating</Badge>}
+                                    <Badge variant="outline" className="border-hairline">{detailExam.examType?.name}</Badge>
+                                    {detailExam.altSeating && <Badge className="bg-accent-blue-soft text-accent-blue border border-accent-blue/20">Alt Seating</Badge>}
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-3 gap-3">
-                                <div className="bg-surface-soft/30 border rounded-lg p-3">
+                                <div className="bg-surface-soft/20 border border-hairline rounded-md p-3">
                                     <div className="text-xs font-semibold uppercase text-muted-foreground tracking-wider flex items-center gap-1 mb-1"><Clock className="h-3 w-3" />Duration</div>
-                                    <div className="text-2xl font-bold">{detailExam.length}m</div>
+                                    <div className="text-2xl font-bold text-ink">{detailExam.length}m</div>
                                 </div>
-                                <div className="bg-surface-soft/30 border rounded-lg p-3">
+                                <div className="bg-surface-soft/20 border border-hairline rounded-md p-3">
                                     <div className="text-xs font-semibold uppercase text-muted-foreground tracking-wider flex items-center gap-1 mb-1"><Users className="h-3 w-3" />Students</div>
-                                    <div className="text-2xl font-bold">{detailExam._count.studentEnrollments}</div>
+                                    <div className="text-2xl font-bold text-ink">{detailExam._count.studentEnrollments}</div>
                                 </div>
-                                <div className="bg-muted/30 border rounded-lg p-3">
+                                <div className="bg-surface-soft/20 border border-hairline rounded-md p-3">
                                     <div className="text-xs font-semibold uppercase text-muted-foreground tracking-wider mb-1">Max Rooms</div>
-                                    <div className="text-2xl font-bold">{detailExam.maxRooms}</div>
+                                    <div className="text-2xl font-bold text-ink">{detailExam.maxRooms}</div>
                                 </div>
                             </div>
 
@@ -462,7 +462,7 @@ export default function ExamsPage() {
                                 {(detailExam.instructorAssignments || []).length > 0 ? (
                                     <div className="flex flex-wrap gap-2">
                                         {detailExam.instructorAssignments!.map((ia, i) => (
-                                            <span key={i} className="text-sm bg-muted px-2.5 py-1 rounded-md border">{ia.instructor.name}</span>
+                                            <span key={i} className="text-sm bg-surface-soft/50 px-2.5 py-1 rounded-md border border-hairline text-ink">{ia.instructor.name}</span>
                                         ))}
                                     </div>
                                 ) : <p className="text-sm text-muted-foreground italic">No instructors assigned</p>}
@@ -472,9 +472,9 @@ export default function ExamsPage() {
                             <div className="space-y-1.5">
                                 <div className="text-xs font-semibold uppercase text-muted-foreground tracking-wider flex items-center gap-1.5"><BookOpen className="h-3.5 w-3.5" />Course Sections</div>
                                 {(detailExam.owners || []).length > 0 ? (
-                                    <div className="border rounded-lg divide-y overflow-hidden">
+                                    <div className="border border-hairline rounded-md divide-y divide-hairline overflow-hidden">
                                         {detailExam.owners!.map((o, i) => (
-                                            <div key={i} className="px-3 py-2 text-sm">
+                                            <div key={i} className="px-3 py-2 text-sm text-ink">
                                                 <span className="font-medium">{o.section.course.subjectId} {o.section.course.courseNumber}</span>
                                                 <span className="text-muted-foreground ml-2">Section {o.section.sectionNumber}</span>
                                             </div>
