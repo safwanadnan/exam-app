@@ -6,3 +6,4 @@ export { ExamStudent } from "./ExamStudent";
 export { ExamInstructor } from "./ExamInstructor";
 export { ExamDistributionConstraint } from "./ExamDistributionConstraint";
 export { ExamModel } from "./ExamModel";
+export { buildSameTimeGroups, getSameTimePeers } from "./ExamSameTimePeer";

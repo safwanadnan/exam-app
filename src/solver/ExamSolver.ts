@@ -11,7 +11,8 @@
  * The solver runs asynchronously and emits progress events.
  */
 import { ExamModel, Exam, ExamPlacement, ExamPeriodPlacement } from "./model";
-import { type ExamNeighbour } from "./neighbours/ExamNeighbour";
+import { buildSameTimeGroups } from "./model/ExamSameTimePeer";
+import { ExamChainNeighbour, type ExamNeighbour } from "./neighbours/ExamNeighbour";
 import {
     generateRandomMove,
     generateTimeMove,
@@ -98,6 +99,11 @@ export class ExamSolver {
     private bestAssignments: Map<string, ExamPlacement> = new Map();
     private shouldStop: boolean = false;
     private onProgress: SolverProgressCallback | null = null;
+
+    // Same-time peer groups: examId → all exams that must share the same period
+    private sameTimeGroups: Map<string, Exam[]> = new Map();
+    // Set of exam IDs already handled as part of a group (to avoid double-placing)
+    private placedAsGroup: Set<string> = new Set();
 
     // SA state
     private saTemperature: number = 0;
@@ -203,19 +209,41 @@ export class ExamSolver {
         this.beginPhaseTracking();
         console.log("[Solver] Phase 1: Construction");
 
+        // Build same-time peer groups ONCE before construction.
+        // Exams linked by hard SAME_PERIOD must be placed atomically.
+        this.sameTimeGroups = buildSameTimeGroups(this.model);
+        this.placedAsGroup = new Set();
+
+        const nGroups = new Set(Array.from(this.sameTimeGroups.values()).map(g => g.map(e => e.id).sort().join(","))).size;
+        console.log(`[Solver] Built ${nGroups} same-time groups from SAME_PERIOD hard constraints`);
+
         // Sort exams by priority (largest/most constrained first)
         const examOrder = [...this.model.exams].sort((a, b) => a.comparePriority(b));
 
         for (const exam of examOrder) {
             if (this.shouldStop) return;
 
-            const diagnostic = this.diagnoseAndPlace(exam);
-            this.examDiagnostics.set(exam.id, diagnostic);
+            // Skip exams already assigned as part of a group
+            if (this.placedAsGroup.has(exam.id)) continue;
 
-            if (diagnostic.assigned) {
-                this.phaseMovesAccepted++;
+            const group = this.sameTimeGroups.get(exam.id) ?? [exam];
+
+            if (group.length > 1) {
+                // --- Atomic group placement ---
+                const placed = this.diagnoseAndPlaceGroup(group);
+                for (const [e, diag] of placed) {
+                    this.examDiagnostics.set(e.id, diag);
+                    this.placedAsGroup.add(e.id);
+                    if (diag.assigned) this.phaseMovesAccepted++;
+                    else this.phaseMovesRejected++;
+                }
             } else {
-                this.phaseMovesRejected++;
+                // --- Single exam placement ---
+                const diagnostic = this.diagnoseAndPlace(exam);
+                this.examDiagnostics.set(exam.id, diagnostic);
+                this.placedAsGroup.add(exam.id);
+                if (diagnostic.assigned) this.phaseMovesAccepted++;
+                else this.phaseMovesRejected++;
             }
 
             this.iteration++;
@@ -240,6 +268,142 @@ export class ExamSolver {
             }
             if (unassigned.length > 20) console.log(`  ... and ${unassigned.length - 20} more`);
         }
+    }
+
+    /**
+     * Place an entire same-time group atomically.
+     * Finds the single best period that works for ALL exams in the group,
+     * then assigns each exam to that period.
+     */
+    private diagnoseAndPlaceGroup(group: Exam[]): Array<[Exam, ExamDiagnostic]> {
+        // Find the intersection of period domains across all exams
+        // (only periods that appear in every exam's domain are valid)
+        const periodSets = group.map(e => new Set(e.periodPlacements.map(pp => pp.period.id)));
+        const commonPeriodIds = periodSets.reduce((acc, s) => {
+            const result = new Set<string>();
+            for (const id of acc) if (s.has(id)) result.add(id);
+            return result;
+        });
+
+        // Evaluate every common period and pick the one with lowest total group cost
+        let bestPeriodId: string | null = null;
+        let bestCost = Infinity;
+
+        for (const periodId of Array.from(commonPeriodIds)) {
+            // All exams must be feasible in this period
+            let feasible = true;
+            for (const e of group) {
+                // Temporarily skip other group members when checking feasibility
+                // (they won't be assigned yet, so SAME_PERIOD constraints won't fire)
+                if (!this.isPeriodFeasibleIgnoringGroup(e, e.periodPlacements.find(pp => pp.period.id === periodId)!, group)) {
+                    feasible = false;
+                    break;
+                }
+            }
+            if (!feasible) continue;
+
+            // All exams must have rooms in this period
+            let totalCost = 0;
+            let allHaveRooms = true;
+
+            // Simulate sequential room assignment within the period for the group
+            const simulatedOccupied = new Set<string>(this.model.getAssignedRoomsInPeriod(periodId));
+
+            for (const e of group) {
+                const pp = e.periodPlacements.find(p => p.period.id === periodId)!;
+                const roomMap = new Map<string, Set<string>>();
+                roomMap.set(periodId, new Set(simulatedOccupied));
+                const rooms = e.findBestAvailableRooms(pp.period, roomMap);
+                if (rooms === null && e.maxRooms > 0) { allHaveRooms = false; break; }
+                if (rooms) for (const rp of rooms) simulatedOccupied.add(rp.room.id);
+
+                const placement = new ExamPlacement(pp, rooms ?? []);
+                totalCost += this.computePlacementCost(e, placement);
+            }
+            if (!allHaveRooms) continue;
+
+            if (totalCost < bestCost) {
+                bestCost = totalCost;
+                bestPeriodId = periodId;
+            }
+        }
+
+        const results: Array<[Exam, ExamDiagnostic]> = [];
+
+        if (bestPeriodId === null) {
+            // Could not place the group together — leave all unassigned with a diagnostic
+            for (const e of group) {
+                results.push([e, {
+                    examId: e.id,
+                    examName: e.name,
+                    examSize: e.size,
+                    assigned: false,
+                    failureReasons: ["HARD_DISTRIBUTION_CONSTRAINT"],
+                    details: [`No common feasible period found for SAME_PERIOD group of ${group.length} exams`],
+                    distributionViolations: [],
+                    periodsTried: commonPeriodIds.size,
+                    periodsInDomain: e.periodPlacements.length,
+                    periodRejections: { studentConflicts: 0, instructorConflicts: 0, hardConstraints: group.length, noRooms: 0 },
+                }]);
+            }
+            return results;
+        }
+
+        // Assign the whole group to the chosen period
+        const occupied = new Set<string>(this.model.getAssignedRoomsInPeriod(bestPeriodId));
+        for (const e of group) {
+            const pp = e.periodPlacements.find(p => p.period.id === bestPeriodId)!;
+            const roomMap = new Map<string, Set<string>>();
+            roomMap.set(bestPeriodId, new Set(occupied));
+            const rooms = e.findBestAvailableRooms(pp.period, roomMap);
+            if (rooms) for (const rp of rooms) occupied.add(rp.room.id);
+
+            const placement = new ExamPlacement(pp, rooms ?? []);
+            this.model.assignExam(e, placement);
+
+            results.push([e, {
+                examId: e.id,
+                examName: e.name,
+                examSize: e.size,
+                assigned: true,
+                failureReasons: [],
+                details: [`Placed as part of SAME_PERIOD group in period ${bestPeriodId}`],
+                distributionViolations: [],
+                periodsTried: commonPeriodIds.size,
+                periodsInDomain: e.periodPlacements.length,
+                periodRejections: { studentConflicts: 0, instructorConflicts: 0, hardConstraints: 0, noRooms: 0 },
+            }]);
+        }
+        return results;
+    }
+
+    /**
+     * Check period feasibility for an exam while ignoring not-yet-assigned group members.
+     * Used during group construction so intra-group SAME_PERIOD constraints don't self-block.
+     */
+    private isPeriodFeasibleIgnoringGroup(exam: Exam, pp: ExamPeriodPlacement, group: Exam[]): boolean {
+        const groupIds = new Set(group.map(e => e.id));
+        for (const dc of exam.distributionConstraints) {
+            if (!dc.hard) continue;
+            const otherExamId = dc.examAId === exam.id ? dc.examBId : dc.examAId;
+            // Skip intra-group constraints; they're satisfied by definition (we're placing all together)
+            if (groupIds.has(otherExamId)) continue;
+            const otherExam = this.model.getExam(otherExamId);
+            if (!otherExam?.isAssigned) continue;
+            if (dc.isPeriodRelated()) {
+                const examIsA = dc.examAId === exam.id;
+                const p1 = examIsA ? pp.period : otherExam.assignment!.period;
+                const p2 = examIsA ? otherExam.assignment!.period : pp.period;
+                if (!dc.isPeriodSatisfied(p1, p2)) return false;
+            }
+        }
+        for (const student of exam.students) {
+            if (!student.isAvailable(pp.period)) return false;
+        }
+        for (const instructor of exam.instructors) {
+            if (!instructor.isAvailable(pp.period)) return false;
+        }
+        return true;
     }
 
     /**
@@ -840,12 +1004,14 @@ export class ExamSolver {
 
     // ===================== HELPER METHODS =====================
 
-    private moveWeights = [1, 1, 1, 1, 1, 1]; // random, time, room, swap, conflict, kempe
-    private moveSuccess = [0, 0, 0, 0, 0, 0];
-    private moveAttempts = [0, 0, 0, 0, 0, 0];
+    // 7 move types: random, time, room, swap, conflict, kempe, group
+    private moveWeights = [1, 1, 1, 1, 1, 1, 2]; // group gets higher initial weight
+    private moveSuccess = [0, 0, 0, 0, 0, 0, 0];
+    private moveAttempts = [0, 0, 0, 0, 0, 0, 0];
 
     /**
      * Generate a neighbour move using adaptive probabilities.
+     * Move type 6 is the new group move that shifts all SAME_PERIOD-linked exams together.
      */
     private generateNeighbour(): ExamNeighbour | null {
         // Periodically update weights (e.g. every 1000 iterations)
@@ -879,6 +1045,7 @@ export class ExamSolver {
             case 3: neighbour = generatePeriodSwapMove(this.model); break;
             case 4: neighbour = generateConflictMove(this.model); break;
             case 5: neighbour = generateKempeChainMove(this.model); break;
+            case 6: neighbour = this.generateGroupMove(); break;
         }
 
         if (neighbour) {
@@ -886,6 +1053,76 @@ export class ExamSolver {
         }
 
         return neighbour;
+    }
+
+    /**
+     * Group move: pick a random same-time group and move ALL members to a new
+     * common period together. This is the key move that makes SAME_PERIOD
+     * constraints tractable — it keeps the group intact while still exploring
+     * the period search space.
+     */
+    private generateGroupMove(): ExamNeighbour | null {
+        if (this.sameTimeGroups.size === 0) return null;
+
+        // Pick a random assigned exam
+        const assigned = this.model.assignedExams;
+        if (assigned.length === 0) return null;
+
+        const seed = assigned[Math.floor(Math.random() * assigned.length)];
+        const group = this.sameTimeGroups.get(seed.id) ?? [seed];
+
+        // Only bother with actual groups (size > 1), or fallback to time move for singletons
+        if (group.length <= 1) return generateTimeMove(this.model);
+
+        // All group members must be assigned to the same period already (sanity check)
+        const currentPeriodId = group[0].assignment?.period.id;
+        if (!currentPeriodId) return null;
+
+        // Find common period domain across all group members
+        const periodSets = group.map(e => new Set(e.periodPlacements.map(pp => pp.period.id)));
+        const commonPeriodIds = Array.from(periodSets.reduce((acc, s) => {
+            const r = new Set<string>();
+            for (const id of acc) if (s.has(id)) r.add(id);
+            return r;
+        })).filter(pid => pid !== currentPeriodId);
+
+        if (commonPeriodIds.length === 0) return null;
+
+        // Try a few candidate periods and pick a feasible one
+        const shuffled = commonPeriodIds.sort(() => Math.random() - 0.5);
+        for (const targetPeriodId of shuffled.slice(0, 5)) {
+            // Check all group members are feasible in target period
+            let feasible = true;
+            for (const e of group) {
+                if (!this.isPeriodFeasibleIgnoringGroup(e, e.periodPlacements.find(pp => pp.period.id === targetPeriodId)!, group)) {
+                    feasible = false;
+                    break;
+                }
+            }
+            if (!feasible) continue;
+
+            // Build new placements for each group member
+            const newAssignments = new Map<Exam, ExamPlacement>();
+            const occupied = new Set<string>(this.model.getAssignedRoomsInPeriod(targetPeriodId));
+            let allRoomsFound = true;
+
+            for (const e of group) {
+                const pp = e.periodPlacements.find(p => p.period.id === targetPeriodId);
+                if (!pp) { allRoomsFound = false; break; }
+                const roomMap = new Map<string, Set<string>>();
+                roomMap.set(targetPeriodId, new Set(occupied));
+                const rooms = e.findBestAvailableRooms(pp.period, roomMap);
+                if (rooms === null && e.maxRooms > 0) { allRoomsFound = false; break; }
+                if (rooms) for (const rp of rooms) occupied.add(rp.room.id);
+                newAssignments.set(e, new ExamPlacement(pp, rooms ?? []));
+            }
+
+            if (!allRoomsFound) continue;
+
+            return new ExamChainNeighbour(newAssignments);
+        }
+
+        return null;
     }
 
     /** Check if timeout has been reached */
