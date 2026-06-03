@@ -42,7 +42,7 @@ function FeatureDialog({ open, onOpenChange, onSaved, sessionId }: {
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[400px]">
+            <DialogContent className="sm:max-w-100">
                 <form onSubmit={handleSubmit}>
                     <DialogHeader>
                         <DialogTitle>Add Room Feature</DialogTitle>

@@ -156,7 +156,7 @@ function DeleteDialog({ open, onOpenChange, onConfirm, title }: { open: boolean;
     const [deleting, setDeleting] = useState(false);
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[400px]">
+            <DialogContent className="sm:max-w-100">
                 <DialogHeader><DialogTitle>Confirm Delete</DialogTitle><DialogDescription>Delete <strong>{title}</strong>? This cannot be undone.</DialogDescription></DialogHeader>
                 <DialogFooter>
                     <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
@@ -369,7 +369,7 @@ export default function ExamsPage() {
                                         <TableHead className="text-right">Enrolled</TableHead>
                                         <TableHead className="text-right">Max Rooms</TableHead>
                                         <TableHead className="text-center">Alt Seating</TableHead>
-                                        <TableHead className="w-[80px]"></TableHead>
+                                        <TableHead className="w-20"></TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -427,7 +427,7 @@ export default function ExamsPage() {
 
             {/* ── Exam Detail Panel ── */}
             <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-                <DialogContent className="sm:max-w-[520px] max-h-[85vh] overflow-y-auto">
+                <DialogContent className="sm:max-w-130 max-h-[85vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2"><GraduationCap className="h-5 w-5" />Exam Details</DialogTitle>
                     </DialogHeader>
@@ -516,7 +516,7 @@ export default function ExamsPage() {
                                         {feat.name} <span className="text-muted-foreground ml-1 font-normal text-xs">({feat.code})</span>
                                     </Label>
                                     <Select value={val} onValueChange={(v) => handleFeatureChange(feat.id, v)}>
-                                        <SelectTrigger className="w-[180px] h-8 text-xs">
+                                        <SelectTrigger className="w-45 h-8 text-xs">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>

@@ -185,7 +185,7 @@ function ConstraintDialog({ constraint, open, onOpenChange, onSaved }: {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-150 max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>{isEditing ? "Edit Constraint" : "Add Constraints"}</DialogTitle>
@@ -352,7 +352,7 @@ function DeleteDialog({ open, onOpenChange, onConfirm }: { open: boolean; onOpen
   const [deleting, setDeleting] = useState(false);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[400px]">
+      <DialogContent className="sm:max-w-100">
         <DialogHeader><DialogTitle>Delete Constraint</DialogTitle><DialogDescription>This action cannot be undone.</DialogDescription></DialogHeader>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
@@ -501,7 +501,7 @@ export default function ConstraintsPage() {
               <Table>
                 <TableHeader className="bg-surface-soft/5">
                   <TableRow>
-                    <TableHead className="w-[40px] px-4">
+                    <TableHead className="w-10 px-4">
                       <input
                         type="checkbox"
                         className="h-4 w-4 rounded border-hairline text-ink focus:ring-ink bg-surface-card"
@@ -509,12 +509,12 @@ export default function ConstraintsPage() {
                         onChange={toggleSelectAll}
                       />
                     </TableHead>
-                    <TableHead className="w-[180px]">Type</TableHead>
+                    <TableHead className="w-45">Type</TableHead>
                     <TableHead>Exam A</TableHead>
                     <TableHead>Exam B</TableHead>
-                    <TableHead className="text-center w-[120px]">Enforcement</TableHead>
-                    <TableHead className="text-right w-[100px]">Weight</TableHead>
-                    <TableHead className="w-[80px]"></TableHead>
+                    <TableHead className="text-center w-30">Enforcement</TableHead>
+                    <TableHead className="text-right w-25">Weight</TableHead>
+                    <TableHead className="w-20"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

@@ -149,7 +149,7 @@ export default function AnalyticsPage() {
                 <div className="flex items-center gap-3">
                     {runs.length > 0 && (
                         <Select value={selectedRun} onValueChange={setSelectedRun}>
-                            <SelectTrigger className="w-[260px] bg-background">
+                            <SelectTrigger className="w-65 bg-background">
                                 <SelectValue placeholder="Select run" />
                             </SelectTrigger>
                             <SelectContent>
@@ -265,7 +265,7 @@ export default function AnalyticsPage() {
                                     <CardDescription>Exams and student load per exam period</CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+                                    <div className="space-y-4 max-h-100 overflow-y-auto pr-2">
                                         <div className="grid grid-cols-12 text-xs text-muted-foreground font-semibold uppercase tracking-wider px-1 sticky top-0 bg-background py-2">
                                             <span className="col-span-3">Period</span>
                                             <span className="col-span-4">Exams</span>
@@ -301,7 +301,7 @@ export default function AnalyticsPage() {
                                     <CardDescription>How often each room is assigned across periods</CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+                                    <div className="space-y-4  omax-h-[400px]verflow-y-auto pr-2">
                                         <div className="grid grid-cols-12 text-xs text-muted-foreground font-semibold uppercase tracking-wider px-1 sticky top-0 bg-background py-2">
                                             <span className="col-span-4">Room</span>
                                             <span className="col-span-5">Usage Rate</span>
