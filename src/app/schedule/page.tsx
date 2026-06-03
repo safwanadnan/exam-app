@@ -20,10 +20,10 @@ import { cn } from "@/lib/utils";
 
 interface Assignment {
     id: string;
-    exam: { 
+    exam: {
         id: string;
-        name: string; 
-        length: number; 
+        name: string;
+        length: number;
         _count: { studentEnrollments: number };
         owners: { section: { sectionNumber: string, course: { id: string, title: string, courseNumber: string } } }[];
         instructorAssignments: { instructor: { name: string } }[];
@@ -92,7 +92,7 @@ const PALETTE = [
 function StatCard({ label, value, icon: Icon, highlight }: { label: string; value: string | number; icon: any; highlight?: "red" | "green" }) {
     return (
         <div className={`flex items-center gap-3 bg-surface-soft/40 border rounded-xl px-4 py-3 ${highlight === "red" ? "border-accent-red/20 bg-accent-red-soft" : highlight === "green" ? "border-accent-green/20 bg-accent-green-soft" : ""}`}>
-            <Icon className={`h-5 w-5 flex-shrink-0 ${highlight === "red" ? "text-accent-red" : highlight === "green" ? "text-accent-green" : "text-muted-foreground"}`} />
+            <Icon className={`h-5 w-5 shrink-0 ${highlight === "red" ? "text-accent-red" : highlight === "green" ? "text-accent-green" : "text-muted-foreground"}`} />
             <div>
                 <div className={`text-2xl font-bold leading-none ${highlight === "red" ? "text-accent-red" : highlight === "green" ? "text-accent-green" : ""}`}>{value}</div>
                 <div className="text-xs text-muted-foreground mt-0.5">{label}</div>
@@ -227,7 +227,7 @@ export default function SchedulePage() {
             setPeriods(perData.periods || []);
             setClashMap(clashData.clashMap || {});
             setPeriodClashMap(clashData.periodClashMap || {});
-            
+
             // Map distribution violations
             const vMap: Record<string, string[]> = {};
             const diagnostics = runData.diagnostics?.examDiagnostics || [];
@@ -237,11 +237,11 @@ export default function SchedulePage() {
                 }
             });
             setViolationMap(vMap);
-            
+
             setLoading(false);
         }).catch(() => { setLoading(false); toast.error("Failed to load schedule"); });
     }, [selectedRunId]);
- 
+
     const doSave = async (force = false) => {
         if (!detailedAssignment) return;
         setUpdating(true);
@@ -265,11 +265,11 @@ export default function SchedulePage() {
             }
 
             if (!res.ok) throw new Error(data.error || "Update failed");
-            
+
             toast.success(force ? "Saved with room conflict (double-booked)" : "Assignment updated successfully");
             setIsEditing(false);
             setRoomConflicts([]);
-            
+
             // Refresh all data — fetch in parallel
             const [expData, clashData] = await Promise.all([
                 fetch(`/api/export?runId=${selectedRunId}`).then(r => r.json()),
@@ -315,11 +315,11 @@ export default function SchedulePage() {
     // Grouped and Filtered assignments
     const getGroupedAssignments = useCallback((periodId?: string) => {
         let list = periodId ? assignments.filter(a => a.periodId === periodId) : assignments;
-        
+
         // Initial filtering (search/clash mode)
         if (searchQuery) {
             const q = searchQuery.toLowerCase();
-            list = list.filter(a => (a.exam.name || "").toLowerCase().includes(q) || 
+            list = list.filter(a => (a.exam.name || "").toLowerCase().includes(q) ||
                 a.exam.owners.some(o => o.section.course.courseNumber.toLowerCase().includes(q) || o.section.course.title.toLowerCase().includes(q)));
         }
         if (filterMode === "clashing") {
@@ -332,10 +332,10 @@ export default function SchedulePage() {
         const groups: Record<string, GroupedAssignment> = {};
         for (const a of list) {
             const course = a.exam.owners[0]?.section.course;
-            
+
             // Group by Title to catch different course codes that are semantically the same course
             const key = course ? course.title.trim().toLowerCase() : a.id;
-            
+
             if (!groups[key]) {
                 groups[key] = {
                     key,
@@ -348,13 +348,13 @@ export default function SchedulePage() {
                     hasViolations: false
                 };
             }
-            
+
             groups[key].exams.push(a);
-            
+
             // If we have multiple course numbers in one group, append them? 
             // Or just keep the first one if they are 95% the same.
             // For now, let's just use the title as the anchor.
-            
+
             groups[key].totalStudents += a.exam._count.studentEnrollments;
             groups[key].totalClashes += (clashMap[a.id] ?? 0);
             if (violationMap[a.exam.id]?.length > 0) groups[key].hasViolations = true;
@@ -651,12 +651,12 @@ export default function SchedulePage() {
                 <DialogContent className="sm:max-w-[540px] max-h-[90vh] overflow-y-auto">
                     <DialogHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <DialogTitle className="text-lg">
-                            {isEditing ? `Edit: ${detailedAssignment?.examName}` : "Exam Details"}
+                            {isEditing ? `Edit: ${detailedAssignment?.courseTitle}` : "Exam Details"}
                         </DialogTitle>
                         {!detailLoading && detailedAssignment && (
-                            <Button 
-                                variant={isEditing ? "ghost" : "outline"} 
-                                size="sm" 
+                            <Button
+                                variant={isEditing ? "ghost" : "outline"}
+                                size="sm"
                                 onClick={() => setIsEditing(!isEditing)}
                                 className={isEditing ? "text-muted-foreground mr-6" : "text-primary mr-6"}
                             >
@@ -696,16 +696,16 @@ export default function SchedulePage() {
                                             {allRooms.map(r => {
                                                 const isSelected = editRoomIds.includes(r.id);
                                                 return (
-                                                    <div 
-                                                        key={r.id} 
+                                                    <div
+                                                        key={r.id}
                                                         onClick={() => {
                                                             if (isSelected) setEditRoomIds(editRoomIds.filter(id => id !== r.id));
                                                             else setEditRoomIds([...editRoomIds, r.id]);
                                                         }}
                                                         className={cn(
                                                             "flex items-center gap-2 px-2 py-1.5 rounded text-xs cursor-pointer border transition-colors",
-                                                            isSelected 
-                                                                ? "bg-primary text-primary-foreground border-primary" 
+                                                            isSelected
+                                                                ? "bg-primary text-primary-foreground border-primary"
                                                                 : "bg-background hover:bg-surface-soft border-border outline-none focus:ring-1 focus:ring-primary"
                                                         )}
                                                     >
@@ -716,7 +716,7 @@ export default function SchedulePage() {
                                                 );
                                             })}
                                         </div>
-                                        <p className="text-[10px] text-muted-foreground italic">Total Capacity: {allRooms.filter(r => editRoomIds.includes(r.id)).reduce((s,r) => s+r.capacity, 0)} (Need: {detailedAssignment.totalStudents})</p>
+                                        <p className="text-[10px] text-muted-foreground italic">Total Capacity: {allRooms.filter(r => editRoomIds.includes(r.id)).reduce((s, r) => s + r.capacity, 0)} (Need: {detailedAssignment.exams.reduce((s, e) => s + e.students, 0)})</p>
                                     </div>
 
                                     {/* Room Conflict Warning */}
@@ -737,7 +737,7 @@ export default function SchedulePage() {
                                                     </li>
                                                 ))}
                                             </ul>
-                                            <Button 
+                                            <Button
                                                 className="w-full bg-accent-red text-white hover:bg-accent-red/90 mt-1"
                                                 onClick={handleForceUpdateAssignment}
                                                 disabled={updating}
@@ -792,7 +792,7 @@ export default function SchedulePage() {
                                     {(() => {
                                         const ex = detailedAssignment.exams.find(e => e.id === selectedExamId);
                                         if (!ex) return null;
-                                        
+
                                         return (
                                             <div className="animate-in fade-in slide-in-from-top-1 duration-300 space-y-4">
                                                 <div className="bg-surface-soft/40 border rounded-xl p-4 space-y-3">
@@ -809,7 +809,7 @@ export default function SchedulePage() {
                                                             </Badge>
                                                         </div>
                                                     </div>
-                                                    
+
                                                     <div className="grid grid-cols-1 gap-2 border-t border-muted/50 pt-3">
                                                         <div className="flex flex-wrap gap-2 text-xs font-medium">
                                                             {ex.sections.map(s => (
@@ -830,7 +830,7 @@ export default function SchedulePage() {
                                                                 <ul className="text-[11px] space-y-1 text-body-text">
                                                                     {ex.violations.map((v, i) => (
                                                                         <li key={i} className="flex items-start gap-1.5 leading-tight">
-                                                                            <div className="h-1 w-1 rounded-full bg-accent-purple mt-1 flex-shrink-0" />
+                                                                            <div className="h-1 w-1 rounded-full bg-accent-purple mt-1 shrink-0" />
                                                                             {v}
                                                                         </li>
                                                                     ))}
@@ -847,7 +847,7 @@ export default function SchedulePage() {
                                                                 const isExpanded = expandedClash === idx;
                                                                 return (
                                                                     <div key={idx} className="bg-destructive/5 rounded-lg border border-destructive/20 overflow-hidden">
-                                                                        <button 
+                                                                        <button
                                                                             onClick={(e) => {
                                                                                 e.stopPropagation();
                                                                                 setExpandedClash(isExpanded ? null : idx);
@@ -862,7 +862,7 @@ export default function SchedulePage() {
                                                                             </div>
                                                                             {isExpanded ? <ChevronUp className="h-3 w-3 text-destructive/50" /> : <ChevronDown className="h-3 w-3 text-destructive/50" />}
                                                                         </button>
-                                                                        
+
                                                                         {isExpanded && (
                                                                             <div className="p-2.5 pt-0 border-t border-destructive/10 animate-in slide-in-from-top-1 duration-200">
                                                                                 <div className="grid grid-cols-1 gap-1.5">
@@ -873,9 +873,9 @@ export default function SchedulePage() {
                                                                                         </div>
                                                                                     ))}
                                                                                 </div>
-                                                                                <Button 
-                                                                                    variant="ghost" 
-                                                                                    size="sm" 
+                                                                                <Button
+                                                                                    variant="ghost"
+                                                                                    size="sm"
                                                                                     className="h-7 text-[10px] mt-2 hover:bg-destructive/10 text-destructive/60 hover:text-destructive w-full"
                                                                                     onClick={() => jumpToExam(clash.concurrentAssignmentId)}
                                                                                 >
@@ -953,13 +953,13 @@ export default function SchedulePage() {
                                                 Student Conflict Warning
                                             </div>
                                             <p className="text-xs text-accent-red/75">
-                                                One or more sections in this group have students scheduled for multiple exams at this same time slot. 
+                                                One or more sections in this group have students scheduled for multiple exams at this same time slot.
                                                 Check the analytics page for individual student names and details.
                                             </p>
                                         </div>
                                     ) : (
                                         <div className="rounded-xl bg-accent-green-soft border border-accent-green/20 p-3.5 flex items-center gap-3">
-                                            <CheckCircle2 className="h-5 w-5 text-accent-green flex-shrink-0" />
+                                            <CheckCircle2 className="h-5 w-5 text-accent-green shrink-0" />
                                             <div>
                                                 <div className="text-sm font-semibold text-accent-green">No Student Clashes</div>
                                                 <div className="text-xs text-accent-green/75">All enrolled students are free during this period.</div>

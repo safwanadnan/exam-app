@@ -34,7 +34,7 @@ export const GET = withErrorHandling(async (_req: NextRequest, ctx: RouteContext
             roomPreferences: { include: { room: { include: { building: { select: { code: true } } } } } },
             distributionConstraintsA: { include: { examB: { select: { id: true, name: true } } } },
             distributionConstraintsB: { include: { examA: { select: { id: true, name: true } } } },
-            assignment: { include: { period: true, rooms: { include: { room: true } } } },
+            assignments: { include: { period: true, rooms: { include: { room: true } } } },
         },
     });
     if (!exam) return errorResponse("Exam not found", 404);

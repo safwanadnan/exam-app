@@ -298,7 +298,7 @@ export default function SectionGroupsPage() {
                             : <><ToggleLeft className="h-4 w-4" /> Turn Off All Sync</>
                         }
                     </Button>
-                    <Button variant="outline" size="icon" onClick={fetchGroups} disabled={loading} className="h-10 w-10">
+                    <Button variant="outline" size="icon" onClick={() => fetchGroups()} disabled={loading} className="h-10 w-10">
                         <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
                     </Button>
                 </div>

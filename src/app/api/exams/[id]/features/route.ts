@@ -10,7 +10,11 @@ export async function GET(_request: Request, { params }: RouteContext) {
             where: { examId: id },
             include: { feature: true }
         });
-        return NextResponse.json({ preferences });
+        const mappedPreferences = preferences.map(p => ({
+            ...p,
+            penalty: p.level === "REQUIRED" ? -1 : 1
+        }));
+        return NextResponse.json({ preferences: mappedPreferences });
     } catch {
         return NextResponse.json({ error: "Failed to fetch exam feature preferences" }, { status: 500 });
     }
@@ -31,12 +35,13 @@ export async function POST(request: Request, { params }: RouteContext) {
                         const fid = (item as any).id;
                         const penalty = (item as any).penalty;
                         if (typeof fid === "string") {
-                            return { examId: id, featureId: fid, penalty: typeof penalty === "number" ? penalty : undefined };
+                            const level = penalty === -1 ? "REQUIRED" : "PREFERRED";
+                            return { examId: id, featureId: fid, level };
                         }
                     }
                     return null;
                 })
-                .filter(Boolean) as { examId: string; featureId: string; penalty?: number }[];
+                .filter(Boolean) as { examId: string; featureId: string; level: string }[];
 
             if (data.length > 0) {
                 await prisma.roomFeaturePreference.createMany({ data });
@@ -48,3 +53,4 @@ export async function POST(request: Request, { params }: RouteContext) {
         return NextResponse.json({ error: "Failed to update exam feature preferences" }, { status: 500 });
     }
 }
+

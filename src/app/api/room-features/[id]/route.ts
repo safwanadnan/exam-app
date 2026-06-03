@@ -11,13 +11,13 @@ const updateSchema = z.object({
     type: z.enum(["BOOLEAN", "NUMERIC"]).optional(),
 });
 
-export const DELETE = withErrorHandling(async (_req: NextRequest, { params }: RouteContext["params"]) => {
+export const DELETE = withErrorHandling(async (_req: NextRequest, { params }: RouteContext) => {
     const { id } = await params;
     await prisma.roomFeature.delete({ where: { id } });
     return jsonResponse({ success: true });
 });
 
-export const PUT = withErrorHandling(async (req: NextRequest, { params }: RouteContext["params"]) => {
+export const PUT = withErrorHandling(async (req: NextRequest, { params }: RouteContext) => {
     const { id } = await params;
     const parsed = await parseBody(req, updateSchema);
     if (parsed.error) return parsed.error;

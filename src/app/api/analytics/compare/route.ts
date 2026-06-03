@@ -13,11 +13,17 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
     const [runA, runB] = await Promise.all([
         prisma.solverRun.findUnique({
             where: { id: runAId },
-            include: { assignments: { include: { period: true, rooms: { include: { room: true } } } } }
+            include: {
+                config: true,
+                assignments: { include: { period: true, rooms: { include: { room: true } } } }
+            }
         }),
         prisma.solverRun.findUnique({
             where: { id: runBId },
-            include: { assignments: { include: { period: true, rooms: { include: { room: true } } } } }
+            include: {
+                config: true,
+                assignments: { include: { period: true, rooms: { include: { room: true } } } }
+            }
         })
     ]);
 
@@ -25,19 +31,16 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
         return NextResponse.json({ error: "One or both runs not found" }, { status: 404 });
     }
 
-    const aScores = runA.scoreDetails as any || {};
-    const bScores = runB.scoreDetails as any || {};
-
     const diff = {
         score: {
-            runA: runA.score || 0,
-            runB: runB.score || 0,
-            delta: (runB.score || 0) - (runA.score || 0)
+            runA: runA.bestObjective || 0,
+            runB: runB.bestObjective || 0,
+            delta: (runB.bestObjective || 0) - (runA.bestObjective || 0)
         },
         conflicts: {
-            runA: aScores.studentConflicts || 0,
-            runB: bScores.studentConflicts || 0,
-            delta: (bScores.studentConflicts || 0) - (aScores.studentConflicts || 0)
+            runA: runA.directConflicts || 0,
+            runB: runB.directConflicts || 0,
+            delta: (runB.directConflicts || 0) - (runA.directConflicts || 0)
         },
         changedExams: [] as any[]
     };

@@ -70,7 +70,7 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     const data = parsed.data;
 
     // Use a transaction for bulk import
-    const result = await prisma.$transaction(async (tx: typeof prisma) => {
+    const result = await prisma.$transaction(async (tx) => {
         // 1. Create Session
         const session = await tx.academicSession.create({
             data: {
@@ -225,10 +225,10 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
             let defaultDeptId = "";
             let defaultSubjId = "";
 
-            const bulkExams: Record<string, unknown>[] = [];
-            const bulkExamOwners: Record<string, unknown>[] = [];
-            const bulkInstructorAssignments: Record<string, unknown>[] = [];
-            const bulkStudentEnrollments: Record<string, unknown>[] = [];
+            const bulkExams: any[] = [];
+            const bulkExamOwners: any[] = [];
+            const bulkInstructorAssignments: any[] = [];
+            const bulkStudentEnrollments: any[] = [];
 
             for (const et of data.examTypes) {
                 const examType = await tx.examType.upsert({

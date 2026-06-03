@@ -16,9 +16,10 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
 
     const result = {
         overview: { exams: examCount, students: studentCount, rooms: roomCount, periods: periodCount },
-        conflicts: [],
-        roomUtilization: [],
-        periodUtilization: [],
+        conflicts: [] as any[],
+        roomUtilization: [] as any[],
+        periodUtilization: [] as any[],
+        assignmentCount: 0,
     };
 
     if (runId) {
@@ -66,7 +67,7 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
             });
         }
 
-        const conflicts: Array<Record<string, unknown>> = [];
+        const conflicts: any[] = [];
         for (const [periodId, periodExams] of periodStudentMap) {
             for (let i = 0; i < periodExams.length; i++) {
                 for (let j = i + 1; j < periodExams.length; j++) {

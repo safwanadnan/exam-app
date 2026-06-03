@@ -1,4 +1,4 @@
-import { Prisma, type PrismaClient } from "../../generated/prisma/client";
+import { Prisma, type PrismaClient } from "@prisma/client";
 
 type GroupSeed = {
     courseId: string;
@@ -209,7 +209,7 @@ export async function recomputeSectionGroups(
     let groupsCreated = 0;
     let constraintsCreated = 0;
 
-    await prisma.$transaction(async (tx) => {
+    const execute = async (tx: Prisma.TransactionClient) => {
         if (existingGroups.length > 0) {
             await tx.sectionGroup.deleteMany({
                 where: { id: { in: existingGroups.map((g) => g.id) } },
@@ -238,7 +238,13 @@ export async function recomputeSectionGroups(
         }
 
         constraintsCreated = await rebuildSessionConstraints(tx, sessionId, unique(Array.from(groupMap.values()).map((g) => g.courseId)));
-    }, { timeout: 300000 });
+    };
+
+    if ("$transaction" in prisma) {
+        await (prisma as any).$transaction(execute, { timeout: 300000 });
+    } else {
+        await execute(prisma as Prisma.TransactionClient);
+    }
 
     return {
         groupsCreated,

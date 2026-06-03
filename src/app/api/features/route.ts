@@ -8,9 +8,7 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
     const search = getSearch(req);
     const exact = new URL(req.url).searchParams.get("exact") === "true";
     const url = new URL(req.url);
-    const sessionId = url.searchParams.get("sessionId");
-    
-    const where: Prisma.RoomFeatureWhereInput = sessionId ? { sessionId } : {};
+    const where: Prisma.RoomFeatureWhereInput = {};
     if (search) {
         where.OR = buildSearchOR(search, [["name"], ["code"]], exact) ?? [];
     }
@@ -30,7 +28,6 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
 const featureSchema = z.object({
     name: z.string().min(1),
     code: z.string().min(1),
-    sessionId: z.string().min(1),
 });
 
 export const POST = withErrorHandling(async (req: NextRequest) => {

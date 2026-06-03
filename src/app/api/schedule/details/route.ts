@@ -32,13 +32,14 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
     });
 
     if (!seed) return jsonResponse({ error: "Assignment not found" }, 404);
+    if (!seed.runId) {
+        return jsonResponse({ error: "No run associated with this assignment" }, 400);
+    }
 
     const courseTitle = seed.exam.owners[0]?.section?.course?.title;
 
     if (!courseTitle) {
-        // Fallback if no course is linked: just show details for this single exam
-        const studentMap = new Map(seed.exam.studentEnrollments?.map(e => [e.student.id, e.student]) || []);
-        // ... (this part is complex to fix here, but the main issue was the crash)
+        return jsonResponse({ error: "No course linked to this exam" }, 400);
     }
 
     // 2. Fetch all assignments for courses with the SAME TITLE in this PERIOD and RUN

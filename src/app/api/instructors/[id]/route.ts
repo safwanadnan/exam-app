@@ -10,7 +10,7 @@ const updateSchema = z.object({
     name: z.string().min(1).optional(),
 });
 
-export const GET = withErrorHandling(async (_req: NextRequest, { params }: RouteContext["params"]) => {
+export const GET = withErrorHandling(async (_req: NextRequest, { params }: RouteContext) => {
     const { id } = await params;
     const instructor = await prisma.instructor.findUniqueOrThrow({
         where: { id },
@@ -24,7 +24,7 @@ export const GET = withErrorHandling(async (_req: NextRequest, { params }: Route
     return jsonResponse(instructor);
 });
 
-export const PUT = withErrorHandling(async (req: NextRequest, { params }: RouteContext["params"]) => {
+export const PUT = withErrorHandling(async (req: NextRequest, { params }: RouteContext) => {
     const { id } = await params;
     const parsed = await parseBody(req, updateSchema);
     if (parsed.error) return parsed.error;
@@ -38,7 +38,7 @@ export const PUT = withErrorHandling(async (req: NextRequest, { params }: RouteC
     return jsonResponse(instructor);
 });
 
-export const DELETE = withErrorHandling(async (_req: NextRequest, { params }: RouteContext["params"]) => {
+export const DELETE = withErrorHandling(async (_req: NextRequest, { params }: RouteContext) => {
     const { id } = await params;
     await prisma.instructor.delete({ where: { id } });
     return jsonResponse({ success: true });
