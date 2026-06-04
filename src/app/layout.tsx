@@ -43,7 +43,7 @@ export default function RootLayout({
                     <Sidebar />
                   </div>
                   <div className="flex flex-col h-full overflow-hidden">
-                    <header className="flex h-14 lg:h-[60px] items-center gap-4 border-b bg-background px-6">
+                    <header className="flex h-14 lg:h-15 items-center gap-4 border-b bg-background px-6">
                       <MobileNav />
                       <div className="w-full flex-1 flex items-center gap-4">
                         <Link href="/" className="flex items-center gap-3">

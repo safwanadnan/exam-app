@@ -158,7 +158,7 @@ export default function SolverConfigPage() {
                 </div>
                 <div className="flex gap-2">
                     <Select value={selectedSession} onValueChange={setSelectedSession}>
-                        <SelectTrigger className="w-[200px]"><SelectValue placeholder="Session" /></SelectTrigger>
+                        <SelectTrigger className="w-50"><SelectValue placeholder="Session" /></SelectTrigger>
                         <SelectContent>
                             {sessions.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
                         </SelectContent>

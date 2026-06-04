@@ -431,7 +431,7 @@ export default function SchedulePage() {
                 <div className="flex items-center gap-2">
                     {runs.length > 0 && (
                         <Select value={selectedRunId || undefined} onValueChange={setSelectedRunId}>
-                            <SelectTrigger className="w-[260px] bg-background">
+                            <SelectTrigger className="w-65 bg-background">
                                 <SelectValue placeholder="Select Run" />
                             </SelectTrigger>
                             <SelectContent>
@@ -481,7 +481,7 @@ export default function SchedulePage() {
 
                     {/* Search & Filter bar */}
                     <div className="flex items-center gap-3 flex-wrap">
-                        <div className="relative flex-1 min-w-[220px]">
+                        <div className="relative flex-1 min-w-55">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <input
                                 type="text"
@@ -648,7 +648,7 @@ export default function SchedulePage() {
 
             {/* Detail Dialog */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="sm:max-w-[540px] max-h-[90vh] overflow-y-auto">
+                <DialogContent className="sm:max-w-135 max-h-[90vh] overflow-y-auto">
                     <DialogHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <DialogTitle className="text-lg">
                             {isEditing ? `Edit: ${detailedAssignment?.courseTitle}` : "Exam Details"}
@@ -680,7 +680,7 @@ export default function SchedulePage() {
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Select Period" />
                                             </SelectTrigger>
-                                            <SelectContent className="max-h-[300px]">
+                                            <SelectContent className="max-h-75">
                                                 {periods.map(p => (
                                                     <SelectItem key={p.id} value={p.id}>
                                                         {format(new Date(p.date), "MMM d")} | {p.startTime} - {p.endTime}
@@ -692,7 +692,7 @@ export default function SchedulePage() {
 
                                     <div className="space-y-2">
                                         <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Rooms (Multiple Select)</Label>
-                                        <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto p-2 border rounded-md bg-muted/20">
+                                        <div className="grid grid-cols-2 gap-2 max-h-50 overflow-y-auto p-2 border rounded-md bg-muted/20">
                                             {allRooms.map(r => {
                                                 const isSelected = editRoomIds.includes(r.id);
                                                 return (

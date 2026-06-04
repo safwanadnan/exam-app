@@ -53,7 +53,7 @@ function BuildingDialog({ building, open, onOpenChange, onSaved }: {
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[400px]">
+            <DialogContent className="sm:max-w-100">
                 <form onSubmit={handleSubmit}>
                     <DialogHeader>
                         <DialogTitle>{isEditing ? "Edit Building" : "Add Building"}</DialogTitle>
@@ -111,7 +111,7 @@ function RoomDialog({ room, buildings, open, onOpenChange, onSaved }: {
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[480px]">
+            <DialogContent className="sm:max-w-120">
                 <form onSubmit={handleSubmit}>
                     <DialogHeader>
                         <DialogTitle>{isEditing ? "Edit Room" : "Add Room"}</DialogTitle>
@@ -149,7 +149,7 @@ function DeleteDialog({ open, onOpenChange, onConfirm, title }: { open: boolean;
     const [deleting, setDeleting] = useState(false);
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[400px]">
+            <DialogContent className="sm:max-w-100">
                 <DialogHeader><DialogTitle>Confirm Delete</DialogTitle><DialogDescription>Are you sure you want to delete <strong>{title}</strong>? This cannot be undone.</DialogDescription></DialogHeader>
                 <DialogFooter>
                     <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
@@ -338,7 +338,7 @@ export default function RoomsPage() {
                                                 <TableHead>Normal Capacity</TableHead>
                                                 <TableHead>Alternate Capacity</TableHead>
                                                 <TableHead>Coordinates (X,Y)</TableHead>
-                                                <TableHead className="w-[80px]"></TableHead>
+                                                <TableHead className="w-20"></TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>

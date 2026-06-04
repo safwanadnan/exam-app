@@ -70,7 +70,7 @@ export default function DashboardPage() {
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">Active Session:</span>
             <Select value={currentSessionId || ""} onValueChange={setCurrentSessionId}>
-              <SelectTrigger className="w-[200px] h-9 bg-background border-hairline">
+              <SelectTrigger className="w-50 h-9 bg-background border-hairline">
                 <SelectValue placeholder="Select a session" />
               </SelectTrigger>
               <SelectContent>

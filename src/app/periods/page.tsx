@@ -60,7 +60,7 @@ function PeriodDialog({ period, open, onOpenChange, onSaved }: {
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[480px]">
+            <DialogContent className="sm:max-w-120">
                 <form onSubmit={handleSubmit}>
                     <DialogHeader>
                         <DialogTitle>Edit Period</DialogTitle>
@@ -91,7 +91,7 @@ function DeleteDialog({ open, onOpenChange, onConfirm, title }: { open: boolean;
     const [deleting, setDeleting] = useState(false);
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[400px]">
+            <DialogContent className="sm:max-w-100">
                 <DialogHeader><DialogTitle>Delete Period</DialogTitle><DialogDescription>Delete <strong>{title}</strong>? This cannot be undone.</DialogDescription></DialogHeader>
                 <DialogFooter>
                     <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
@@ -196,7 +196,7 @@ export default function PeriodsPage() {
                                         <TableHead>Exam Type</TableHead>
                                         <TableHead className="text-right">Penalty</TableHead>
                                         <TableHead className="text-right">Assignments</TableHead>
-                                        <TableHead className="w-[80px]"></TableHead>
+                                        <TableHead className="w-20"></TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>

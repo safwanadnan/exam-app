@@ -355,7 +355,7 @@ export default function ExamsPage() {
                             <Table>
                                 <TableHeader className="bg-surface-soft/5">
                                     <TableRow>
-                                        <TableHead className="w-[40px]">
+                                        <TableHead className="w-10">
                                             <input 
                                                 type="checkbox" 
                                                 className="h-4 w-4 rounded border-hairline text-ink focus:ring-ink bg-surface-card cursor-pointer"

@@ -121,7 +121,7 @@ export default function FeaturesPage() {
                 </div>
                 <div className="flex items-center gap-2">
                     <Select value={selectedSessionId} onValueChange={setSelectedSessionId}>
-                        <SelectTrigger className="w-[200px]"><SelectValue placeholder="Select session" /></SelectTrigger>
+                        <SelectTrigger className="w-50"><SelectValue placeholder="Select session" /></SelectTrigger>
                         <SelectContent>{sessions.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
                     </Select>
                     <Button onClick={() => setAddOpen(true)} disabled={!selectedSessionId}><Plus className="mr-2 h-4 w-4" /> Add Feature</Button>

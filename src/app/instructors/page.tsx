@@ -283,7 +283,7 @@ export default function InstructorsPage() {
 
             {/* ── Detail Panel ── */}
             <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-                <DialogContent className="sm:max-w-[520px] max-h-[85vh] overflow-y-auto">
+                <DialogContent className="sm:max-w-130 max-h-[85vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <GraduationCap className="h-5 w-5" />

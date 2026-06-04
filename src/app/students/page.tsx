@@ -57,7 +57,7 @@ function StudentDialog({ open, onOpenChange, onSaved }: { open: boolean; onOpenC
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[400px]">
+            <DialogContent className="sm:max-w-100">
                 <form onSubmit={handleSubmit}>
                     <DialogHeader>
                         <DialogTitle>Add Student</DialogTitle>
@@ -215,7 +215,7 @@ export default function StudentsPage() {
                                         <TableHead>External ID <HelpTip text="University student ID" /></TableHead>
                                         <TableHead>Name</TableHead>
                                         <TableHead className="text-right">Enrollments <HelpTip text="Number of exams this student is enrolled in" /></TableHead>
-                                        <TableHead className="w-[80px]"></TableHead>
+                                        <TableHead className="w-20"></TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -263,7 +263,7 @@ export default function StudentsPage() {
 
             {/* ── Student Detail Panel ── */}
             <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-                <DialogContent className="sm:max-w-[540px] max-h-[85vh] overflow-y-auto">
+                <DialogContent className="sm:max-w-135 max-h-[85vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <Users className="h-5 w-5" />
@@ -344,7 +344,7 @@ export default function StudentsPage() {
 
             {/* Delete Confirm */}
             <Dialog open={!!deleteTarget} onOpenChange={o => { if (!o) setDeleteTarget(null); }}>
-                <DialogContent className="sm:max-w-[400px]">
+                <DialogContent className="sm:max-w-100">
                     <DialogHeader><DialogTitle>Delete Student</DialogTitle><DialogDescription>Delete <strong>{deleteTarget?.name}</strong>? This will also remove all enrollments.</DialogDescription></DialogHeader>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>

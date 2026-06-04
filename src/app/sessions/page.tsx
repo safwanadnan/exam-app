@@ -106,7 +106,7 @@ function SessionFormDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[480px]">
+            <DialogContent className="sm:max-w-120">
                 <form onSubmit={handleSubmit}>
                     <DialogHeader>
                         <DialogTitle>{isEditing ? "Edit Session" : "Create Session"}</DialogTitle>
@@ -171,7 +171,7 @@ function DeleteConfirmDialog({
     const [deleting, setDeleting] = useState(false);
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[400px]">
+            <DialogContent className="sm:max-w-100">
                 <DialogHeader>
                     <DialogTitle>Delete Session</DialogTitle>
                     <DialogDescription>
@@ -306,7 +306,7 @@ export default function SessionsPage() {
                                     <TableHead>Dates</TableHead>
                                     <TableHead className="text-right">Exam Types <HelpTip text="Number of exam types (e.g. Final, Midterm) configured for this session" /></TableHead>
                                     <TableHead className="text-right">Solver Runs <HelpTip text="How many times the optimizer has been executed for this session" /></TableHead>
-                                    <TableHead className="w-[80px]"></TableHead>
+                                    <TableHead className="w-20"></TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
