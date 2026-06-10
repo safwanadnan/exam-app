@@ -504,7 +504,7 @@ export default function ConstraintsPage() {
                     <TableHead className="w-10 px-4">
                       <input
                         type="checkbox"
-                        className="h-4 w-4 rounded border-hairline text-ink focus:ring-ink bg-surface-card"
+                        className="h-4 w-4 rounded border-primary/50 accent-primary focus:ring-primary bg-surface-card cursor-pointer"
                         checked={filtered.length > 0 && selectedIds.size === filtered.length}
                         onChange={toggleSelectAll}
                       />
@@ -523,7 +523,7 @@ export default function ConstraintsPage() {
                       <TableCell className="px-4">
                         <input
                           type="checkbox"
-                          className="h-4 w-4 rounded border-hairline text-ink focus:ring-ink bg-surface-card"
+                          className="h-4 w-4 rounded border-primary/50 accent-primary focus:ring-primary bg-surface-card cursor-pointer"
                           checked={selectedIds.has(c.id)}
                           onChange={() => toggleSelect(c.id)}
                         />

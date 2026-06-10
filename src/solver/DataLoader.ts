@@ -115,8 +115,11 @@ export async function loadExamModel(
             building: {
                 include: { campus: true },
             },
+            features: true,
         },
     });
+
+    const roomFeaturesMap = new Map<string, Set<string>>();
 
     for (const dbRoom of dbRooms) {
         const room = new ExamRoom({
@@ -129,6 +132,9 @@ export async function loadExamModel(
             campusId: dbRoom.building.campus?.id ?? undefined,
         });
         model.addRoom(room);
+
+        const featureIds = new Set(dbRoom.features.map(f => f.featureId));
+        roomFeaturesMap.set(dbRoom.id, featureIds);
 
         // Load room availability
         const avail = await prisma.roomPeriodAvailability.findMany({
@@ -180,6 +186,7 @@ export async function loadExamModel(
             instructorAssignments: true,
             periodPreferences: true,
             roomPreferences: true,
+            featurePreferences: true,
             owners: {
                 include: {
                     section: {
@@ -275,11 +282,42 @@ export async function loadExamModel(
             }
         }
 
+        // Extract room feature preferences for this exam
+        const requiredFeatureIds = new Set<string>();
+        const preferredFeaturePenalties = new Map<string, number>(); // featureId -> penalty
+        for (const pref of dbExam.featurePreferences) {
+            if (pref.level === "REQUIRED") {
+                requiredFeatureIds.add(pref.featureId);
+            } else {
+                preferredFeaturePenalties.set(pref.featureId, getPenaltyForLevel(pref.level));
+            }
+        }
+
         for (const room of model.rooms) {
             if (prohibitedRooms.has(room.id)) continue;
             // Campus constraint: skip rooms not on the required campus
             if (requiredCampusId !== null && room.campusId !== requiredCampusId) continue;
-            const penalty: number = roomPenalties.get(room.id) ?? 0;
+
+            // Room feature constraint: skip rooms that do not have all required features
+            const roomFeatureIds = roomFeaturesMap.get(room.id) ?? new Set<string>();
+            let hasAllRequiredFeatures = true;
+            for (const reqFeatureId of requiredFeatureIds) {
+                if (!roomFeatureIds.has(reqFeatureId)) {
+                    hasAllRequiredFeatures = false;
+                    break;
+                }
+            }
+            if (!hasAllRequiredFeatures) continue;
+
+            // Preferred features penalty / reward
+            let featurePenalty = 0;
+            for (const [prefFeatureId, pen] of preferredFeaturePenalties.entries()) {
+                if (roomFeatureIds.has(prefFeatureId)) {
+                    featurePenalty += pen;
+                }
+            }
+
+            const penalty: number = (roomPenalties.get(room.id) ?? 0) + featurePenalty;
             exam.addRoomPlacement(new ExamRoomPlacement(room, penalty));
         }
 

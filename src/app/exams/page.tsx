@@ -358,7 +358,7 @@ export default function ExamsPage() {
                                         <TableHead className="w-10">
                                             <input 
                                                 type="checkbox" 
-                                                className="h-4 w-4 rounded border-hairline text-ink focus:ring-ink bg-surface-card cursor-pointer"
+                                                className="h-4 w-4 rounded border-primary/50 accent-primary focus:ring-primary bg-surface-card cursor-pointer"
                                                 checked={selectedIds.size === filtered.length && filtered.length > 0}
                                                 onChange={toggleSelectAll}
                                             />
@@ -382,7 +382,7 @@ export default function ExamsPage() {
                                             <TableCell onClick={e => e.stopPropagation()}>
                                                 <input 
                                                     type="checkbox" 
-                                                    className="h-4 w-4 rounded border-hairline text-ink focus:ring-ink bg-surface-card cursor-pointer"
+                                                    className="h-4 w-4 rounded border-primary/50 accent-primary focus:ring-primary bg-surface-card cursor-pointer"
                                                     checked={selectedIds.has(exam.id)}
                                                     onChange={() => toggleSelect(exam.id)}
                                                 />
